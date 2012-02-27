@@ -7,7 +7,7 @@ var p5>=0, <=1;
 var p6>=0, <=1;
 var p7>=0, <=1;
 var p8>=0, <=1;
-minimize obj: 3.754324+0.635354*p4*p5+0.490761*p5+0.490761*p1+0.504447*p4+0.110784*p1*p4*p5+0.198408*p1*p5+0.635354*p1*p4;
+minimize obj: 10+0.25*p3*p6*p7+-0.5*p3*p6;
 subject to r1:  p1>=0.85+p2;
 subject to r2:  p1<=0.95;
 subject to r3:  p2<=0.10;

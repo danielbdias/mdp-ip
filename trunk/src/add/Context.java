@@ -58,10 +58,14 @@ public abstract class Context {
     protected Hashtable reduceCacheMinPar=new Hashtable();
     public final static String  NAME_FILE_AMPL = Config.getConfig().getAmplTempFile();
     public final static String  NAME_FILE_AMPL_BOUNDS = Config.getConfig().getAmplBoundTempFile();
+    
     HashMap probBound=new HashMap();  // String prob -> array[lower,upper]
     
     public int reuseCacheIntNode=0,clash=0, noclash=0,contReuse=0,contNoReuse=0,numberReducedToValue=0,contReuseUsingLattice=0;
     public Hashtable<String, Double> currentValuesProb=new Hashtable<String, Double>();     //  idProb--> valProb
+    public Hashtable<String, Double> probSample;     //  idProb--> valProb
+    
+    
     protected Hashtable currentDirectionList=new Hashtable();
     protected Hashtable cacheResultsSolver=new Hashtable();
     
@@ -369,32 +373,16 @@ public abstract class Context {
 	     	try {
 	     		
 	             BufferedWriter out = new BufferedWriter(new FileWriter(NAME_FILE_AMPL));
-	             out.write(SOLVER);
-	             out.append(System.getProperty("line.separator"));
-	             Iterator it=listVarProb.iterator();
-	             while(it.hasNext()){
-	            	 out.append("var p" + it.next() + ">=0, <=1;");
-	            	 out.append(System.getProperty("line.separator"));
-	             }
-	             
-	             out.append("minimize obj: " + objective + ";");
-	             out.append(System.getProperty("line.separator"));
+	             writeVarObjective(objective,out);
 	             BufferedReader input= new BufferedReader(new FileReader(NAME_FILE_CONTRAINTS));
 	             String line = null;
 	             while (( line = input.readLine()) != null){
 	                 out.append(line);
 	                 out.append(System.getProperty("line.separator"));
 	             }
-	             out.append("solve;");
-	             out.append(System.getProperty("line.separator"));
-	             //print the probabilities founded
-	             Iterator it1=listVarProb.iterator();
-	             while(it1.hasNext()){
-	            	 String pnumber=(String)it1.next();
-	            	 out.append("print 'p" + pnumber + "',p"+ pnumber+";");
-	            	 out.append(System.getProperty("line.separator"));
-	             }
 	             
+	             //print the probabilities founded by the solver
+	             writeProbFounded(out);
 	             input.close();
 	             out.close();
 	         } catch (IOException e) {
@@ -403,7 +391,37 @@ public abstract class Context {
 	         }
 
 	 	}
-	     
+	    
+	    
+	    
+		private void writeVarObjective(String objective, BufferedWriter out) throws IOException {
+	    	out.write(SOLVER);
+            out.append(System.getProperty("line.separator"));
+            Iterator it=listVarProb.iterator();
+            while(it.hasNext()){
+           	 out.append("var p" + it.next() + ">=0, <=1;");
+           	 out.append(System.getProperty("line.separator"));
+            }
+            
+            out.append("minimize obj: " + objective + ";");
+            out.append(System.getProperty("line.separator"));
+			
+		}
+
+	    private void writeProbFounded(BufferedWriter out) throws IOException {
+	    	out.append("solve;");
+            out.append(System.getProperty("line.separator"));
+	    	Iterator it1=listVarProb.iterator();
+            while(it1.hasNext()){
+           	 String pnumber=(String)it1.next();
+           	 out.append("print 'p" + pnumber + "',p"+ pnumber+";");
+           	 out.append(System.getProperty("line.separator"));
+            }
+			
+		}
+		
+
+	    
 	    //for Paramereterized   
 	    /**
 	     * call the non linear solver and fill currentValuesProb with the probabilities  
@@ -515,6 +533,20 @@ public abstract class Context {
 
 		}
 		 
+		 
+		 //	create file in order to get probabilities for RTDP-IP sample
+		 public void getProbSampleCallingSolver(String NAME_FILE_CONTRAINTS_GREATERZERO) {
+			 
+			 createFileAMPL("0",NAME_FILE_CONTRAINTS_GREATERZERO);
+			 Double obj=callNonLinearSolver(); //fill   currentValuesProb and currentValuesW
+			 if (obj==null){
+				 System.out.println("createProbSample: Problems with the solver. It returns null");
+				 System.exit(0);
+			 }
+             probSample=new Hashtable(currentValuesProb);	
+            
+		}
+ 
 		 
 
 	     public static boolean containsClash(Hashtable dirlist) {

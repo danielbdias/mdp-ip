@@ -41,7 +41,7 @@ public abstract class MDP {
 	boolean printTrafficFormat=false;
 	boolean sampleInitialFromI=true;
 	boolean printPolicy=false;
-	int typeSampledRTDPMDPIP=2; //1: allProbabilities 2: without p=0  and with epsilon 3: without p=0 and with a new constraints p>0
+	int typeSampledRTDPMDPIP=3; //typeSampledRTDPMDPIP   1: allProbabilities 2: if p=0  => p=epsilon 3: using  the result of a problem with constraints p>= epsilon
 	double epsilon=0.000001;
 	
 	/* Local constants */
@@ -49,7 +49,7 @@ public abstract class MDP {
 //  public final static boolean ALWAYS_FLUSH = false;         // Always flush DD caches?
  public final static double FLUSH_PERCENT_MINIMUM = 0.1d; // used to flush
  public final static String  NAME_FILE_CONTRAINTS = Config.getConfig().getAmplConstraintFile();
- 
+ public final static String  NAME_FILE_CONTRAINTS_GREATERZERO = Config.getConfig().getAmplConstraintFileGreaterZero();
  public final static String  NAME_FILE_VALPART = Config.getConfig().getReportsDir() + "value";
  public final static String  NAME_FILE_MPPART = Config.getConfig().getReportsDir() + "AMPL";
  public String NAME_FILE_VALUE;
@@ -210,8 +210,10 @@ public abstract class MDP {
 			  System.exit(1);
 		  }
 		  ArrayList constraints = (ArrayList)i.next();
-		  createFileConstraints(constraints);
+		  createFileConstraints(constraints, NAME_FILE_CONTRAINTS);
 		  numOriginalConstraints=constraints.size();
+		  createFileConstraintsGreaterZero(constraints, NAME_FILE_CONTRAINTS_GREATERZERO);
+		  		  
 	  }
 	  // Read discount and tolerance
 	  o = i.next();
@@ -377,15 +379,11 @@ private State createStateEnum(Object o) {
 }
 
 	//For constraints in MDPIP  
-    private void createFileConstraints(ArrayList constraints) {
+    private void createFileConstraints(ArrayList constraints, String nameFileConstraint) {
 		
     	try {
-            BufferedWriter out = new BufferedWriter(new FileWriter(NAME_FILE_CONTRAINTS));
-            for(int i=0;i< constraints.size();i++){
-            	String line=createLineFileConst((ArrayList)constraints.get(i));
-            	out.write(line);
-            	out.append(System.getProperty("line.separator"));
-            }
+            BufferedWriter out = new BufferedWriter(new FileWriter(nameFileConstraint));
+            writeConstraints(constraints,out);
             out.close();
         } catch (IOException e) {
         	System.out.println("Problem with the Constraint file");
@@ -393,6 +391,43 @@ private State createStateEnum(Object o) {
         }
 
 	}
+    
+    
+
+    private void writeConstraints(ArrayList constraints, BufferedWriter out) throws IOException {
+        for(int i=0;i< constraints.size();i++){
+        	String line=createLineFileConst((ArrayList)constraints.get(i));
+        	out.write(line);
+        	out.append(System.getProperty("line.separator"));
+        }		
+	}
+
+
+	private void createFileConstraintsGreaterZero(ArrayList constraints, String nameFileConstraint) {
+		
+    	try {
+    		numConstraints=0;
+            BufferedWriter out = new BufferedWriter(new FileWriter(nameFileConstraint));
+            writeConstraints(constraints,out);
+            int i=numConstraints;
+            //write constrains p_i >= epsilon 
+            Iterator it=context.listVarProb.iterator();
+            while(it.hasNext()){
+             i++;
+           	 out.append("subject to r"+i+": p" + it.next() + ">="+Context._df.format(epsilon)+";");
+           	 out.append(System.getProperty("line.separator"));
+            }
+            
+            out.close();
+        } catch (IOException e) {
+        	System.out.println("Problem with the Constraint file");
+        	System.exit(0);
+        }
+
+	}
+
+    
+    
 	private String createLineFileConst(ArrayList list) {
 		numConstraints++;
 		String line=new String("subject to r"+numConstraints+":  ");
@@ -402,7 +437,6 @@ private State createStateEnum(Object o) {
 		return line+";";
 	}
 	public int solve(int maxNumberIterations, double mergeError){
-		
 		if(this.pruneAfterEachIt){
 			NAME_FILE_VALUE=NAME_FILE_VALUE+"_"+Double.toString(mergeError).replace(".", "_")+"APRI"+".net";//NAME_FILE_VALUE is inicializated in MDP_Fac(...)
 		}
@@ -413,7 +447,6 @@ private State createStateEnum(Object o) {
         Object QiPlus1DD, DiffDD;
     	valueiDD = rewardDD;
         //context.view(valueiDD);
-    	
     	double Rmax=context.apply(valueiDD, Context.MAXVALUE);
     	double Vmax=Rmax;
     	context.workingWithParameterizedBef=context.workingWithParameterized;
@@ -1346,13 +1379,14 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 			//context.view(VPrime);
 		}
 		
-		if(context.workingWithParameterized){//new If Karina
+		if(context.workingWithParameterized){//new  Karina
 			//TODO: here we inicialize mergeError of the context
 			//context.mergeError = mergeError;
 			//context.view(VPrime);
-			VPrime=context.doMinCallOverNodes(VPrime,NAME_FILE_CONTRAINTS,this.pruneAfterEachIt); // the parameter is ParADD and the result is an ADD
+			//Important: Here VPrime only have one node
+			VPrime=context.doMinCallOverNodes(VPrime,NAME_FILE_CONTRAINTS,this.pruneAfterEachIt); // the parameter is a ParADD and the result is an ADD
 			//after this we have currentValuesProb
-			context.workingWithParameterized=false;//para ver el VDD
+			//context.workingWithParameterized=false;//para ver el VDD
 						
 			//context.view(VPrime);
 		}
@@ -1389,8 +1423,11 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 		long timeSum=0;
 		ResetTimer();
 		Action actionGreedy=null;
-		//Initialize Vu with admissible value function //////////////////////////////////
-		//create an ADD with  V_u=Rmax/1-gamma //////////////////////////////////
+		if (typeSampledRTDPMDPIP==3){ //callSolver with constraints p_i>=epsilon 
+			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
+		}
+	//Initialize Vu with admissible value function //////////////////////////////////
+	//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
 		double Rmax=context.apply(this.rewardDD, Context.MAXVALUE);
 		if(this.bdDiscount.doubleValue()==1){
 			maxUpper=Rmax*maxDepth;
@@ -1399,7 +1436,7 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 			maxUpper=Rmax/(1-this.bdDiscount.doubleValue());
 		}
 		VUpper=context.getTerminalNode(maxUpper);
-		
+	////////////////////////////////////////////////////////////////////////////////////	
 		//context.view(VUpper);
 		ArrayList<ArrayList> perf=new ArrayList<ArrayList>();
 		contUpperUpdates=0;
@@ -1536,25 +1573,29 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 	}
 	
 	private double samplingOneVariableIP(Polynomial probFalsePol) {
-		// typeSampledRTDPMDPIP   1: allProbabilities 2: without p=0  and with epsilon 3: without p=0 and with a new constraints p>0 (não implementado)
-		    double probFalse;
-		 
-			//TODO:
+		// typeSampledRTDPMDPIP   1: allProbabilities 2: if p=0  => p=epsilon 3: using  the result of a problem with constraints p>= epsilon 
+		double probFalse;
+		
+		if(typeSampledRTDPMDPIP==1 || typeSampledRTDPMDPIP==2 ){    
             if(probNature.size()!=0){ //i.e. the solver was  called when we have computed Q
             	probFalse=probFalsePol.evalWithListValues(probNature, context);
             	System.out.println("probNature:"+probNature);
             }
             else{ //probNature was not created, then call the solver for each variable s.t.constraints
-            	//probFalse=0.5;//o que não é necessariamente certo, deveria selecionar a prob do conjunto credal
+            	//PADD with only one node
             	Object probFalseNode =(Object)context.doMinCallOverNodes(context.getTerminalNode(probFalsePol),NAME_FILE_CONTRAINTS,this.pruneAfterEachIt);
             	probFalse=((TerminalNodeKeyADD)context.getInverseNodesCache().get(probFalseNode)).getValue();
             }
-            if (typeSampledRTDPMDPIP==2 && probFalse==0){ //OPTION 1 with out p>0
-            	probFalse=probFalse+epsilon;
+            if (typeSampledRTDPMDPIP==2 && probFalse==0){ //OPTION 2 
+            	probFalse=epsilon;
             }
-            return probFalse;
             
-		
+		}
+        else{// OPTION 3
+//        	TODO:  
+        	probFalse=probFalsePol.evalWithListValues(context.probSample, context);
+        }
+		return probFalse;
 	}
 
 	
