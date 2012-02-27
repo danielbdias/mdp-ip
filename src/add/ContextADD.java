@@ -950,75 +950,20 @@ public class ContextADD extends Context{
 		}	
 			
 //		 the parameter is ParADD and the result is an ADD
-	     public Object doMinCallOverNodes(Object VDD,String NAME_FILE_CONTRAINTS,boolean pruneAfterEachIt) {
+	    public Object doMinCallOverNodes(Object VDD,String NAME_FILE_CONTRAINTS,boolean pruneAfterEachIt) {
 
-	    	 if(this.isTerminalNode(VDD)){
+	    	 if(this.isTerminalNode(VDD)){ 
 	    		 TerminalNodeKeyPar node=(TerminalNodeKeyPar)this.getInverseNodesCache().get(VDD);
-
-	    		 //if the node not have probabilities then not call the nonlinear solver
-	    		 if(node.getPolynomial().getTerms().size()==0){
+	    		 if(node.getPolynomial().getTerms().size()==0){ //if the node does not have probabilities then we do not call the nonlinear solver
 	    			 return this.getTerminalNode(node.getPolynomial().getC());
 	    		 }
+	    		 /////////////////////OBJECTIVE-IP PRUNE/////////////////////////////////////////////
 	    		 if(pruneAfterEachIt==false){
-//	    			 construct a hashtable from the polynomial
-	    			 ArrayList currentIdsClash=new ArrayList();
-	    			 currentDirectionList=node.getPolynomial().constructDirectionList(listVarProb,this,currentIdsClash);//it is necessary to calculate currentIdsClash
-	    			 //System.out.println(node.getPolynomial().toString(this));
-
-	    			 // TODO: for taxonomy lookup, only remove clash terms
-
-	    			 /////////// record how much of the error budget this consumed
-	    			 Polynomial newPolAprox=null;
-	    			 if(this.typeAproxPol==1){
-	    				 newPolAprox=node.getPolynomial().aproxPol_Upper_Lower_OnlyProbClash(listVarProb, this, currentIdsClash, mergeError/2d);
-	    			 }
-	    			 else{
-	    				 newPolAprox=node.getPolynomial().aproxPol(listVarProb, this, currentIdsClash, mergeError/2d);	
-	    			 }
-
-
-
-	    			 if(newPolAprox.getTerms().size()==0){
-	    				 numberReducedToValue++;
-	    				 return this.getTerminalNode(newPolAprox.getC());
-	    			 }
-
-	    			 if(newPolAprox.currentError>mergeError/2d){
-	    				 System.out.println("Error:   "+newPolAprox.currentError+mergeError/2d);
-	    				 System.out.println("IT MUST NOT HAPPEN: doMinCallOverNodes");
-	    				 System.exit(0);
-	    			 }
-
-
-	    			 createFileAMPL(newPolAprox.toString(this,"p"),NAME_FILE_CONTRAINTS);
-	    			 //createFileAMPL(node.getPolynomial().toString(this),NAME_FILE_CONTRAINTS);
-
-	    			 Double obj=callNonLinearSolver();  			 //after this we have the currentValuesProb
-	    			 contNoReuse++;
-	    			 if (obj==null){
-	    				 System.out.println("doMinCallOverNodes: Problems with the solver it return null");
-	    				 System.exit(0);
-	    			 }
-                     //TODO: We eliminate this part related to using direct list
-	    			 /*
-	    			 if (!this.containsClash(currentDirectionList)){
-	    				 cacheResultsSolver.put(currentDirectionList,this.currentValuesProb);
-	    				 if (cacheResultsSolver.get(currentDirectionList) != this.currentValuesProb) {
-	    					 System.out.println("ERROR");
-	    					 System.exit(1);
-	    				 }
-	    				 if(this.typeAproxPol==1){
-	    					 Lattice.AddKey(lattice, createStringCurDir(currentDirectionList));
-
-	    				 }
-
-	    			 }*/
-	    			 return this.getTerminalNode(obj);
+	    			 return callNonLinearSolverObjectiveIP(node, NAME_FILE_CONTRAINTS);
 	    		 }
-	    		 else{
-	    			 //createFileAMPL(newPolAprox.toString(this),NAME_FILE_CONTRAINTS);
+	    		 //////////////////////////////////////////////////////////////////////////////////////
+	    		 else{ //////Call solver with the polynomial//////////////////////////////////////////
 	    			 createFileAMPL(node.getPolynomial().toString(this,"p"),NAME_FILE_CONTRAINTS);
-
 	    			 Double obj=callNonLinearSolver();
 	    			 //after this I have the currentValuesProb
 	    			 contNoReuse++;
@@ -1029,8 +974,8 @@ public class ContextADD extends Context{
 	    			 return this.getTerminalNode(obj);
 	    		 }
 	    	 }
+	    	 /////////////////////recursive call for each ADD branch////////////////////////////////////////////
 	    	 Integer Fr= (Integer) reduceCacheMinPar.get(VDD);
-
 	    	 if(Fr==null){
 	    		 InternalNodeKey intNodeKey=(InternalNodeKey)this.getInverseNodesCache().get(VDD);
 	    		 Object Fh=doMinCallOverNodes(intNodeKey.getHigh(),NAME_FILE_CONTRAINTS,pruneAfterEachIt);
@@ -1041,24 +986,48 @@ public class ContextADD extends Context{
 	    	 } else	{
 	    		 reuseCacheIntNode++;
 	    	 }
+	    	 ///////////////////////////////////////////////////////////////////////////////////////////////////
 	    	 return Fr;//could be integer or AditArc
 
 	     }
 	  
 	     
 
-	/*	private Hashtable createHash(String conceptName) {
-			Hashtable newDirList=new Hashtable();
-			Iterator it=listVarProb.iterator();
-			int i=0;
-			 while(it.hasNext()){
-				 String idProb=(String)it.next();
-				 newDirList.put(idProb, conceptName.substring(i, i+1));
-				 i=i+1;
+	
+		private Object callNonLinearSolverObjectiveIP(TerminalNodeKeyPar node, String name_file_contraints) {
+//			 construct a hashtable from the polynomial
+			 ArrayList currentIdsClash=new ArrayList();
+			 currentDirectionList=node.getPolynomial().constructDirectionList(listVarProb,this,currentIdsClash);//it is necessary to calculate currentIdsClash
+			 //System.out.println(node.getPolynomial().toString(this));
+			 /////////// record how much of the error budget this consumed
+			 Polynomial newPolAprox=null;
+			 if(this.typeAproxPol==1){
+				 newPolAprox=node.getPolynomial().aproxPol_Upper_Lower_OnlyProbClash(listVarProb, this, currentIdsClash, mergeError/2d);
 			 }
-			return newDirList;
+			 else{
+				 newPolAprox=node.getPolynomial().aproxPol(listVarProb, this, currentIdsClash, mergeError/2d);	
+			 }
+			 if(newPolAprox.getTerms().size()==0){
+				 numberReducedToValue++;
+				 return this.getTerminalNode(newPolAprox.getC());
+			 }
+			 if(newPolAprox.currentError>mergeError/2d){
+				 System.out.println("Error:   "+newPolAprox.currentError+mergeError/2d);
+				 System.out.println("IT MUST NOT HAPPEN: doMinCallOverNodes");
+				 System.exit(0);
+			 }
+			 createFileAMPL(newPolAprox.toString(this,"p"),name_file_contraints);
+			 //createFileAMPL(node.getPolynomial().toString(this),NAME_FILE_CONTRAINTS);
+
+			 Double obj=callNonLinearSolver();  			 //after this we have the currentValuesProb
+			 contNoReuse++;
+			 if (obj==null){
+				 System.out.println("doMinCallOverNodes: Problems with the solver it return null");
+				 System.exit(0);
+			 }
+			 return this.getTerminalNode(obj);
 			
-		}*/
+		}
 
 		private ArrayList getArrayDiff(String currDir, String name) {
 			ArrayList arrayDiff=new ArrayList();

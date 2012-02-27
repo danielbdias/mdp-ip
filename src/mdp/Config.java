@@ -68,12 +68,20 @@ public class Config {
 		return this.getConfigValue(configKey);
 	}
 	
+	
+	
+	
 	public String getAmplConstraintFile() {
 		final String configKey = "ampl.constraintfile";
 		
 		return this.getConfigValue(configKey);
 	}
 	
+	public String getAmplConstraintFileGreaterZero() {
+		final String configKey = "ampl.constraintfileGreaterZero";
+		
+		return this.getConfigValue(configKey);
+	}
 	public String getProblemsDir() {
 		final String configKey = "problems.dir";
 		
