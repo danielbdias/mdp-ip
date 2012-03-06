@@ -41,7 +41,7 @@ public abstract class MDP {
 	boolean printTrafficFormat=false;
 	boolean sampleInitialFromI=true;
 	boolean printPolicy=false;
-	int typeSampledRTDPMDPIP = 3; //typeSampledRTDPMDPIP   1: allProbabilities 2: if p=0  => p=epsilon 3: using  the result of a problem with constraints p>= epsilon
+	int typeSampledRTDPMDPIP = 1; //typeSampledRTDPMDPIP   1: allProbabilities 2: if p=0  => p=epsilon 3: using  the result of a problem with constraints p>= epsilon
 	double epsilon=0.000001;
 	
 	/* Local constants */
@@ -1580,7 +1580,7 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 		context.workingWithParameterized = false;
 		
 		for (TreeMap<Integer, Boolean> state : listInitialStates) {		
-			double value = (Double) context.getValueForStateInContext((Integer) this.VUpper, state, 1, true);			
+			double value = (Double) context.getValueForStateInContext((Integer) this.VUpper, state, null, null);			
 			result.add(new Object[] { state, value });
 		}
 		
