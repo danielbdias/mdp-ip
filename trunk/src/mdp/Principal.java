@@ -7,6 +7,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
+import java.util.TreeMap;
 
 import add.Context;
 
@@ -102,37 +103,79 @@ public class Principal {
 		   }
 		   //=================RTDP AND BRTDP================================================================
 		   else if (typeSolution.compareTo("BRTDP")==0 ||typeSolution.compareTo("RTDP")==0 || typeSolution.compareTo("RTDPEnum")==0||typeSolution.compareTo("BRTDPEnum")==0){
-			   myMDP.pruneAfterEachIt=pruneEachIt; //new line Karina
+			   myMDP.pruneAfterEachIt = pruneEachIt;
+			   
 			   ArrayList all_perf=new ArrayList();
-			   for(int i=1; i<=numberLearningRuns; i++){
+			   
+			   for (int i = 1; i <= numberLearningRuns; i++){
 				   
 				   System.out.println("LEARNING RUN: "+i);
 				   ArrayList<ArrayList> perf=null;
-					Random randomGenInitial=new Random(19580427+i*7);
-					Random randomGenNextState=new Random(19580800+i*7);
-					MDP myMDPSimulator=new MDP_Fac(filename,1,0,"RTDP");//typeContext=1; typeAproxPol= 0;
-					if(typeSolution.compareTo("BRTDP")==0){
+				   
+				   Random randomGenInitial=new Random(19580427+i*7);
+				   Random randomGenNextState=new Random(19580800+i*7);
+					
+				   MDP myMDPSimulator=new MDP_Fac(filename,1,0,"RTDP");//typeContext=1; typeAproxPol= 0;
+				   if (typeSolution.compareTo("BRTDP") == 0){
 					    //IMPORTANT: for BRTDP you must use VLower to do the simulations
-					   perf=myMDP.solveBRTDPFac(maxDepth,timeOut,maxUpdates,tau,typeMDP, typeSolution,numTrials,interval,numTrialsSimulation, numberInitialStates, randomGenInitial, randomGenNextState,myMDPSimulator);
-					}
-					else if(typeSolution.compareTo("RTDP")==0){
-					   perf=myMDP.solveRTDPFac(maxDepth,timeOut,maxUpdates,typeMDP, typeSolution,numTrials,interval,numTrialsSimulation, numberInitialStates, randomGenInitial, randomGenNextState,myMDPSimulator);
+					   perf=myMDP.solveBRTDPFac(maxDepth,timeOut,maxUpdates,tau,typeMDP, typeSolution,numTrials,interval,numTrialsSimulation, numberInitialStates, randomGenInitial, randomGenNextState, myMDPSimulator);
+				   }
+				   else if (typeSolution.compareTo("RTDP")==0){
+					   perf=myMDP.solveRTDPFac(maxDepth, timeOut, maxUpdates, typeMDP, typeSolution, numTrials, interval, numTrialsSimulation, numberInitialStates, randomGenInitial, randomGenNextState, myMDPSimulator);
 					   myMDP.flushCachesRTDP(true); //true because we dont want to save Vupper
 				   }
-				   else if(typeSolution.compareTo("RTDPEnum")==0){
+				   else if (typeSolution.compareTo("RTDPEnum")==0){
 						perf=myMDP.solveRTDPEnum(maxDepth,timeOut,maxUpdates,typeMDP, typeSolution,numTrials,interval,numTrialsSimulation, numberInitialStates, randomGenInitial, randomGenNextState,myMDPSimulator);
 				   }
-				   else if(typeSolution.compareTo("BRTDPEnum")==0){
+				   else if (typeSolution.compareTo("BRTDPEnum")==0){
 				      //IMPORTANT: for BRTDP you must use VLower to do the simulations
 				        perf=myMDP.solveBRTDPEnum(maxDepth,timeOut,maxUpdates,tau,typeMDP, typeSolution,numTrials,interval,numTrialsSimulation, numberInitialStates, randomGenInitial, randomGenNextState,myMDPSimulator);
 				   }
+					
 				   all_perf.add(perf);
 				}
 			   // average all vector
 			   averageAllPerfAndPrintInAFile(all_perf,fileNameReport, filename, typeSolution,maxDepth,tau,myMDP);
 		   }
 		   //====================================================================================
-		   
+		   else if(typeSolution.compareTo("RTDPIP")==0){
+			   myMDP.pruneAfterEachIt = pruneEachIt;
+			   			   
+			   Random randomGenInitial = new Random(19580434);
+			   Random randomGenNextState = new Random(19580807);
+			   
+			   ResetTimer();
+			   
+			   ArrayList<Object[]> result = myMDP.solveRTDPIPFac(maxDepth, timeOut, typeSolution, numTrialsSimulation, 
+							   					interval, numberInitialStates, randomGenInitial, randomGenNextState);
+			   
+			   long timeSeg = GetElapsedTime();
+			   
+			   myMDP.context.workingWithParameterized = false;
+
+			   Object valueStar = myMDP.context.readValueFunction(NAME_FILE_VALUE_STAR);
+			   
+			   double maxError = Double.NEGATIVE_INFINITY;
+			   
+			   for (Object[] item : result) {
+				   TreeMap<Integer, Boolean> state = (TreeMap<Integer, Boolean>) item[0];
+				   double approximatedValue = (Double) item[1];
+				   
+				   double optimumValue = myMDP.context.getValueForStateInContext((Integer)valueStar, state, null, null);
+
+				   double error = Math.abs(optimumValue - approximatedValue);
+				   maxError = Math.max(maxError, error);
+			   }
+			   
+			   int contNumNodes = myMDP.context.contNumberNodes(myMDP.VUpper);
+			   
+			   printReport(filename, maxIter, mergeError, typeContext, contNumNodes, timeSeg, fileNameReport, 
+					   myMDP.context.contReuse, myMDP.context.contNoReuse, myMDP.context.numberReducedToValue, 
+					   myMDP.context.numCallSolver, myMDP.context.reuseCacheIntNode,
+					   maxError, myMDP.pruneAfterEachIt, typeSolution);
+			   
+			   myMDP.flushCachesRTDP(true); //true because we dont want to save Vupper
+		   }
 		   else if(typeSolution.compareTo("MP")==0){
 			   ResetTimer();
 			   myMDP.solveMP();
