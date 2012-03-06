@@ -41,7 +41,7 @@ public abstract class MDP {
 	boolean printTrafficFormat=false;
 	boolean sampleInitialFromI=true;
 	boolean printPolicy=false;
-	int typeSampledRTDPMDPIP=3; //typeSampledRTDPMDPIP   1: allProbabilities 2: if p=0  => p=epsilon 3: using  the result of a problem with constraints p>= epsilon
+	int typeSampledRTDPMDPIP = 3; //typeSampledRTDPMDPIP   1: allProbabilities 2: if p=0  => p=epsilon 3: using  the result of a problem with constraints p>= epsilon
 	double epsilon=0.000001;
 	
 	/* Local constants */
@@ -231,9 +231,9 @@ public abstract class MDP {
 	  bdTolerance = ((BigDecimal)i.next());
 
 	  //For RTDP and BRTDP Read initial and goal states/////////////////////////////
-	  if(typeSolution.compareTo("RTDP")==0 || typeSolution.compareTo("BRTDP")==0 ){
-		  listInitialStates=new ArrayList();
-		  listGoalStates=new ArrayList();
+	  if(typeSolution.equals("RTDP") || typeSolution.equals("RTDPIP") || typeSolution.equals("BRTDP") ){
+		  listInitialStates = new ArrayList();
+		  listGoalStates = new ArrayList();
 		  o = i.next();
 		  if ( !(o instanceof String) || !((String)o).equalsIgnoreCase("initial")) {
 			  System.out.println("Missing initial state declaration: " + o);
@@ -436,7 +436,8 @@ private State createStateEnum(Object o) {
 		}
 		return line+";";
 	}
-	public int solve(int maxNumberIterations, double mergeError){
+	
+	public int solve(int maxNumberIterations, double mergeError) {
 		if(this.pruneAfterEachIt){
 			NAME_FILE_VALUE=NAME_FILE_VALUE+"_"+Double.toString(mergeError).replace(".", "_")+"APRI"+".net";//NAME_FILE_VALUE is inicializated in MDP_Fac(...)
 		}
@@ -489,9 +490,10 @@ private State createStateEnum(Object o) {
     			 //context.view(valueiPlus1DD);
     			 return contNumNodes;
     		}
+    		
     		valueiDD=valueiPlus1DD;
     		
-    		if(mergeError!=0 && !this.context.workingWithParameterized&&pruneAfterEachIt){
+    		if (mergeError!=0 && !this.context.workingWithParameterized&&pruneAfterEachIt){
     			
     			//context.view(valueiDD);
     			System.out.println("Prune ADD");
@@ -1419,57 +1421,67 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 /////////////////////////////////////////RTDP///////////////////////////////////////////////////////
 	public  ArrayList<ArrayList> solveRTDPFac(int maxDepth, long timeOut, long maxUpdates,String typeMDP,String typeSolution, int numTrials, int interval,int numTrialsSimulation, int numberInitialStates,Random randomGenInitial, Random randomGenNextState,MDP myMDPSimulator) {
 		NAME_FILE_VALUE=NAME_FILE_VALUE+"_"+typeSolution+".net";//NAME_FILE_VALUE is inicializated in MDP_Fac(...)
+		
 		Stack<TreeMap<Integer,Boolean>> visited=new Stack<TreeMap<Integer,Boolean>>();
+		
 		long timeSum=0;
 		ResetTimer();
+		
 		Action actionGreedy=null;
-		if (typeSampledRTDPMDPIP==3){ //callSolver with constraints p_i>=epsilon 
+
+		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
 			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
-		}
-	//Initialize Vu with admissible value function //////////////////////////////////
-	//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
-		double Rmax=context.apply(this.rewardDD, Context.MAXVALUE);
-		if(this.bdDiscount.doubleValue()==1){
+
+		//Initialize Vu with admissible value function //////////////////////////////////
+		//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
+		double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
+		
+		if (this.bdDiscount.doubleValue() == 1)
 			maxUpper=Rmax*maxDepth;
-		}
-		else{
+		else
 			maxUpper=Rmax/(1-this.bdDiscount.doubleValue());
-		}
-		VUpper=context.getTerminalNode(maxUpper);
-	////////////////////////////////////////////////////////////////////////////////////	
-		//context.view(VUpper);
+		
+		VUpper = context.getTerminalNode(maxUpper);
+		
 		ArrayList<ArrayList> perf=new ArrayList<ArrayList>();
 		contUpperUpdates=0;
-		//do trials until convergence or timeOut (in practice we dont check convergence )//////////////////////////////////
-		//while (contUpperUpdates<maxUpdates){//timeSeg<timeOut){ not using timeOut only for test
-		context.workingWithParameterizedBef=context.workingWithParameterized;//newline Karina
-		for(int trial=1; trial <=numTrials;trial++){	
-			int depth=0;
+
+		context.workingWithParameterizedBef = context.workingWithParameterized;
+		
+		for (int trial = 1; trial <= numTrials; trial++){	
+			int depth = 0;
 			visited.clear();// clear visited states stack
-			//draw initial state //////////////////////////////////
+
 			TreeMap<Integer,Boolean> state=sampleInitialStateFromList(randomGenInitial);
+
 			//do trial //////////////////////////////////
-			while(!inGoalSet(state) && (state !=null)&& depth<maxDepth){ //contUpperUpdates<maxUpdates){//not update more than maxUpdates in the last iteration
+			while (!inGoalSet(state) && (state !=null) && depth < maxDepth){
 				depth++;
 				visited.push(state);
+				
 				//this compute maxUpperUpdated and actionGreedy
-				actionGreedy=updateVUpper(state); // Here we fill probNature
-				//context.view(VUpper);
+				actionGreedy = updateVUpper(state); // Here we fill probNature
+				
 				contUpperUpdates++;
-				System.out.println("action greedy: "+actionGreedy.getName());
-				context.workingWithParameterized=context.workingWithParameterizedBef;//newline Karina
-				state=chooseNextStateRTDP(state,actionGreedy,randomGenNextState);
+				
+				System.out.println("action greedy: " + actionGreedy.getName());
+				
+				context.workingWithParameterized = context.workingWithParameterizedBef;
+				state = chooseNextStateRTDP(state,actionGreedy,randomGenNextState);
+				
 				System.out.println("next state: "+state);
 				flushCachesRTDP(false);
 			}
+			
 			//do optimization
-			while(!visited.empty()){
-				state=visited.pop();
+			while (!visited.empty()) {
+				state = visited.pop();
 				updateVUpper(state);
 				contUpperUpdates++;
 			}
+			
 			//New part for simulate the policy //////////////////////////////////
-			context.workingWithParameterized=context.workingWithParameterizedBef;
+			context.workingWithParameterized = context.workingWithParameterizedBef;
 			
 			if(trial%interval==0 && !context.workingWithParameterized){
 				long time1  = GetElapsedTime();
@@ -1494,11 +1506,87 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 			////////////////////////////////////////////////////////////////////
 			ResetTimer();
 		}
-		//if(printFinalADD){
-		//	context.view(VUpper);
-		//}
+
 		return perf;
-	}	
+	}
+	
+	public  ArrayList<Object[]> solveRTDPIPFac(int maxDepth, long timeOut,  
+			String typeSolution, int numTrials, int interval, int numberInitialStates, 
+			Random randomGenInitial, Random randomGenNextState) {
+		NAME_FILE_VALUE=NAME_FILE_VALUE+"_"+typeSolution+".net";
+		
+		Stack<TreeMap<Integer,Boolean>> visited = new Stack<TreeMap<Integer,Boolean>>();
+		
+		long timeSum=0;
+		ResetTimer();
+		
+		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
+			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
+
+		//Initialize Vu with admissible value function //////////////////////////////////
+		//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
+		double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
+		
+		if (this.bdDiscount.doubleValue() == 1)
+			maxUpper = Rmax * maxDepth;
+		else
+			maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
+		
+		VUpper = context.getTerminalNode(maxUpper);
+		
+		ArrayList<ArrayList> perf=new ArrayList<ArrayList>();
+		contUpperUpdates=0;
+
+		context.workingWithParameterizedBef = context.workingWithParameterized;
+		
+		for (int trial = 1; trial <= numTrials; trial++){	
+			int depth = 0;
+			visited.clear();// clear visited states stack
+			
+			TreeMap<Integer,Boolean> state = sampleInitialStateFromList(randomGenInitial); 
+
+			//do trial //////////////////////////////////
+			while (!inGoalSet(state) && (state !=null) && depth < maxDepth){
+				depth++;
+				visited.push(state);
+				
+				//this compute maxUpperUpdated and actionGreedy
+				Action greedyAction = updateVUpper(state); // Here we fill probNature
+				
+				contUpperUpdates++;
+				
+				System.out.println("action greedy: " + greedyAction.getName());
+				
+				context.workingWithParameterized = context.workingWithParameterizedBef;
+				state = chooseNextStateRTDP(state, greedyAction, randomGenNextState);
+				
+				System.out.println("next state: " + state);
+				flushCachesRTDP(false);
+			}
+			
+			//do optimization
+			while (!visited.empty()) {
+				state = visited.pop();
+				updateVUpper(state);
+				contUpperUpdates++;
+			}
+			
+			////////////////////////////////////////////////////////////////////
+			ResetTimer();
+		}
+		
+		ArrayList<Object[]> result = new ArrayList<Object[]>();
+		
+		context.workingWithParameterized = false;
+		
+		for (TreeMap<Integer, Boolean> state : listInitialStates) {		
+			double value = (Double) context.getValueForStateInContext((Integer) this.VUpper, state, 1, true);			
+			result.add(new Object[] { state, value });
+		}
+		
+		return result;
+	}
+	
 	public void dumpADDtoFile(Object V){
 		System.out.println("Dumping Value");
 		context.dump(context.remapIdWithOutPrime(V, hmPrime2IdRemap),NAME_FILE_VALUE);		
