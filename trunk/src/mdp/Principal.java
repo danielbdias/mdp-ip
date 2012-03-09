@@ -35,6 +35,7 @@ public class Principal {
 	 * max number of updates
 	 * tau parameter for BRTDP
 	 * numTrials: to do the learning instead of max number of updates
+	 * 
 	 * interval: to do the simulations every X intervals for RTDP BRTDP RTDPEnum BRTDPEnum
 	 * numTrialsSimulation: number of trials in the simulation
 	 * numberInitialStates: number of initial states to be sample in the simulation
@@ -80,8 +81,8 @@ public class Principal {
 			   myMDP.pruneAfterEachIt=pruneEachIt;
 			   ResetTimer();
 			   int contNumNodes=myMDP.solve(maxIter,mergeError);
-			   long time1  = GetElapsedTime();
-			   long timeSeg=time1/1000;
+			   long timeSeg  = GetElapsedTime()/1000; //this time includes dumping V
+			   
 			   //Calculate the ||V*-valueiDD||_infty/////////////////////////////////////
 			   Double Error=null;
 			   Object valueStar=null;
@@ -149,24 +150,25 @@ public class Principal {
 			   ArrayList<Object[]> result = myMDP.solveRTDPIPFac(maxDepth, timeOut, typeSolution, numTrialsSimulation, 
 							   					interval, numberInitialStates, randomGenInitial, randomGenNextState);
 			   
-			   long timeSeg = GetElapsedTime();
-			   
-			   myMDP.context.workingWithParameterized = false;
-
-			   Object valueStar = myMDP.context.readValueFunction(NAME_FILE_VALUE_STAR);
+			   long timeSeg = GetElapsedTime()/1000;
 			   
 			   double maxError = Double.NEGATIVE_INFINITY;
-			   
-			   for (Object[] item : result) {
-				   TreeMap<Integer, Boolean> state = (TreeMap<Integer, Boolean>) item[0];
-				   double approximatedValue = (Double) item[1];
-				   
-				   double optimumValue = myMDP.context.getValueForStateInContext((Integer)valueStar, state, null, null);
+			   if (NAME_FILE_VALUE_STAR.compareTo("NOT")!=0){
+				   myMDP.context.workingWithParameterized=false;
 
-				   double error = Math.abs(optimumValue - approximatedValue);
-				   maxError = Math.max(maxError, error);
-			   }
+				   Object valueStar = myMDP.context.readValueFunction(NAME_FILE_VALUE_STAR);
 			   
+				   		   
+				   for (Object[] item : result) {
+					   TreeMap<Integer, Boolean> state = (TreeMap<Integer, Boolean>) item[0];
+					   double approximatedValue = (Double) item[1];
+					   
+					   double optimumValue = myMDP.context.getValueForStateInContext((Integer)valueStar, state, null, null);
+	
+					   double error = Math.abs(optimumValue - approximatedValue);
+					   maxError = Math.max(maxError, error);
+				   }
+			   }   
 			   int contNumNodes = myMDP.context.contNumberNodes(myMDP.VUpper);
 			   
 			   printReport(filename, maxIter, mergeError, typeContext, contNumNodes, timeSeg, fileNameReport, 
@@ -312,8 +314,12 @@ public class Principal {
 			if (typeSolution.compareTo("MP")==0){
 				tex=tex+" "+typeSolution;
 			}
+			if (typeSolution.compareTo("RTDPIP")==0){
+				tex=tex+" "+typeSolution;
+			}
+
 			out.write(tex);
-			if (Error != null){
+			if (Error != null && Error != Double.NEGATIVE_INFINITY){
 				out.write(" "+df.format(Error));
 			}			
 			out.write(System.getProperty("line.separator"));

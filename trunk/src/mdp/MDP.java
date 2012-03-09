@@ -512,6 +512,7 @@ private State createStateEnum(Object o) {
     		
     	}
     	if(printFinalADD){
+    	
     	  context.view(valueiDD);
     	}
     	if(printPolicy){
@@ -519,7 +520,8 @@ private State createStateEnum(Object o) {
 
     	}
     	
-    	if(dumpValue && this.typeContext==1){ 
+    	if(dumpValue && this.typeContext==1){
+    	  System.out.println("dumping VUpper in" + NAME_FILE_VALUE);
     	  context.dump(valueiDD,NAME_FILE_VALUE);
     	}
         int contNumNodes=this.context.contNumberNodes(valueiDD);
@@ -1302,7 +1304,7 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 			double Qt;
 			context.workingWithParameterized=context.workingWithParameterizedBef; 
 		    Qt=this.computeQ(VUpper, state,action,action.tmID2ADD);
-		    System.out.println("probNature:"+context.currentValuesProb+"action:"+action.getName()+"Quality:"+Qt);
+		    //System.out.println("probNature:"+context.currentValuesProb+"action:"+action.getName()+"Quality:"+Qt);
 			max=Math.max(max,Qt);
 			if(max==Qt){
 				actionGreedy=action;
@@ -1425,6 +1427,7 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 		Stack<TreeMap<Integer,Boolean>> visited=new Stack<TreeMap<Integer,Boolean>>();
 		
 		long timeSum=0;
+		
 		ResetTimer();
 		
 		Action actionGreedy=null;
@@ -1448,7 +1451,8 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 
 		context.workingWithParameterizedBef = context.workingWithParameterized;
 		
-		for (int trial = 1; trial <= numTrials; trial++){	
+		for (int trial = 1; trial <= numTrials; trial++){
+		
 			int depth = 0;
 			visited.clear();// clear visited states stack
 
@@ -1480,6 +1484,7 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 				contUpperUpdates++;
 			}
 			
+						
 			//New part for simulate the policy //////////////////////////////////
 			context.workingWithParameterized = context.workingWithParameterizedBef;
 			
@@ -1504,7 +1509,9 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 				
 			}
 			////////////////////////////////////////////////////////////////////
-			ResetTimer();
+			
+		
+            ResetTimer();
 		}
 
 		return perf;
@@ -1517,7 +1524,9 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 		
 		Stack<TreeMap<Integer,Boolean>> visited = new Stack<TreeMap<Integer,Boolean>>();
 		
-		long timeSum=0;
+		
+		long totalTrialTime=0;
+		long totalTrialTimeSec=0;
 		ResetTimer();
 		
 		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
@@ -1539,7 +1548,8 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 
 		context.workingWithParameterizedBef = context.workingWithParameterized;
 		
-		for (int trial = 1; trial <= numTrials; trial++){	
+		//for (int trial = 1; trial <= numTrials; trial++){
+		while (totalTrialTimeSec<=timeOut){	
 			int depth = 0;
 			visited.clear();// clear visited states stack
 			
@@ -1572,17 +1582,33 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 			}
 			
 			////////////////////////////////////////////////////////////////////
+			long trailTime  = GetElapsedTime();
+			totalTrialTime+=trailTime;
+            totalTrialTimeSec=totalTrialTime/1000;
 			ResetTimer();
 		}
 		
 		ArrayList<Object[]> result = new ArrayList<Object[]>();
 		
 		context.workingWithParameterized = false;
-		
+		//context.view(VUpper);
 		for (TreeMap<Integer, Boolean> state : listInitialStates) {		
-			double value = (Double) context.getValueForStateInContext((Integer) this.VUpper, state, null, null);			
+			TreeMap<Integer, Boolean> stateInitial=this.remapWithPrimes(state);
+			double value = (Double) context.getValueForStateInContext((Integer) this.VUpper, stateInitial, null, null);			
 			result.add(new Object[] { state, value });
 		}
+		
+		if(printFinalADD){
+	    	  context.view(VUpper);
+    	}
+    	if(dumpValue && this.typeContext==1){
+    	  System.out.println("dumping VUpper in" + NAME_FILE_VALUE);	
+    	  context.dump(VUpper,NAME_FILE_VALUE);
+    	}
+	    
+	    //System.out.println("Number of Nodes:  "+contNumNodes);
+	        
+	    	
 		
 		return result;
 	}
@@ -1647,7 +1673,7 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 			}
 			else{//new part for IP
 					Polynomial probFalsePol=(Polynomial)context.getValuePolyForStateInContext((Integer)cpt_a_xiprime,state,varPrime,false);
-					System.out.println(""+probFalsePol.toString(context, "p"));
+					//System.out.println(""+probFalsePol.toString(context, "p"));
 					probFalse=samplingOneVariableIP(probFalsePol);
 					if (ran<=probFalse){
 						nextState.put(var,false);  		
@@ -1667,7 +1693,7 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 		if(typeSampledRTDPMDPIP==1 || typeSampledRTDPMDPIP==2 ){    
             if(probNature.size()!=0){ //i.e. the solver was  called when we have computed Q
             	probFalse=probFalsePol.evalWithListValues(probNature, context);
-            	System.out.println("probNature:"+probNature);
+            	//System.out.println("probNature:"+probNature);
             }
             else{ //probNature was not created, then call the solver for each variable s.t.constraints
             	//PADD with only one node
