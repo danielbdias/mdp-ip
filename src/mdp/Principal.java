@@ -150,9 +150,10 @@ public class Principal {
 			   ArrayList<Object[]> result = myMDP.solveRTDPIPFac(maxDepth, timeOut, typeSolution, numTrialsSimulation, 
 							   					interval, numberInitialStates, randomGenInitial, randomGenNextState);
 			   
-			   long timeSeg = GetElapsedTime()/1000;
+			   long timeSeg = GetElapsedTime() / 1000;
 			   
 			   double maxError = Double.NEGATIVE_INFINITY;
+			   
 			   if (NAME_FILE_VALUE_STAR.compareTo("NOT")!=0){
 				   myMDP.context.workingWithParameterized=false;
 
@@ -169,6 +170,7 @@ public class Principal {
 					   maxError = Math.max(maxError, error);
 				   }
 			   }   
+			   
 			   int contNumNodes = myMDP.context.contNumberNodes(myMDP.VUpper);
 			   
 			   printReport(filename, maxIter, mergeError, typeContext, contNumNodes, timeSeg, fileNameReport, 

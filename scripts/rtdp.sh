@@ -20,14 +20,17 @@ PROBLEM_DIR=$ROOT_DIR/problemsMDPIP
 PROBLEM_TYPE=uni_ring_IP
 
 #Indicate the directory where the results will be saved
-RESULTS_DIR=$ROOT_DIR/reportsMDPIP/results/$ALGORITHM
-
-#Define the range to be tested
-INITIAL_PROBLEM=1
-LAST_PROBLEM=6
+REPORTS_DIR=$ROOT_DIR/reportsMDPIP
+RESULTS_DIR=$REPORTS_DIR/results/$ALGORITHM
 
 #Test execution
 NUMBER_OF_RUNS_PER_TEST=50
+
+#Max depth to explore with RTDP
+MAX_DEPTH=1000 
+
+#Number of trials to execute in RTDP
+MAX_TRIALS=300
 
 #Java execution parameters
 BINARIES_DIR=$ROOT_DIR/bin
@@ -37,28 +40,72 @@ MAIN_CLASS=mdp.Principal
 ###########################################################################
 #Script execution
 ###########################################################################
-echo Starting tests...
-echo 
 
-cd $ROOT_DIR
+execute_problem(){
+	local test_type=$1	
+	local current_problem_index=$2
+	local timeout=$3
 
-current_problem_index=$INITIAL_PROBLEM
+	cd $ROOT_DIR
 
-while test $current_problem_index -le $LAST_PROBLEM
-do
 	echo Executing problem $PROBLEM_TYPE"_"$current_problem_index
 
 	current_problem=$PROBLEM_DIR/$PROBLEM_TYPE"_"$current_problem_index".net"
-	current_report=$RESULTS_DIR/$PROBLEM_TYPE"_"$current_problem_index".txt"
+	current_report=$RESULTS_DIR/$PROBLEM_TYPE"_test_"$test_type".txt"
 	current_log=$RESULTS_DIR/$PROBLEM_TYPE"_"$current_problem_index".log"
+	
 
-	time -f "Took %U seconds..." java -Xms200m -Xmx2048m -classpath $CLASSPATH -cp $BINARIES_DIR $MAIN_CLASS $current_problem $NUMBER_OF_RUNS_PER_TEST 0 1 $current_report 0 Fact NOT TRUE RTDP 160 1000 1000 1.5 300 60 60 2 1 > $current_log
+	java -Xms200m -Xmx2048m -classpath $CLASSPATH -cp $BINARIES_DIR $MAIN_CLASS $current_problem $NUMBER_OF_RUNS_PER_TEST 0 1 $current_report 0 Fact NOT TRUE RTDPIP $MAX_DEPTH $timeout 1000 0.0 $MAX_TRIALS 60 60 1 1 > $current_log
+
+	current_value_function=$REPORTS_DIR/"value"$PROBLEM_TYPE"_"$current_problem_index"_RTDPIP.net"
+	new_value_function=$RESULTS_DIR/"value"$PROBLEM_TYPE"_"$current_problem_index"_RTDPIP_"$test_type".net"
+
+	mv $current_value_function $new_value_function
 
 	echo Problem $PROBLEM_TYPE"_"$current_problem_index executed
 	echo 
+}
 
-	current_problem_index=`expr $current_problem_index + 1`
-done
+echo Starting tests...
+echo 
+
+echo Tests with 100% of time...
+
+TEST_TYPE="full"
+
+execute_problem $TEST_TYPE 1 1
+execute_problem $TEST_TYPE 2 4
+execute_problem $TEST_TYPE 3 15
+execute_problem $TEST_TYPE 4 45
+execute_problem $TEST_TYPE 5 149
+execute_problem $TEST_TYPE 6 501
+execute_problem $TEST_TYPE 7 1264
+execute_problem $TEST_TYPE 8 4183
+
+echo Tests with 75% of time...
+
+TEST_TYPE="threequarters"
+
+execute_problem $TEST_TYPE 1 1
+execute_problem $TEST_TYPE 2 3
+execute_problem $TEST_TYPE 3 12
+execute_problem $TEST_TYPE 4 34
+execute_problem $TEST_TYPE 5 118
+execute_problem $TEST_TYPE 6 376
+execute_problem $TEST_TYPE 7 956
+execute_problem $TEST_TYPE 8 3139
+
+echo Tests with 50% of time...
+
+TEST_TYPE="half"
+
+execute_problem $TEST_TYPE 1 1
+execute_problem $TEST_TYPE 2 2
+execute_problem $TEST_TYPE 3 8
+execute_problem $TEST_TYPE 4 23
+execute_problem $TEST_TYPE 5 75
+execute_problem $TEST_TYPE 6 251
+execute_problem $TEST_TYPE 7 632
+execute_problem $TEST_TYPE 8 2093
 
 echo End of tests
-
