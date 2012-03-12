@@ -47,82 +47,82 @@ public abstract class MDP {
 	/* Local constants */
 //  public final static int VERBOSE_LEVEL = 0; // Determines how much output is displayed
 //  public final static boolean ALWAYS_FLUSH = false;         // Always flush DD caches?
- public final static double FLUSH_PERCENT_MINIMUM = 0.1d; // used to flush
- public final static String  NAME_FILE_CONTRAINTS = Config.getConfig().getAmplConstraintFile();
- public final static String  NAME_FILE_CONTRAINTS_GREATERZERO = Config.getConfig().getAmplConstraintFileGreaterZero();
- public final static String  NAME_FILE_VALPART = Config.getConfig().getReportsDir() + "value";
- public final static String  NAME_FILE_MPPART = Config.getConfig().getReportsDir() + "AMPL";
- public String NAME_FILE_VALUE;
+	public final static double FLUSH_PERCENT_MINIMUM = 0.1d; // used to flush
+	public final static String  NAME_FILE_CONTRAINTS = Config.getConfig().getAmplConstraintFile();
+	public final static String  NAME_FILE_CONTRAINTS_GREATERZERO = Config.getConfig().getAmplConstraintFileGreaterZero();
+	public final static String  NAME_FILE_VALPART = Config.getConfig().getReportsDir() + "value";
+	public final static String  NAME_FILE_MPPART = Config.getConfig().getReportsDir() + "AMPL";
+	public String NAME_FILE_VALUE;
 
   /* Static variables */
 //  public static long _lTime;       // For timing purposes
-  public static Runtime RUNTIME = Runtime.getRuntime();
-  public static int NUMBEROFSEEDS =30; //for simulate MDP 
-  /* Local vars */
-  public int numVars;                 // number of variables   
-  public ArrayList  alVars;        // List of variable names (including primes) index is ID
-  public TreeMap    tmID2Var;      // Maps Integer -> names (including primes a',b',etc...)
-  public TreeMap    tmVar2ID;      // Maps names -> Integers (including primes a',b',etc...)
-  public HashMap    hmPrimeRemap;  // Maps non-prime IDs to their primed counterparts
-  public HashMap    hmPrime2IdRemap;  // Maps prime IDs to their non-prime counterparts
-  public ArrayList  alOrder;       // The variable order used in decision diagrams  (including primes a',b',etc...)
-  public TreeMap        mName2Action; // List of actions //(see Action.java)
-  public Context  context;
-  public int typeContext;
-  public Object     rewardDD;      // The reward for this MDP
-  public Object     valueiPlus1DD;       // The resulting value function once this MDP has been solved
-  public Object     valueiDD;       // The resulting value function once this MDP has been solved
+	public static Runtime RUNTIME = Runtime.getRuntime();
+	public static int NUMBEROFSEEDS =30; //for simulate MDP 
+	/* Local vars */
+	public int numVars;                 // number of variables   
+	public ArrayList  alVars;        // List of variable names (including primes) index is ID
+	public TreeMap    tmID2Var;      // Maps Integer -> names (including primes a',b',etc...)
+	public TreeMap    tmVar2ID;      // Maps names -> Integers (including primes a',b',etc...)
+	public HashMap    hmPrimeRemap;  // Maps non-prime IDs to their primed counterparts
+	public HashMap    hmPrime2IdRemap;  // Maps prime IDs to their non-prime counterparts
+	public ArrayList  alOrder;       // The variable order used in decision diagrams  (including primes a',b',etc...)
+	public TreeMap        mName2Action; // List of actions //(see Action.java)
+	public Context  context;
+	public int typeContext;
+	public Object     rewardDD;      // The reward for this MDP
+	public Object     valueiPlus1DD;       // The resulting value function once this MDP has been solved
+	public Object     valueiDD;       // The resulting value function once this MDP has been solved
 //   public Object     _maxDD;
 //   public Object     _prevDD;
-  public BigDecimal bdDiscount;    // Discount (gamma) for MDP
-  public BigDecimal bdTolerance;   // Tolerance (gamma) for MDP
+	public BigDecimal bdDiscount;    // Discount (gamma) for MDP
+	public BigDecimal bdTolerance;   // Tolerance (gamma) for MDP
 //   public int        _nDDType;       // Type of DD to use
 //   public TreeMap    _tmAct2Regr;    // Cached DDs from last regression step
 //   public int        _nIter;      
 //   public int        _nMaxRegrSz;
 //   public String     _sRegrAction;
-  public ArrayList  alSaveNodesValue;   // Nodes to save related to valuei during cache flushing
+	public ArrayList  alSaveNodesValue;   // Nodes to save related to valuei during cache flushing
 
-  //for paramereterized ADD
-  private int numConstraints=0;
-  public Hashtable<String, Double> probNature=new Hashtable<String, Double>();     //  idProb--> valProb
+	//for paramereterized ADD
+	private int numConstraints=0;
+	public Hashtable<String, Double> probNature=new Hashtable<String, Double>();     //  idProb--> valProb
+	  
+	//for MDP_Flat
+	public HashMap action2TransTable=new HashMap();
+	//for RTDP BRTDP////////////////////////
+	public ArrayList<TreeMap> listInitialStates;
+	public ArrayList<TreeMap> listGoalStates;
+	public Object   VUpper;
+	public Object   VLower;
+	public Object   VGap;
+	public int contbreak; 
+	public int contUpperUpdates;
+	  
+	private double maxUpper,minLower;
+	private double maxUpperUpdated,maxLowerUpdated;
+	public static long timeTrials;  
+	double gapInitial;
   
- //for MDP_Flat
-  public HashMap action2TransTable=new HashMap();
-  //for RTDP BRTDP////////////////////////
-  public ArrayList<TreeMap> listInitialStates;
-  public ArrayList<TreeMap> listGoalStates;
-  public Object   VUpper;
-  public Object   VLower;
-  public Object   VGap;
-  public int contbreak; 
-  public int contUpperUpdates;
-  
-  private double maxUpper,minLower;
-  private double maxUpperUpdated,maxLowerUpdated;
-  public static long timeTrials;  
-  double gapInitial;
-  
-  //for RTDPEnum and BRTDPEnum ////////////// 
-  public double firstGap;
-  public double B;
-  public int posActionGreedy;
-  protected HashMap<Integer,State> states=new HashMap<Integer, State>();
-  public ArrayList<State> listInitialStatesEnum;
-  public ArrayList<State> listGoalStatesEnum;
-  
-  //for MP///////////////////////
-  public ArrayList listBasisFunctions;
-  public ArrayList listFactoredReward;
-  public HashSet nameNewVariables;
-  public int contConstraintsMP;
-  public final static String  NAME_FILE_CONTRAINTS_MP="/home/karina/ADDVer2/ADD/reportsMDPIP/constraintMP.ampl";
-  public int numOriginalConstraints;
-  public Object valueWHDD;
+	//for RTDPEnum and BRTDPEnum ////////////// 
+	public double firstGap;
+	public double B;
+	public int posActionGreedy;
+	protected HashMap<Integer,State> states=new HashMap<Integer, State>();
+	public ArrayList<State> listInitialStatesEnum;
+	public ArrayList<State> listGoalStatesEnum;
+	  
+	//for MP///////////////////////
+	public ArrayList listBasisFunctions;
+	public ArrayList listFactoredReward;
+	public HashSet nameNewVariables;
+	public int contConstraintsMP;
+	public final static String  NAME_FILE_CONTRAINTS_MP="/home/karina/ADDVer2/ADD/reportsMDPIP/constraintMP.ampl";
+	public int numOriginalConstraints;
+	public Object valueWHDD;
    
-  ///////////////////////////////
-  
-  public void buildMDP_Fac(ArrayList input,int typeContext,String typeSolution) {
+	///////////////////////////////
+
+	public void buildMDP_Fac(ArrayList input,int typeContext,String typeSolution) {
 
 	  if (input == null) {
 		  System.out.println("Empty input file!");
@@ -701,7 +701,7 @@ private State createStateEnum(Object o) {
 	 * @param state
 	 * @return
 	 */	
-public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
+    public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 	  
 	    state=remapVariablesWithNames(state);  
 	     
@@ -1418,7 +1418,6 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 	public static long GetElapsedTime() {
 		return System.currentTimeMillis() - timeTrials;
 	}
-
 	
 /////////////////////////////////////////RTDP///////////////////////////////////////////////////////
 	public  ArrayList<ArrayList> solveRTDPFac(int maxDepth, long timeOut, long maxUpdates,String typeMDP,String typeSolution, int numTrials, int interval,int numTrialsSimulation, int numberInitialStates,Random randomGenInitial, Random randomGenNextState,MDP myMDPSimulator) {
@@ -1524,7 +1523,6 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 		
 		Stack<TreeMap<Integer,Boolean>> visited = new Stack<TreeMap<Integer,Boolean>>();
 		
-		
 		long totalTrialTime=0;
 		long totalTrialTimeSec=0;
 		ResetTimer();
@@ -1549,7 +1547,7 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 		context.workingWithParameterizedBef = context.workingWithParameterized;
 		
 		//for (int trial = 1; trial <= numTrials; trial++){
-		while (totalTrialTimeSec<=timeOut){	
+		while (totalTrialTimeSec <= timeOut){	
 			int depth = 0;
 			visited.clear();// clear visited states stack
 			
@@ -1591,25 +1589,23 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 		ArrayList<Object[]> result = new ArrayList<Object[]>();
 		
 		context.workingWithParameterized = false;
-		//context.view(VUpper);
+			
+		Object remappedVUpper = context.remapIdWithOutPrime(this.VUpper, hmPrime2IdRemap);
+		
 		for (TreeMap<Integer, Boolean> state : listInitialStates) {		
-			TreeMap<Integer, Boolean> stateInitial=this.remapWithPrimes(state);
-			double value = (Double) context.getValueForStateInContext((Integer) this.VUpper, stateInitial, null, null);			
+			TreeMap<Integer, Boolean> stateInitial = state; //this.remapWithPrimes(state);
+			double value = (Double) context.getValueForStateInContext((Integer) remappedVUpper, stateInitial, null, null);			
 			result.add(new Object[] { state, value });
 		}
 		
-		if(printFinalADD){
-	    	  context.view(VUpper);
-    	}
-    	if(dumpValue && this.typeContext==1){
-    	  System.out.println("dumping VUpper in" + NAME_FILE_VALUE);	
-    	  context.dump(VUpper,NAME_FILE_VALUE);
-    	}
-	    
-	    //System.out.println("Number of Nodes:  "+contNumNodes);
-	        
-	    	
+		if (printFinalADD)
+			context.view(remappedVUpper);
 		
+    	if (dumpValue && this.typeContext == 1){
+    		System.out.println("dumping VUpper in" + NAME_FILE_VALUE);	
+    		context.dump(remappedVUpper, NAME_FILE_VALUE);
+    	}
+	
 		return result;
 	}
 	
@@ -2168,7 +2164,7 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 		
 	}
 	
-	   public void createLinesFileConstCiMP(Integer F, BufferedWriter out, String path,int i,int contAction,HashSet listVarPath,Action action){
+	public void createLinesFileConstCiMP(Integer F, BufferedWriter out, String path,int i,int contAction,HashSet listVarPath,Action action){
 	    	  
 	    	if(context.isTerminalNode(F)){
 	    		Polynomial pol=((TerminalNodeKeyPar)context.getInverseNodesCache().get(F)).getPolynomial();
@@ -2342,16 +2338,14 @@ public String getTrafficStringOneLane(HashMap<String,Boolean> state) {
 		return perf;
 	}	
 
-
-public void dumpVHashtoADDtoFile(HashMap V,boolean upper) {
+	public void dumpVHashtoADDtoFile(HashMap V,boolean upper) {
 	Context contextADD=new ContextADD();
 	System.out.println("Dumping V ");
 	Object VADD=createADDFromVHashMapEnum(contextADD,V,upper);
 	contextADD.dump(contextADD.remapIdWithOutPrime(VADD, hmPrime2IdRemap),NAME_FILE_VALUE);	
 }
 
-
-private Object createADDFromVHashMapEnum(Context contextADD,HashMap V,boolean upper) {
+	private Object createADDFromVHashMapEnum(Context contextADD,HashMap V,boolean upper) {
 	Object VADD;
 	if (upper){
 	   VADD=contextADD.getTerminalNode(maxUpper);
@@ -2371,7 +2365,7 @@ private Object createADDFromVHashMapEnum(Context contextADD,HashMap V,boolean up
 	return VADD;
 }
 
-/*private Object createADDFromTable(Context contextADD,Object V,boolean upper) {
+/*	private Object createADDFromTable(Context contextADD,Object V,boolean upper) {
 	Object VADD;
 	if (upper){
 		   VADD=contextADD.getTerminalNode(maxUpper);
@@ -2393,8 +2387,7 @@ private Object createADDFromVHashMapEnum(Context contextADD,HashMap V,boolean up
 	return VADD;
 }*/
 
-
-private TreeMap <Integer,Boolean>getConfigurationTable(int pos, TreeSet listVar) {
+	private TreeMap <Integer,Boolean>getConfigurationTable(int pos, TreeSet listVar) {
 	TreeMap <Integer,Boolean>conf= new TreeMap<Integer,Boolean>();
 	Iterator it=listVar.iterator();
 	Boolean val;
@@ -2413,7 +2406,7 @@ private TreeMap <Integer,Boolean>getConfigurationTable(int pos, TreeSet listVar)
 /* updateVUpper and put the max in maxUpperUpdated 
  * return the actionGreedy
  */
-private Action updateVUpper(State state) {
+	private Action updateVUpper(State state) {
 	double max=Double.NEGATIVE_INFINITY;
 	Action actionGreedy=null;
 	Iterator actions=mName2Action.entrySet().iterator();
@@ -2444,7 +2437,6 @@ private Action updateVUpper(State state) {
 	maxUpperUpdated=maxTotal;
 	return actionGreedy;
 }
-
 
     private State sampleInitialStateFromListEnum(Random randomGenerator) {
     	int ranIndex=randomGenerator.nextInt(listInitialStatesEnum.size());
@@ -2508,9 +2500,6 @@ private Action updateVUpper(State state) {
  		return res;
 		//at the end we have a number		
 	}
-	
-	
-	
 	
 	private SuccProbabilities computeSuccesorsProbEnum(State state,TreeMap iD2ADD) {
 	       
@@ -2593,10 +2582,6 @@ private Action updateVUpper(State state) {
 		return succ;
 	}
 	
-	
-		
-	
-	
 	public State  createStateFrom(int pos, int numberVariables) {
 		
 		State newState;
@@ -2620,8 +2605,6 @@ private Action updateVUpper(State state) {
 		return newState;
 	
 	}
-	
-	
 	
 	/////////////////////////////////////////Enumerative BRTDP///////////////////////////////////////////////////////
 	public  ArrayList<ArrayList> solveBRTDPEnum(int maxDepth, long timeOut,long maxUpdates,double tau,String typeMDP,String typeSolution, int numTrials, int interval,int numTrialsSimulation, int numberInitialStates,Random randomGenInitial, Random randomGenNextState,MDP myMDPSimulator) {
@@ -2747,6 +2730,7 @@ private Action updateVUpper(State state) {
 		System.out.println("It must never happen, because it must return before");
 		return nextState;
     }
+	
 	private SuccProbabilities multByVGap(SuccProbabilities  succState) {
 		SuccProbabilities  b=new SuccProbabilities();
 		State nextState;
@@ -2766,6 +2750,4 @@ private Action updateVUpper(State state) {
 		}
 		return b;
 	}
-	
-	
 }
