@@ -948,7 +948,7 @@ public class ContextADD extends Context{
 	    	return Fr;
 			
 		}	
-			
+		
 //		 the parameter is ParADD and the result is an ADD
 	    public Object doMinCallOverNodes(Object VDD,String NAME_FILE_CONTRAINTS,boolean pruneAfterEachIt) {
 
@@ -975,24 +975,21 @@ public class ContextADD extends Context{
 	    		 }
 	    	 }
 	    	 /////////////////////recursive call for each ADD branch////////////////////////////////////////////
-	    	 Integer Fr= (Integer) reduceCacheMinPar.get(VDD);
-	    	 if(Fr==null){
-	    		 InternalNodeKey intNodeKey=(InternalNodeKey)this.getInverseNodesCache().get(VDD);
-	    		 Object Fh=doMinCallOverNodes(intNodeKey.getHigh(),NAME_FILE_CONTRAINTS,pruneAfterEachIt);
-	    		 Object Fl=doMinCallOverNodes(intNodeKey.getLower(),NAME_FILE_CONTRAINTS,pruneAfterEachIt);
+	    	 Integer Fr = (Integer) reduceCacheMinPar.get(VDD);
+	    	 if (Fr == null){
+	    		 InternalNodeKey intNodeKey = (InternalNodeKey) this.getInverseNodesCache().get(VDD);
+	    		 Object Fh = doMinCallOverNodes(intNodeKey.getHigh(),NAME_FILE_CONTRAINTS,pruneAfterEachIt);
+	    		 Object Fl = doMinCallOverNodes(intNodeKey.getLower(),NAME_FILE_CONTRAINTS,pruneAfterEachIt);
 	    		 Integer Fvar= intNodeKey.getVar();
 	    		 Fr=(Integer)this.GetNode(Fvar,Fh,Fl);
 	    		 reduceCacheMinPar.put(VDD, Fr);
 	    	 } else	{
 	    		 reuseCacheIntNode++;
 	    	 }
+	    	 
 	    	 ///////////////////////////////////////////////////////////////////////////////////////////////////
 	    	 return Fr;//could be integer or AditArc
-
 	     }
-	  
-	     
-
 	
 		private Object callNonLinearSolverObjectiveIP(TerminalNodeKeyPar node, String name_file_contraints) {
 //			 construct a hashtable from the polynomial
