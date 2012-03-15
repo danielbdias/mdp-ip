@@ -50,13 +50,13 @@ public class CustomPolicyEvaluator {
 		for (int i = initialProblem; i <= finalProblem; i++) {
 			String[] args = {
 				"//home//daniel//workspaces//java//mdpip//ADD//problemsMDPIP//uni_ring_IP_" + i +".net",
-				"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//rtdpip//valueuni_ring_IP_" + i +"_RTDPIP_" + type + ".net",
+				"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//rtdpip//test_03//valueuni_ring_IP_" + i +"_RTDPIP_" + type + ".net",
 				"30",
 				"50",
 				"160",
 				"MDPIP",
 				"RTDPIP",
-				"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//rtdpip//uni_ring_IP_sim_results_" + type + ".txt"					
+				"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//rtdpip//test_03//uni_ring_IP_sim_results_" + type + ".txt"					
 			};
 			
 			list.add(args);

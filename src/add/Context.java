@@ -512,6 +512,52 @@ public abstract class Context {
 	     
 //		 the parameter is ParADD and the result is an ADD
 	     public abstract Object doMinCallOverNodes(Object VDD,String NAME_FILE_CONTRAINTS,boolean pruneAfterEachIt);
+	     
+	   //Daniel: method used in RTDPIP state sampling
+		public Object doMinCallOverNodesWithRandomCoef(Object VDD, String NAME_FILE_CONTRAINTS) {
+
+	    	if (this.isTerminalNode(VDD)){ 
+	    		TerminalNodeKeyPar node = (TerminalNodeKeyPar) this.getInverseNodesCache().get(VDD);
+	    		 
+	    		if (node.getPolynomial().getTerms().size() == 0) //if the node does not have probabilities then we do not call the nonlinear solver
+	    			return this.getTerminalNode(node.getPolynomial().getC());
+
+	    		String polynomial = node.getPolynomial().toStringWithRandCoef(this,"p");
+    		
+	    		//////Call solver with the polynomial//////////////////////////////////////////
+				createFileAMPL(polynomial, NAME_FILE_CONTRAINTS);
+				
+				Double obj = callNonLinearSolver();
+				
+				//contNoReuse++;
+				
+				if (obj == null){
+					System.out.println("doMinCallOverNodes: Problems with the solver it return null");
+					System.exit(0);
+				}
+				
+				return this.getTerminalNode(obj);
+	    	 }
+	    	 
+	    	 /////////////////////recursive call for each ADD branch////////////////////////////////////////////
+	    	 Integer Fr = (Integer) reduceCacheMinPar.get(VDD);
+	    	 
+	    	 if (Fr == null) {
+	    		 InternalNodeKey intNodeKey = (InternalNodeKey) this.getInverseNodesCache().get(VDD);
+	    		 Object Fh = doMinCallOverNodesWithRandomCoef(intNodeKey.getHigh(), NAME_FILE_CONTRAINTS);
+	    		 Object Fl = doMinCallOverNodesWithRandomCoef(intNodeKey.getLower(), NAME_FILE_CONTRAINTS);
+	    		 Integer Fvar = intNodeKey.getVar();
+	    		 Fr = (Integer) this.GetNode(Fvar, Fh, Fl);
+	    		 reduceCacheMinPar.put(VDD, Fr);
+	    	 } else	{
+	    		 reuseCacheIntNode++;
+	    	 }
+	    	 
+	    	 ///////////////////////////////////////////////////////////////////////////////////////////////////
+	    	 return Fr;//could be integer or AditArc
+	     }
+	     
+	     
 		 public abstract int contNumberNodes(Object valueiDD);
 ///////////////////////////////////////////////////////////////////
 		 //create file in order to obtain a bound of each probability
@@ -624,30 +670,29 @@ public abstract class Context {
 	    	return reward;
   	  }
   	  public  Hashtable sampleProbabilitiesSubjectTo(String NAME_FILE_CONTRAINTS) {
-  		  //HashMap probSample=new HashMap();
-  		  Iterator it=listVarProb.iterator();
-  		  String objective="";
-  		  while(it.hasNext()){
-  			  String prob=(String)it.next();
-  			  double w=Math.random();
-  			  double sign=Math.random();
-  			  int signW=1;
-  			  if (sign<=0.5){
-  				  signW=-1;
-  			  }
-  			  if (objective==""){
-  				objective=w*signW+"*p"+prob;
-  			  }
-  			  else{
-  				  objective=w*signW+"*p"+prob+"+"+objective;
-  			  }
+  		  Iterator it = listVarProb.iterator();
+  		  String objective = "";
+  		  
+  		  while (it.hasNext()) {
+  			  String prob = (String) it.next();
+  			  double w = Math.random();
+  			  double sign = Math.random();
+  			  int signW = 1;
   			  
-  		  }
-  		  createFileAMPL(objective,NAME_FILE_CONTRAINTS);
-  		  Double obj=callNonLinearSolver(); //it creates the currentValueProbabilities
-  		  return currentValuesProb;
-		  
+  			  if (sign <= 0.5)
+  				  signW = -1;
 
+  			  if (objective == "")
+  				  objective = w * signW + "*p" + prob;
+  			  else
+  				  objective = w * signW + "*p" + prob + "+" + objective; 			  
+  		  }
+  		  
+  		  createFileAMPL(objective, NAME_FILE_CONTRAINTS);
+  		  
+  		  callNonLinearSolver(); //it creates the currentValueProbabilities
+  		  
+  		  return currentValuesProb;
 	}
   	public Integer convertCPT(Integer F, Hashtable sampleProbabilities) {
 		if(this.isTerminalNode(F)){

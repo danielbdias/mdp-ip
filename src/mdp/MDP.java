@@ -41,7 +41,14 @@ public abstract class MDP {
 	boolean printTrafficFormat=false;
 	boolean sampleInitialFromI=true;
 	boolean printPolicy=false;
-	int typeSampledRTDPMDPIP = 1; //typeSampledRTDPMDPIP   1: allProbabilities 2: if p=0  => p=epsilon 3: using  the result of a problem with constraints p>= epsilon
+	
+	// typeSampledRTDPMDPIP   
+	//1: allProbabilities 
+	//2: if p=0  => p=epsilon 
+	//3: using  the result of a problem with constraints p>= epsilon 
+	//4: add random coefficients for each constraint p
+	int typeSampledRTDPMDPIP = 1;
+	
 	double epsilon=0.000001;
 	
 	/* Local constants */
@@ -576,35 +583,40 @@ private State createStateEnum(Object o) {
 	//////////////////////////////////////////////////////////////FOR SIMULATION MDPIP ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	public ArrayList simulateMDPIP(int numberInitialStates,int numberSamples,int tMax, String NAME_FILE_VALUE) {
 
-		context.workingWithParameterizedBef=context.workingWithParameterized;
-		context.workingWithParameterized=false;
-		Object valueRes=context.readValueFunction(NAME_FILE_VALUE);
-		//context.view(valueRes);
-	    HashMap initialState2AvgValue=new HashMap();
-	    double totalSum=0;
-	    ArrayList listReward=new ArrayList();
+		context.workingWithParameterizedBef = context.workingWithParameterized;
+		context.workingWithParameterized = false;
+		
+		Object valueRes = context.readValueFunction(NAME_FILE_VALUE);
+
+	    HashMap initialState2AvgValue = new HashMap();
+	    double totalSum = 0.0;
+	    ArrayList listReward = new ArrayList();
 	    
-	    Random randomGenInitial=new Random(19580427);
-		Random randomGenNextState=new Random(19580800);
+	    Random randomGenInitial = new Random(19580427);
+		Random randomGenNextState = new Random(19580800);
 	    // This policy should be based on the MDPIP regression
 	    // where you do a min_{ p_1 ... P_n } Q(s,a,p_1,...,p_n)
-	    TreeMap action2QDD=calculateQHash(valueRes,true); //here we call the solver
+	    TreeMap action2QDD = calculateQHash(valueRes, true); //here we call the solver
 	    
-	    
-        for(int nI=1; nI<=numberInitialStates; nI++){
+        for (int nI = 1; nI <= numberInitialStates; nI++){
  
-        	HashMap initialState=sampleInitialState(randomGenInitial);
-            HashMap state=null;
+        	HashMap initialState = sampleInitialState(randomGenInitial);
+            HashMap state = null;
         	double sumReward=0;
-        	for ( int numS=1; numS<=numberSamples; numS++){
-            	state=new HashMap(initialState);
+        	
+        	for (int numS = 1; numS <= numberSamples; numS++){
+            	state = new HashMap(initialState);
             	System.out.println("Initial state:"+state);
-        		double rewardState=getReward(state);
-        		context.workingWithParameterized=context.workingWithParameterizedBef;
-        		if(context.workingWithParameterized){
-        		     Hashtable sampleProbabilities=context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
+            	
+        		double rewardState = getReward(state);
+        		
+        		context.workingWithParameterized = context.workingWithParameterizedBef;
+        		
+        		if (context.workingWithParameterized){
+        		     Hashtable sampleProbabilities = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
         		     convertParADD2ADDCPTs(sampleProbabilities);//fills tmID2ADDNewSample
         		}
+        		
         		//because after this line we sampled an MDP given an MDPIP
         		context.workingWithParameterized=false;
         		                
@@ -631,23 +643,22 @@ private State createStateEnum(Object o) {
         		sumReward=sumReward+rewardState;
                
         	}
-        	double avgValue=sumReward/numberSamples;
-        	System.out.println("Average for state: "+initialState+" is "+avgValue);
-        	initialState2AvgValue.put(new HashMap(initialState),avgValue);
-        	totalSum=totalSum+avgValue;
-        	flushCachesSimulator(action2QDD,false,null,null,null);
+        	double avgValue = sumReward / numberSamples;
+        	System.out.println("Average for state: " + initialState + " is " + avgValue);
+        	initialState2AvgValue.put(new HashMap(initialState), avgValue);
+        	totalSum = totalSum + avgValue;
+        	flushCachesSimulator(action2QDD, false, null, null, null);
         }
-        // double mean=calculateMean(listReward);
-        double mean=totalSum/numberInitialStates;
-        double sigma=calculateStandarD(mean,listReward);
-        double standardError=sigma/Math.sqrt(listReward.size());
-        ArrayList res=new ArrayList();
+        
+        double mean = totalSum / numberInitialStates;
+        double sigma = calculateStandarD(mean, listReward);
+        double standardError = sigma / Math.sqrt(listReward.size());
+        
+        ArrayList res = new ArrayList();
         res.add(mean);
         res.add(standardError);
-        //System.out.println("Values: "+listReward);
-        //System.out.println("Mean: :"+mean);
-        //System.out.println("Standard Error: :"+standardError);
-         return res;
+
+        return res;
 	}
 	
 	/**
@@ -1542,7 +1553,7 @@ private State createStateEnum(Object o) {
 		VUpper = context.getTerminalNode(maxUpper);
 		
 		ArrayList<ArrayList> perf=new ArrayList<ArrayList>();
-		contUpperUpdates=0;
+		contUpperUpdates = 0;
 
 		context.workingWithParameterizedBef = context.workingWithParameterized;
 		
@@ -1646,69 +1657,82 @@ private State createStateEnum(Object o) {
 
 	private TreeMap<Integer, Boolean> sampling(TreeMap<Integer, Boolean> state, TreeMap iD2ADD, Random randomGenerator) {
 		TreeMap<Integer, Boolean> nextState=new TreeMap<Integer, Boolean>();
-		for (int i=1; i<= this.numVars;i++){
-			double ran=randomGenerator.nextDouble();
-			Integer varPrime=Integer.valueOf(i);
-			Integer var=Integer.valueOf(varPrime+this.numVars);
-			Object cpt_a_xiprime=iD2ADD.get(varPrime);
+		
+		for (int i = 1; i <= this.numVars; i++){
+			
+			double ran = randomGenerator.nextDouble();
+			Integer varPrime = Integer.valueOf(i);
+			Integer var = Integer.valueOf(varPrime + this.numVars);
+			Object cpt_a_xiprime = iD2ADD.get(varPrime);
 			double probFalse;
-			if(cpt_a_xiprime==null){
+			
+			if (cpt_a_xiprime == null){
 				System.out.println("Prime var not found");
 				System.exit(1);
 			}
 			
-			if(!context.workingWithParameterized){ //new line Karina
-				probFalse=(Double)context.getValuePolyForStateInContext((Integer)cpt_a_xiprime,state,varPrime,false);
-				//double probFalse=1-probTrue;
-				if (ran<=probFalse){
-					nextState.put(var,false);  		
-				}
-				else{
-					nextState.put(var,true);  	
-				}
+			if (!context.workingWithParameterized) { //new line Karina
+				probFalse = (Double) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, state, varPrime, false);
+
+				if (ran <= probFalse)
+					nextState.put(var, false);  		
+				else
+					nextState.put(var, true);  	
+				
 			}
 			else{//new part for IP
-					Polynomial probFalsePol=(Polynomial)context.getValuePolyForStateInContext((Integer)cpt_a_xiprime,state,varPrime,false);
-					//System.out.println(""+probFalsePol.toString(context, "p"));
-					probFalse=samplingOneVariableIP(probFalsePol);
-					if (ran<=probFalse){
-						nextState.put(var,false);  		
-					}
-					else{
-						nextState.put(var,true);  	
-					}
+				Polynomial probFalsePol = (Polynomial) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, state, varPrime, false);
+				
+				probFalse = samplingOneVariableIP(probFalsePol);
+				
+				if (ran <= probFalse)
+					nextState.put(var, false);  		
+				else
+					nextState.put(var, true);  	
 			}
 		}
+		
 		return nextState;
 	}
 	
 	private double samplingOneVariableIP(Polynomial probFalsePol) {
-		// typeSampledRTDPMDPIP   1: allProbabilities 2: if p=0  => p=epsilon 3: using  the result of a problem with constraints p>= epsilon 
-		double probFalse;
+		// typeSampledRTDPMDPIP   
+		//1: allProbabilities 
+		//2: if p=0  => p=epsilon 
+		//3: using  the result of a problem with constraints p>= epsilon 
+		//4: add random coefficients for each constraint p
+		double probFalse = 0.0;
 		
-		if(typeSampledRTDPMDPIP==1 || typeSampledRTDPMDPIP==2 ){    
-            if(probNature.size()!=0){ //i.e. the solver was  called when we have computed Q
-            	probFalse=probFalsePol.evalWithListValues(probNature, context);
-            	//System.out.println("probNature:"+probNature);
+		if (typeSampledRTDPMDPIP == 1 || typeSampledRTDPMDPIP == 2 ){    
+            if (probNature.size() != 0) { //i.e. the solver was  called when we have computed Q
+            	probFalse = probFalsePol.evalWithListValues(probNature, context);
             }
             else{ //probNature was not created, then call the solver for each variable s.t.constraints
             	//PADD with only one node
-            	Object probFalseNode =(Object)context.doMinCallOverNodes(context.getTerminalNode(probFalsePol),NAME_FILE_CONTRAINTS,this.pruneAfterEachIt);
-            	probFalse=((TerminalNodeKeyADD)context.getInverseNodesCache().get(probFalseNode)).getValue();
-            }
-            if (typeSampledRTDPMDPIP==2 && probFalse==0){ //OPTION 2 
-            	probFalse=epsilon;
+            	Object probFalseNode = (Object) context.doMinCallOverNodes(
+            			context.getTerminalNode(probFalsePol),
+            			NAME_FILE_CONTRAINTS,
+            			this.pruneAfterEachIt);
+            	
+            	probFalse = ((TerminalNodeKeyADD) context.getInverseNodesCache().get(probFalseNode)).getValue();
             }
             
+            if (typeSampledRTDPMDPIP == 2 && probFalse == 0.0) //OPTION 2 
+            	probFalse = epsilon;
 		}
-        else{// OPTION 3
-//        	TODO:  
-        	probFalse=probFalsePol.evalWithListValues(context.probSample, context);
+        else if (typeSampledRTDPMDPIP == 3){// OPTION 3 
+        	probFalse = probFalsePol.evalWithListValues(context.probSample, context);
         }
+        else if (typeSampledRTDPMDPIP == 4) {
+        	Object probFalseNode = (Object) context.doMinCallOverNodesWithRandomCoef(
+        			context.getTerminalNode(probFalsePol), NAME_FILE_CONTRAINTS);
+        	
+        	probFalse = ((TerminalNodeKeyADD) context.getInverseNodesCache().get(probFalseNode)).getValue();
+        }
+		
 		return probFalse;
 	}
 
-	
 	//////////////////////////////////////////////////////////////FOR SIMULATING MDPs ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	public ArrayList simulateMDPFromFile(int numberInitialStates,int numberSamples,int tMax, String NAME_FILE_VALUE,String typeSolution) {
 		ArrayList res=new ArrayList();
