@@ -45,24 +45,31 @@ public class PolicyEvaluator {
 		int typeContext=1; //ADD
 		int typeAproxPol= 0;
 		MDP myMDP;
-		if(typeSolution.compareTo("RTDPEnum")==0 || typeSolution.compareTo("BRTDPEnum")==0){
+		
+		System.out.printf("Creating MDP for %s...", fileName);
+		System.out.println();
+		
+		if(typeSolution.compareTo("RTDPEnum")==0 || typeSolution.compareTo("BRTDPEnum")==0)
 			myMDP=new MDP_Fac(fileName,typeContext,typeAproxPol,"RTDP");//create an MDP or an MDPIP automatically
-		}
-		else{
+		else
 			myMDP=new MDP_Fac(fileName,typeContext,typeAproxPol,typeSolution);//create an MDP or an MDPIP automatically
-		}
-			
-		ArrayList result;
-		if(typeMDP.compareTo("MDPIP")==0){
+		
+		System.out.printf("Starting simulation...");
+		System.out.println();
+		
+		ArrayList result = null;
+		
+		if(typeMDP.compareTo("MDPIP")==0)
 			result=myMDP.simulateMDPIP(numberInitialStates,numberSamples,tMax,NAME_FILE_VALUE);
-		}
-		else{
+		else
 			result=myMDP.simulateMDPFromFile(numberInitialStates,numberSamples,tMax,NAME_FILE_VALUE,typeSolution);
-		}
 	
-		 printReport(NAME_FILE_VALUE,result,NAME_FILE_REPORT);
-
+		System.out.printf("Simulation ended.");
+		System.out.println();
+		
+		printReport(NAME_FILE_VALUE,result,NAME_FILE_REPORT);
 	}
+	
 	private static void printReport(String NAME_FILE_VALUE , ArrayList result,String NAME_FILE_REPORT) {
 		;	
 		try {

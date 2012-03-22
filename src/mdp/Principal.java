@@ -155,11 +155,10 @@ public class Principal {
 			   double maxError = Double.NEGATIVE_INFINITY;
 			   
 			   if (NAME_FILE_VALUE_STAR.compareTo("NOT")!=0){
-				   myMDP.context.workingWithParameterized=false;
+				   myMDP.context.workingWithParameterized = false;
 
 				   Object valueStar = myMDP.context.readValueFunction(NAME_FILE_VALUE_STAR);
-			   
-				   		   
+				   
 				   for (Object[] item : result) {
 					   TreeMap<Integer, Boolean> state = (TreeMap<Integer, Boolean>) item[0];
 					   double approximatedValue = (Double) item[1];

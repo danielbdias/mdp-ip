@@ -17,7 +17,7 @@ ALGORITHM=rtdpip
 PROBLEM_DIR=$ROOT_DIR/problemsMDPIP
 
 #Indicate which problem will be used in tests
-PROBLEM_TYPE=uni_ring_IP
+PROBLEM_TYPE=traffic
 
 #Indicate the directory where the results will be saved
 REPORTS_DIR=$ROOT_DIR/reportsMDPIP
@@ -69,43 +69,11 @@ execute_problem(){
 echo Starting tests...
 echo 
 
-echo Tests with 100% of time...
+echo Tests with 25% of time...
 
-TEST_TYPE="full"
+TEST_TYPE="onequarter"
 
-execute_problem $TEST_TYPE 1 1
-execute_problem $TEST_TYPE 2 4
-execute_problem $TEST_TYPE 3 15
-execute_problem $TEST_TYPE 4 45
-execute_problem $TEST_TYPE 5 149
-execute_problem $TEST_TYPE 6 501
-execute_problem $TEST_TYPE 7 1264
-execute_problem $TEST_TYPE 8 4183
-
-echo Tests with 75% of time...
-
-TEST_TYPE="threequarters"
-
-execute_problem $TEST_TYPE 1 1
-execute_problem $TEST_TYPE 2 3
-execute_problem $TEST_TYPE 3 12
-execute_problem $TEST_TYPE 4 34
-execute_problem $TEST_TYPE 5 118
-execute_problem $TEST_TYPE 6 376
-execute_problem $TEST_TYPE 7 956
-execute_problem $TEST_TYPE 8 3139
-
-echo Tests with 50% of time...
-
-TEST_TYPE="half"
-
-execute_problem $TEST_TYPE 1 1
-execute_problem $TEST_TYPE 2 2
-execute_problem $TEST_TYPE 3 8
-execute_problem $TEST_TYPE 4 23
-execute_problem $TEST_TYPE 5 75
-execute_problem $TEST_TYPE 6 251
-execute_problem $TEST_TYPE 7 632
-execute_problem $TEST_TYPE 8 2093
+execute_problem $TEST_TYPE 3 78
+execute_problem $TEST_TYPE 4 316
 
 echo End of tests
