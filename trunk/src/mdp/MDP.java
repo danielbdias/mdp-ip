@@ -47,7 +47,7 @@ public abstract class MDP {
 	//2: if p=0  => p=epsilon 
 	//3: using  the result of a problem with constraints p>= epsilon 
 	//4: add random coefficients for each constraint p
-	int typeSampledRTDPMDPIP = 1;
+	int typeSampledRTDPMDPIP = 4;
 	
 	double epsilon=0.000001;
 	
@@ -638,14 +638,17 @@ private State createStateEnum(Object o) {
         			//rewardState=this.bdDiscount.doubleValue()*rewardState+getReward(state)
         			
         		}
+
         		listReward.add(rewardState);
-        		//System.out.println("reward State:"+rewardState);
         		sumReward=sumReward+rewardState;
                
         	}
         	double avgValue = sumReward / numberSamples;
         	System.out.println("Average for state: " + initialState + " is " + avgValue);
+        	System.out.println("Final state: " + state);
+        	
         	initialState2AvgValue.put(new HashMap(initialState), avgValue);
+        	
         	totalSum = totalSum + avgValue;
         	flushCachesSimulator(action2QDD, false, null, null, null);
         }
@@ -653,6 +656,8 @@ private State createStateEnum(Object o) {
         double mean = totalSum / numberInitialStates;
         double sigma = calculateStandarD(mean, listReward);
         double standardError = sigma / Math.sqrt(listReward.size());
+
+        System.out.println("Rewards through execution: " + initialState2AvgValue.values());
         
         ArrayList res = new ArrayList();
         res.add(mean);

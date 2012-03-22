@@ -1,0 +1,28 @@
+variables (c1 )
+action noreboot
+	c1 (c1 
+               (c1 ([1*p1]) ([0.5*p1]) ) 
+               (c1 ([1*p2]) ([0.5*p2]) ) ) 
+endaction
+action reboot1
+	c1 ([1.00])
+endaction
+reward 
+   (c1 (1) (0) ) 
+constraints
+   (
+       (p1 > = 0.85 + p2)
+       (p1 < = 0.95 )
+       (p2 < = 0.10 )
+   )
+
+
+discount 0.900000
+tolerance 0.010000
+
+initial
+( ) 
+endinitial
+goal
+(c1)
+endgoal
