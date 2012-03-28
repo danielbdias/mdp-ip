@@ -27,7 +27,7 @@ INITIAL_PROBLEM=6
 LAST_PROBLEM=6
 
 #Test execution
-NUMBER_OF_RUNS_PER_TEST=50
+NUMBER_OF_RUNS_PER_TEST=75
 
 #Java execution parameters
 BINARIES_DIR=$ROOT_DIR/bin
@@ -52,7 +52,7 @@ do
 	current_report=$RESULTS_DIR/$PROBLEM_TYPE"_test.txt"
 	current_log=$RESULTS_DIR/$PROBLEM_TYPE"_"$current_problem_index".log"
 
-	time -f "Took %U seconds..." java -Xms200m -Xmx2048m -classpath $CLASSPATH -cp $BINARIES_DIR $MAIN_CLASS $current_problem $NUMBER_OF_RUNS_PER_TEST 0 1 $current_report 0 Fact NOT FALSE Total 160 1000 1000 0.0 300 60 60 1 1 > $current_log
+	java -Xms200m -Xmx2048m -classpath $CLASSPATH -cp $BINARIES_DIR $MAIN_CLASS $current_problem $NUMBER_OF_RUNS_PER_TEST 0 1 $current_report 0 Fact NOT FALSE Total 160 1000 1000 0.0 300 60 60 1 1 > $current_log
 
 	echo Problem $PROBLEM_TYPE"_"$current_problem_index executed
 	echo 
