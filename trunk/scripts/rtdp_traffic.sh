@@ -73,7 +73,27 @@ echo Tests with 25% of time...
 
 TEST_TYPE="onequarter"
 
-execute_problem $TEST_TYPE 3 78
-execute_problem $TEST_TYPE 4 316
+execute_problem $TEST_TYPE 3 107
+execute_problem $TEST_TYPE 4 372
+execute_problem $TEST_TYPE 5 1298
+execute_problem $TEST_TYPE 6 4529
+
+echo Tests with 10% of time...
+
+TEST_TYPE="tenpercent"
+
+execute_problem $TEST_TYPE 3 42
+execute_problem $TEST_TYPE 4 148
+execute_problem $TEST_TYPE 5 519
+execute_problem $TEST_TYPE 6 1811
+
+echo Tests with 5% of time...
+
+TEST_TYPE="fivepercent"
+
+execute_problem $TEST_TYPE 3 21
+execute_problem $TEST_TYPE 4 74
+execute_problem $TEST_TYPE 5 259
+execute_problem $TEST_TYPE 6 905
 
 echo End of tests

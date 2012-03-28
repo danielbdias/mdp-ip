@@ -8,15 +8,13 @@ public class CustomPolicyEvaluator {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-//		ArrayList<String[]> spuddList = getArgsForSpudd("traffic", 4, 4);
-//		
-//		for (String[] arguments : spuddList)
-//			PolicyEvaluator.main(arguments);
+		ArrayList<String[]> spuddList = getArgsForSpudd("traffic", 3, 5);
 		
-		for (String type : new String[] { "onequarter" }) {
-		//for (String type : new String[] { "full", "threequarter", "half", "onequarter", "tenpercent", "fivepercent" }) {
-			//ArrayList<String[]> rtdpList = getArgsForRtdpIP("uni_ring_IP", 1, 8, type);
-			ArrayList<String[]> rtdpList = getArgsForRtdpIP("traffic", 3, 4, type);
+		for (String[] arguments : spuddList)
+			PolicyEvaluator.main(arguments);
+		
+		for (String type : new String[] { "onequarter", "tenpercent", "fivepercent" }) {
+			ArrayList<String[]> rtdpList = getArgsForRtdpIP("traffic", 3, 6, type);
 			
 			for (String[] arguments : rtdpList)
 				PolicyEvaluator.main(arguments);	

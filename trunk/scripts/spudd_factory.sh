@@ -17,17 +17,17 @@ ALGORITHM=spudd
 PROBLEM_DIR=$ROOT_DIR/problemsMDPIP
 
 #Indicate which problem will be used in tests
-PROBLEM_TYPE=indep_ring_IP
+PROBLEM_TYPE=factory_IP
 
 #Indicate the directory where the results will be saved
 RESULTS_DIR=$ROOT_DIR/reportsMDPIP/results/$ALGORITHM
 
 #Define the range to be tested
-INITIAL_PROBLEM=1
-LAST_PROBLEM=8
+INITIAL_PROBLEM=0
+LAST_PROBLEM=4
 
 #Test execution
-NUMBER_OF_RUNS_PER_TEST=50
+NUMBER_OF_RUNS_PER_TEST=75
 
 #Java execution parameters
 BINARIES_DIR=$ROOT_DIR/bin

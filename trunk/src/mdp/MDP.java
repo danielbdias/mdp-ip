@@ -47,9 +47,9 @@ public abstract class MDP {
 	//2: if p=0  => p=epsilon 
 	//3: using  the result of a problem with constraints p>= epsilon 
 	//4: add random coefficients for each constraint p
-	int typeSampledRTDPMDPIP = 4;
+	int typeSampledRTDPMDPIP = 1;
 	
-	double epsilon=0.000001;
+	double epsilon = 0.000001;
 	
 	/* Local constants */
 //  public final static int VERBOSE_LEVEL = 0; // Determines how much output is displayed
