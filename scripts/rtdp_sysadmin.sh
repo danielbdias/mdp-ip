@@ -50,15 +50,15 @@ execute_problem(){
 
 	echo Executing problem $PROBLEM_TYPE"_"$current_problem_index
 
-	current_problem=$PROBLEM_DIR/$PROBLEM_TYPE"_"$current_problem_index".net"
-	current_report=$RESULTS_DIR/$PROBLEM_TYPE"_test_"$test_type".txt"
-	current_log=$RESULTS_DIR/$PROBLEM_TYPE"_"$current_problem_index".log"
+	current_problem=$PROBLEM_DIR/$PROBLEM_TYPE"_"$current_problem_index"_Interval07.net"
+	current_report=$RESULTS_DIR/$PROBLEM_TYPE"_test_"$test_type"_Interval07.txt"
+	current_log=$RESULTS_DIR/$PROBLEM_TYPE"_"$current_problem_index"_Interval07.log"
 	
 
 	java -Xms200m -Xmx2048m -classpath $CLASSPATH -cp $BINARIES_DIR $MAIN_CLASS $current_problem $NUMBER_OF_RUNS_PER_TEST 0 1 $current_report 0 Fact NOT TRUE RTDPIP $MAX_DEPTH $timeout 1000 0.0 $MAX_TRIALS 60 60 1 1 > $current_log
 
-	current_value_function=$REPORTS_DIR/"value"$PROBLEM_TYPE"_"$current_problem_index"_RTDPIP.net"
-	new_value_function=$RESULTS_DIR/"value"$PROBLEM_TYPE"_"$current_problem_index"_RTDPIP_"$test_type".net"
+	current_value_function=$REPORTS_DIR/"value"$PROBLEM_TYPE"_"$current_problem_index"_Interval07_RTDPIP.net"
+	new_value_function=$RESULTS_DIR/"value"$PROBLEM_TYPE"_"$current_problem_index"_Interval07_RTDPIP_"$test_type".net"
 
 	mv $current_value_function $new_value_function
 
@@ -73,25 +73,25 @@ echo Tests with 25% of time...
 
 TEST_TYPE="onequarter"
 
-#execute_problem $TEST_TYPE 1 1
-#execute_problem $TEST_TYPE 2 1
-#execute_problem $TEST_TYPE 3 4
-#execute_problem $TEST_TYPE 4 11
-#execute_problem $TEST_TYPE 5 43
-#execute_problem $TEST_TYPE 6 115
+execute_problem $TEST_TYPE 1 1
+execute_problem $TEST_TYPE 2 1
+execute_problem $TEST_TYPE 3 4
+execute_problem $TEST_TYPE 4 11
+execute_problem $TEST_TYPE 5 41
+execute_problem $TEST_TYPE 6 124
 #execute_problem $TEST_TYPE 7 312
-execute_problem $TEST_TYPE 8 965
+#execute_problem $TEST_TYPE 8 965
 
 echo Tests with 10% of time...
 
 TEST_TYPE="tenpercent"
 
-#execute_problem $TEST_TYPE 1 1
-#execute_problem $TEST_TYPE 2 1
-#execute_problem $TEST_TYPE 3 1
-#execute_problem $TEST_TYPE 4 5
-#execute_problem $TEST_TYPE 5 13
-#execute_problem $TEST_TYPE 6 46
+execute_problem $TEST_TYPE 1 1
+execute_problem $TEST_TYPE 2 1
+execute_problem $TEST_TYPE 3 1
+execute_problem $TEST_TYPE 4 4
+execute_problem $TEST_TYPE 5 16
+execute_problem $TEST_TYPE 6 49
 #execute_problem $TEST_TYPE 7 125
 #execute_problem $TEST_TYPE 8 386
 
@@ -99,12 +99,12 @@ echo Tests with 5% of time...
 
 TEST_TYPE="fivepercent"
 
-#execute_problem $TEST_TYPE 1 1
-#execute_problem $TEST_TYPE 2 1
-#execute_problem $TEST_TYPE 3 1
-#execute_problem $TEST_TYPE 4 3
-#execute_problem $TEST_TYPE 5 7
-#execute_problem $TEST_TYPE 6 23
+execute_problem $TEST_TYPE 1 1
+execute_problem $TEST_TYPE 2 1
+execute_problem $TEST_TYPE 3 1
+execute_problem $TEST_TYPE 4 2
+execute_problem $TEST_TYPE 5 8
+execute_problem $TEST_TYPE 6 25
 #execute_problem $TEST_TYPE 7 63
 #execute_problem $TEST_TYPE 8 183
 
