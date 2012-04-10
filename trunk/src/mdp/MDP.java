@@ -47,7 +47,7 @@ public abstract class MDP {
 	//2: if p=0  => p=epsilon 
 	//3: using  the result of a problem with constraints p>= epsilon 
 	//4: add random coefficients for each constraint p
-	int typeSampledRTDPMDPIP = 1;
+	int typeSampledRTDPMDPIP = 4;
 	
 	double epsilon = 0.000001;
 	
@@ -1570,7 +1570,9 @@ private State createStateEnum(Object o) {
 			TreeMap<Integer,Boolean> state = sampleInitialStateFromList(randomGenInitial); 
 
 			//do trial //////////////////////////////////
-			while (!inGoalSet(state) && (state !=null) && depth < maxDepth){
+			while (!inGoalSet(state) && (state !=null) && depth < maxDepth) {
+				if (totalTrialTimeSec > timeOut) break;
+				
 				depth++;
 				visited.push(state);
 				
@@ -1586,6 +1588,9 @@ private State createStateEnum(Object o) {
 				
 				System.out.println("next state: " + state);
 				flushCachesRTDP(false);
+				
+				totalTrialTime = GetElapsedTime();
+	            totalTrialTimeSec = totalTrialTime / 1000;
 			}
 			
 			//do optimization
@@ -1595,11 +1600,8 @@ private State createStateEnum(Object o) {
 				contUpperUpdates++;
 			}
 			
-			////////////////////////////////////////////////////////////////////
-			long trailTime  = GetElapsedTime();
-			totalTrialTime+=trailTime;
-            totalTrialTimeSec=totalTrialTime/1000;
-			ResetTimer();
+			totalTrialTime = GetElapsedTime();
+            totalTrialTimeSec = totalTrialTime / 1000;
 		}
 		
 		ArrayList<Object[]> result = new ArrayList<Object[]>();
