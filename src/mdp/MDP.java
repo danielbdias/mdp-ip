@@ -824,13 +824,13 @@ private State createStateEnum(Object o) {
 		}
 		return state;
 	}
-	private TreeMap remapWithPrimes(TreeMap nextState) {
-		TreeMap state=new TreeMap();
+	private TreeMap<Integer, Boolean> remapWithPrimes(TreeMap<Integer, Boolean> nextState) {
+		TreeMap<Integer, Boolean> state=new TreeMap <Integer, Boolean>();
 		Iterator it=nextState.keySet().iterator();
 		while (it.hasNext()){
 			Integer var=(Integer)it.next();
 			
-			state.put(this.hmPrimeRemap.get(var),nextState.get(var));
+			state.put((Integer)this.hmPrimeRemap.get(var),nextState.get(var));
 		}
 		return state;
 	}
@@ -1312,6 +1312,8 @@ private State createStateEnum(Object o) {
 		double max=Double.NEGATIVE_INFINITY;
 		Action actionGreedy=null;
 		Iterator actions=mName2Action.entrySet().iterator();
+		int posAction=0;
+		posActionGreedy=-1;
 		while (actions.hasNext()){
 			Map.Entry meaction=(Map.Entry) actions.next();
 			Action action=(Action) meaction.getValue();
@@ -1322,10 +1324,14 @@ private State createStateEnum(Object o) {
 		    Qt=this.computeQ(VUpper, state,action,action.tmID2ADD);
 		    //System.out.println("probNature:"+context.currentValuesProb+"action:"+action.getName()+"Quality:"+Qt);
 			max=Math.max(max,Qt);
-			if(max==Qt){
+			
+			if(Math.abs(max - Qt) <= 1e-10d){//max==Qt){
 				actionGreedy=action;
+				posActionGreedy=posAction;
+				
 				probNature=new Hashtable(context.currentValuesProb); //new line Karina
 			}
+			posAction++;
 		
 		}
 
@@ -1627,6 +1633,249 @@ private State createStateEnum(Object o) {
 		return result;
 	}
 	
+	
+	public  ArrayList<Object[]> solveLRTDPIPFac(int maxDepth, long timeOut,  
+			String typeSolution, int numTrials, int interval, int numberInitialStates, 
+			Random randomGenInitial, Random randomGenNextState) {
+		NAME_FILE_VALUE=NAME_FILE_VALUE+"_"+typeSolution+".net";
+		long totalTrialTime=0;
+		long totalTrialTimeSec=0;
+		ResetTimer();
+		
+		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
+			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
+
+		/* BEGIN: Building the lower bound for V* */
+		//Initialize Vu with admissible value function //////////////////////////////////
+		//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
+		double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
+		
+		if (this.bdDiscount.doubleValue() == 1)
+			maxUpper = Rmax * maxDepth;
+		else
+			maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
+		
+		VUpper = context.getTerminalNode(maxUpper);
+		/* END: Building the lower bound for V* */
+		
+		//ArrayList<ArrayList> perf=new ArrayList<ArrayList>();
+		contUpperUpdates = 0;
+
+		context.workingWithParameterizedBef = context.workingWithParameterized;
+		
+		HashSet <State> solvedStates = new HashSet<State>();
+		
+		//for (int trial = 1; trial <= numTrials; trial++){
+
+		
+		State s = new State(sampleInitialStateFromList(randomGenInitial));
+		
+		int trialCounter = 0;		
+		while (totalTrialTimeSec <= timeOut && !solvedStates.contains(s)){	// TODO: Verificar que contains funcione
+           totalTrialTimeSec=lrtdpTrial(maxDepth, timeOut, randomGenNextState, s, solvedStates);
+           trialCounter++;
+   	    	if (numTrials > 0 && trialCounter >= numTrials) {
+   	    		System.out.println("LRTDP reached the maxTrials (" + numTrials+ "). Stopping..");
+   	    		break;
+   	    	}
+   		   s = new State(sampleInitialStateFromList(randomGenInitial));
+		}
+		assert((numTrials > 0 && trialCounter >= numTrials)|| (solvedStates.contains(s))|| totalTrialTimeSec > timeOut);
+		
+		ArrayList<Object[]> result = new ArrayList<Object[]>();
+		
+		context.workingWithParameterized = false;
+			
+		Object remappedVUpper = context.remapIdWithOutPrime(this.VUpper, hmPrime2IdRemap);
+		
+		for (TreeMap<Integer, Boolean> state : listInitialStates) {		
+			TreeMap<Integer, Boolean> stateInitial = state; //this.remapWithPrimes(state);
+			double value = (Double) context.getValueForStateInContext((Integer) remappedVUpper, stateInitial, null, null);			
+			result.add(new Object[] { state, value });
+		}
+		
+		if (printFinalADD)
+			context.view(remappedVUpper);
+		
+    	if (dumpValue && this.typeContext == 1){
+    		System.out.println("dumping VUpper in" + NAME_FILE_VALUE);	
+    		context.dump(remappedVUpper, NAME_FILE_VALUE);
+    	}
+	
+		return result;
+	}
+	
+	 /* 
+	   * Perform one Trial of the LRTDP in the given Factored MDP-IP.
+	   * If maxDepth > 0, then the stop condition (depth < maxDepth) is also
+	   * considered. Every trial that reached maxDepth also skips the labeling phase
+	   * since this could break the invariant of the solved label 
+	*/
+	public long lrtdpTrial(int maxDepth, long timeOut, Random randomGenNextState, State state, HashSet <State> solvedStates ){
+		int depth = 0;
+		long totalTrialTime=0;
+		long totalTrialTimeSec=0;
+		Stack<State> visited = new Stack<State>();
+		
+	    /* BEGIN TRIAL */
+		boolean debugTrial = false;
+			
+		
+		while (true) {
+	         //Exiting conditions
+			  if (state == null) {
+				  	if (debugTrial){ System.out.println("Exiting trial because state == null"); }
+				  	break;
+			  }
+			  else if (solvedStates.contains(state)) {
+			        if (debugTrial){ System.out.println("Exiting trial because state is marked as solved"); }
+			        break;
+			  }
+			  else if (inGoalSet(state.getValues())) {
+			        if (debugTrial){ System.out.println("Exiting trial because state is a goal state"); }
+			        break;
+			  }
+			  else if (maxDepth > 0 && depth >= maxDepth) {
+			        if (debugTrial){ System.out.println("Exiting trial because depth >= " + maxDepth); }
+			        break;
+			  }
+			  else if (totalTrialTimeSec > timeOut){
+				  if (debugTrial){ System.out.println("Exiting  because time > " + timeOut); }
+			        break;
+			  }
+			 /////////////////////
+			
+						
+			depth++;
+			visited.push(state);
+			
+			//this compute maxUpperUpdated and actionGreedy
+			Action greedyAction = updateVUpper(state.getValues()); // Here we fill probNature. To work with factored, it must be TreeMap, not State
+			contUpperUpdates++;
+			System.out.println("action greedy: " + greedyAction.getName());
+			context.workingWithParameterized = context.workingWithParameterizedBef;
+			state = new State(chooseNextStateRTDP(state.getValues(), greedyAction, randomGenNextState));
+			
+			System.out.println("next state: " + state);
+			flushCachesRTDP(false);
+			
+			totalTrialTime = GetElapsedTime();
+            totalTrialTimeSec = totalTrialTime / 1000;
+		}
+		/* END TRIAL*/
+		
+		if (depth >= maxDepth || totalTrialTimeSec > timeOut ) {
+				System.out.println("Not trying to label states as solved because " + "depth >= " + maxDepth + "or totalTime > " + timeOut); 
+				totalTrialTime = GetElapsedTime();
+		        totalTrialTimeSec = totalTrialTime / 1000;		
+				return totalTrialTimeSec;
+		}
+		// Trying to label the visited nodes from the last to the first
+		while (!visited.empty()) {
+			state = visited.pop();
+			//updateVUpper(state);
+			//contUpperUpdates++;
+			if (!LRTDP_IP_CheckSolved(randomGenNextState, state, solvedStates)){
+				break;
+			}
+		}
+		totalTrialTime = GetElapsedTime();
+        totalTrialTimeSec = totalTrialTime / 1000;		
+		return totalTrialTimeSec;
+	}
+	
+
+	 public boolean LRTDP_IP_CheckSolved(Random randomGenNextState,State state,HashSet<State> solvedStates)
+		  {
+		    boolean rv = true;
+		    Stack<State> open = new Stack<State>();
+		    Stack<State> closed = new Stack<State>();
+		    open.push(state);
+		    
+
+		    HashSet<State> aux=new HashSet<State>(); //aux =open union close
+		  
+		   
+
+		    while (!open.empty()) {
+		    	
+		      state = open.pop();
+		      closed.push(state);
+		      // The residual was too big, so will update the nodes in the open
+		      // list and not mark any node as solved
+		      
+			  TreeMap<Integer, Boolean> state_prime= remapWithPrimes(state.getValues());//Because Vupper has only prime variables
+			  double valueState = (Double) context.getValueForStateInContext((Integer) VUpper, state_prime, null, null);
+		      
+			  Action greedyAction = updateVUpper(state.getValues()); // here it is computed maxUpperUpdated
+			  
+			
+			  Double residual = Math.abs(valueState-maxUpperUpdated);
+			  if (residual == null || residual > epsilon){
+					rv = false;
+					continue;
+			  }
+		      	      
+              
+		      // Here we need to loop over all the states that have non-zero probability
+		      // of happening when applying greedyAction. Notice that we can reuse the
+		      // probability distribution P(s'|cur_s,greedyAction) computed on the call
+		      // to updateVUpper (as opposed to call the non-linear solver again).
+		      SuccProbabilitiesM succ=getSuccessors(state,greedyAction);
+		      State next_s;
+		      Iterator it=succ.getNextStatesProbs().keySet().iterator();
+		      while(it.hasNext()){
+		        next_s=(State)it.next();
+		        if (!solvedStates.contains(next_s) && !aux.contains(next_s)) {
+		          open.push(next_s);
+		          aux.add(next_s);
+		        }
+		      }
+		    }
+
+		    assert(open.empty());
+
+		    if (rv) {// Marking all nodes in the closed list as solved
+		      while (!closed.empty()) {
+		        state = closed.pop();
+		        solvedStates.add(state);
+		      }
+		    }
+		    else{
+		    	//update states with residuasl and ancestors??
+		    	//TODO: está faltando essa parte?
+		    	
+		    }
+    
+		    return rv;
+		  }
+
+	
+	/**
+	 *  if state's sucessors have not been computed before, 
+	 *  create a group of state successors with probabilities different than zero
+	 * @param state
+	 * @param greedyAction
+	 * @return
+	 */
+	private SuccProbabilitiesM getSuccessors(State state, Action greedyAction) {
+		// 
+		  SuccProbabilitiesM succ=state.getActionSuccProbab()[posActionGreedy];
+	       
+	      if(succ==null){
+	        	succ=computeSuccesorsProb(state,greedyAction.tmID2ADD);//TODO: to modify getSuccessorsFromADD
+	        	if (succ.getNextStatesProbs().size()==0){
+	        		System.out.println("Not Sucessors for state: "+state);		        	
+	        	}
+	        	state.getActionSuccProbab()[posActionGreedy]=succ;
+	      }
+	      return succ;
+	      	
+	}
+
+
+
+
 	public void dumpADDtoFile(Object V){
 		System.out.println("Dumping Value");
 		context.dump(context.remapIdWithOutPrime(V, hmPrime2IdRemap),NAME_FILE_VALUE);		
@@ -2500,13 +2749,15 @@ private State createStateEnum(Object o) {
 	}
 
 	private State chooseNextStateRTDPEnum(State state, Action actionGreedy, Random randomGenerator,int posActionGreedy) {
-		SuccProbabilities succState=state.getActionSuccProbab()[posActionGreedy];
+		SuccProbabilitiesM succState=state.getActionSuccProbab()[posActionGreedy];
 		State nextState=null;
 		Double value,sum=0d;
 		double ran=randomGenerator.nextDouble();
-		for(int i=0;i<succState.getNextStates().size();i++){
-              nextState=succState.getNextStates().get(i);
-              value=succState.getProbs().get(i);
+		Iterator it=succState.getNextStatesProbs().keySet().iterator();
+		while(it.hasNext()){
+		//for(int i=0;i<succState.getNextStates().size();i++){
+			  nextState=(State)it.next();
+              value=succState.getNextStatesProbs().get(nextState);
               sum=sum+value;
               if(ran<=sum){
             	  return nextState;
@@ -2516,11 +2767,11 @@ private State createStateEnum(Object o) {
         
     }
 	private double computeQEnum(HashMap V,State state, Action action,TreeMap iD2ADD, char c, int posAction) {
-		SuccProbabilities succ=state.getActionSuccProbab()[posAction];
+		SuccProbabilitiesM succ=state.getActionSuccProbab()[posAction];
 		//if it has not been calculed before, compute it 
         if(succ==null){
         	succ=computeSuccesorsProbEnum(state,iD2ADD);
-        	if (succ.getNextStates().size()==0){
+        	if (succ.getNextStatesProbs().size()==0){
         		System.out.println("Not Sucessors for state: "+state);
         		System.exit(1);
         	}
@@ -2532,7 +2783,7 @@ private State createStateEnum(Object o) {
 		//at the end we have a number		
 	}
 	
-	private SuccProbabilities computeSuccesorsProbEnum(State state,TreeMap iD2ADD) {
+	private SuccProbabilitiesM computeSuccesorsProbEnum(State state,TreeMap iD2ADD) {
 	       
 		Object multCPTs=context.getTerminalNode(1d);
 		Integer xiprime;
@@ -2553,9 +2804,35 @@ private State createStateEnum(Object o) {
 			multCPTs = context.apply(multCPTs, newCPT, Context.PROD);
 		}
 		//context.view(multCPTs);
-		return getSuccessors(multCPTs);
+		return getSuccessorsFromTable(multCPTs);
 		
 	}
+	
+	private SuccProbabilitiesM computeSuccesorsProb(State state,TreeMap iD2ADD) {
+       
+		Object multCPTs=context.getTerminalNode(1d);
+		Integer xiprime;
+		Iterator x=this.hmPrimeRemap.entrySet().iterator();
+		while (x.hasNext()){
+			Map.Entry xiprimeme = (Map.Entry)x.next();
+			xiprime=(Integer) xiprimeme.getValue();
+			Object cpt_a_xiprime=iD2ADD.get(xiprime);
+			//context.view(cpt_a_xiprime);
+			double probTrue,probFalse;
+			probTrue=context.getValueForStateInContext((Integer)cpt_a_xiprime,state.getValues(),xiprime,true);
+			probFalse=1-probTrue;
+			Object Fh=context.getTerminalNode(probTrue);
+			Object Fl=context.getTerminalNode(probFalse);
+			Object newCPT=context.getInternalNode(xiprime, Fh, Fl);
+			//multiply all the new 
+			multCPTs = context.apply(multCPTs, newCPT, Context.PROD);
+		}
+		//context.view(multCPTs);
+		return getSuccessorsFromADD(multCPTs);
+		
+	}
+
+	
 	/**
 	 * calculate Sum_s' P(s'!s,a)V^u(s')
 	 * @param succ transition probabilities between s and s'
@@ -2563,14 +2840,16 @@ private State createStateEnum(Object o) {
 	 * @param c  type upper=' u' lower='l'
 	 * @return
 	 */
-	private double mulSumSuccessors(SuccProbabilities succ, HashMap V,char c) {
+	private double mulSumSuccessors(SuccProbabilitiesM succ, HashMap V,char c) {
 		double sum=0;
 		
 		State state;
 		Double prob;
-		for(int i=0;i<succ.getNextStates().size();i++){
-			state=succ.getNextStates().get(i);
-			prob=succ.getProbs().get(i);
+		Iterator it=succ.getNextStatesProbs().keySet().iterator();
+		//for(int i=0;i<succ.getNextStates().size();i++){
+		while(it.hasNext()){	
+			state=(State)it.next();
+			prob=succ.getNextStatesProbs().get(state);
 			Double valueV=(Double)V.get(state);
 			if (valueV==null){
 				if (c=='u'){
@@ -2589,21 +2868,22 @@ private State createStateEnum(Object o) {
         return sum;
 	}
 	/**
-	 * it gets all the states with not zero probability 
+	 * it gets all the states with not zero probability from a Table
 	 * @param multCPTs
 	 * @return
 	 */
-	private SuccProbabilities getSuccessors(Object multCPTs) {
+	private SuccProbabilitiesM getSuccessorsFromTable(Object multCPTs) {
 		double sumProb=0;
-		SuccProbabilities succ=new SuccProbabilities(); 
+		SuccProbabilitiesM succ=new SuccProbabilitiesM(); 
 		Table table=(Table)context.getInverseNodesCache().get(multCPTs);
 		for (int i=0;i< table.getValues().size();i++){//for all states (with prime)
 			Double val=(Double)table.getValues().get(i);
 			//if(val.compareTo(0d)!=0){
 			if(Math.abs(val.doubleValue() - 0d) > 1e-10d){
-				State newState=createStateFrom(i,table.getVars().size()); //create only if state does not exist yet 
-				succ.getNextStates().add(newState);
-				succ.getProbs().add(val);
+				State newState=createStateFrom(i,table.getVars().size()); //create only if state does not exist yet
+				succ.getNextStatesProbs().put(newState, val);
+				/*succ.getNextStates().add(newState);
+				succ.getProbs().add(val);*/
 				sumProb=sumProb+val;
 			}
 		}
@@ -2612,7 +2892,35 @@ private State createStateEnum(Object o) {
 		}
 		return succ;
 	}
-	
+	/**
+	 * it gets all the states with not zero probability from an ADD 
+	 * @param multCPTs
+	 * @return
+	 */
+
+	private SuccProbabilitiesM getSuccessorsFromADD(Object multCPTs) {//TODO: refazer....
+		//percorrer o ADD e criar um estado para todos aqueles que sejam diferente de zero
+		
+		double sumProb=0;
+		SuccProbabilitiesM succ=new SuccProbabilitiesM(); 
+		Table table=(Table)context.getInverseNodesCache().get(multCPTs);
+		for (int i=0;i< table.getValues().size();i++){//for all states (with prime)
+			Double val=(Double)table.getValues().get(i);
+			//if(val.compareTo(0d)!=0){
+			if(Math.abs(val.doubleValue() - 0d) > 1e-10d){
+				State newState=createStateFrom(i,table.getVars().size()); //create only if state does not exist yet
+				succ.getNextStatesProbs().put(newState, val);
+				/*succ.getNextStates().add(newState);
+				succ.getProbs().add(val);*/
+				sumProb=sumProb+val;
+			}
+		}
+		if (Math.abs(sumProb - 1d) > 1e-10d){
+			System.out.println("Precision error sumProb must be 1 and is: " +sumProb);
+		}
+		return succ;
+	}
+
 	public State  createStateFrom(int pos, int numberVariables) {
 		
 		State newState;
@@ -2733,9 +3041,9 @@ private State createStateEnum(Object o) {
 	    return perf; 
 	}	
 	private State chooseNextStateBRTDPEnum(State state, Action actionGreedy, Random randomGenerator,double tau,State stateInitial,int posActionGreedy) {
-		SuccProbabilities succState=state.getActionSuccProbab()[posActionGreedy];
+		SuccProbabilitiesM succState=state.getActionSuccProbab()[posActionGreedy];
 		//calculate b
-		SuccProbabilities  b=multByVGap(succState);
+		SuccProbabilitiesM  b=multByVGap(succState);
 		State nextState=null;
 		Double valueb,sum=0d;
 		//verify end of trial
@@ -2749,10 +3057,12 @@ private State createStateEnum(Object o) {
 			return null;
 		}
 		//sample from distribution b(y)/B
-		double ran=randomGenerator.nextDouble();		
-		for(int i=0;i<b.getNextStates().size();i++){
-              nextState=b.getNextStates().get(i);
-              valueb=b.getProbs().get(i);
+		double ran=randomGenerator.nextDouble();
+		Iterator it=b.getNextStatesProbs().keySet().iterator();
+		//for(int i=0;i<b.getNextStates().size();i++){
+		while(it.hasNext()){
+              nextState=(State)it.next();
+              valueb=b.getNextStatesProbs().get((nextState));
               sum=sum+valueb/B;
               if(ran<=sum){
             	  return nextState;
@@ -2762,21 +3072,25 @@ private State createStateEnum(Object o) {
 		return nextState;
     }
 	
-	private SuccProbabilities multByVGap(SuccProbabilities  succState) {
-		SuccProbabilities  b=new SuccProbabilities();
+	private SuccProbabilitiesM multByVGap(SuccProbabilitiesM  succState) {
+		SuccProbabilitiesM  b=new SuccProbabilitiesM();
 		State nextState;
 		Double prob;
 		B=0d;
-		for(int i=0;i<succState.getNextStates().size();i++){
-			nextState=succState.getNextStates().get(i);
-            prob=succState.getProbs().get(i);
+		Iterator it=succState.getNextStatesProbs().keySet().iterator();
+		//for(int i=0;i<succState.getNextStates().size();i++){
+		while (it.hasNext()){
+			nextState=(State)it.next();
+            prob=succState.getNextStatesProbs().get(nextState);
             Double gap=(Double)((HashMap)VGap).get(nextState);
             if (gap==null){
             	gap=firstGap;
             }
             double probGap=prob*gap;
-            b.getNextStates().add(nextState);
+            b.getNextStatesProbs().put(nextState, probGap);
+            /*b.getNextStates().add(nextState);
             b.getProbs().add(probGap);
+            */
             B=B+probGap;
 		}
 		return b;

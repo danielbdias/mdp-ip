@@ -1,6 +1,7 @@
 package mdp;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.TreeMap;
 
 import add.BinaryOperKeyADD;
@@ -9,7 +10,7 @@ import add.BinaryOperation;
 public class State {
 	private int identifier;
 	private TreeMap<Integer,Boolean> values;
-	private SuccProbabilities actionSuccProbab[];
+	private SuccProbabilitiesM actionSuccProbab[];
 	
 	/*public State(int numActions){
 		this.values=new ArrayList();
@@ -24,13 +25,33 @@ public class State {
 	public State(TreeMap<Integer, Boolean> values,int numActions,int identifier){
 		this.identifier=identifier;
 		this.values=values;
-		actionSuccProbab=new  SuccProbabilities[numActions];
+		actionSuccProbab=new SuccProbabilitiesM[numActions];
 		for (int i=0;i<numActions;i++){
 			actionSuccProbab[i]=null;
 		}
 	}
+	
+	public State (TreeMap<Integer, Boolean> values) { // Para LRTDP-IP
+	    int identifier=0; // take into account the position (prime) variable  
+		Iterator it = values.keySet().iterator();
+		while (it.hasNext()) {
+		    Integer id=(Integer)it.next();
+		    Boolean value=values.get(id);
+		    if (value){
+		    	identifier= (int) (identifier+Math.pow(2,id)) ;
+		    }
+		}
+		this.identifier=identifier;
+		this.values=values;
+/*		actionSuccProbab=new  SuccProbabilities[numActions];
+		for (int i=0;i<numActions;i++){
+			actionSuccProbab[i]=null;
+		}*/
+	}
+	
+	
 	public void initActionSucc(int numActions){
-		actionSuccProbab=new  SuccProbabilities[numActions];
+		actionSuccProbab=new  SuccProbabilitiesM[numActions];
 		for (int i=0;i<numActions;i++){
 			actionSuccProbab[i]=null;
 		}
@@ -40,7 +61,7 @@ public class State {
 	public TreeMap<Integer,Boolean> getValues(){
 		return values;
 	}
-	public SuccProbabilities [] getActionSuccProbab(){
+	public SuccProbabilitiesM [] getActionSuccProbab(){
 		return actionSuccProbab;
 	}
 	

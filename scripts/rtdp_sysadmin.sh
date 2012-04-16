@@ -8,7 +8,7 @@
 #Parameter definition
 ###########################################################################
 
-ROOT_DIR=/home/daniel/workspaces/java/mdpip/ADD
+ROOT_DIR=/home/karina/mdp-ip
 
 #Algorithm name
 ALGORITHM=rtdpip
