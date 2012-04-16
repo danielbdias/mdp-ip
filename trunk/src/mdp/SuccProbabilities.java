@@ -2,7 +2,7 @@ package mdp;
 
 import java.util.ArrayList;
 
-public class SuccProbabilities {
+public class SuccProbabilities { //It is better a map State probs
 	private ArrayList<State>  nextStates;
 	private ArrayList<Double> probs;
 	
