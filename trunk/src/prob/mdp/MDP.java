@@ -80,7 +80,7 @@ public class MDP
     /** Constructor - filename
      **/
     public MDP(String filename, int dd_type) {
-	this(HierarchicalParser.ParseFile(filename), dd_type);
+	this(HierarchicalParser.parseFile(filename), dd_type);
     }
 
     /** Constructor - pre-parsed file

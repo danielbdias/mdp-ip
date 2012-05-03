@@ -419,99 +419,93 @@ public abstract class Context {
             }
 			
 		}
-		
-
-	    
+			    
 	    //for Paramereterized   
 	    /**
 	     * call the non linear solver and fill currentValuesProb with the probabilities  
 	     */
-	     public Double callNonLinearSolver() {
-	    	// TODO Auto-generated method stub
-	    	 this.numCallSolver=this.numCallSolver+1;
-	    	 Double obj=null;
-	    	 try {
-	             // Open files for reading and writing
-	             //BufferedReader fis_reader = new BufferedReader(_rReader);
-	             Process pros = Runtime.getRuntime().exec("ampl "+NAME_FILE_AMPL);
-	             BufferedReader process_out = new BufferedReader(new InputStreamReader(pros.getInputStream()));
-	             PrintWriter    process_in  = new PrintWriter(pros.getOutputStream(), true);
+	    public Double callNonLinearSolver() {
+	    	this.numCallSolver++;
+ 
+	    	Double obj = null;
+ 
+	    	try {
+	    		// Open files for reading and writing
+	    		Process pros = Runtime.getRuntime().exec("ampl " + NAME_FILE_AMPL);
+	    		 
+	    		BufferedReader process_out = new BufferedReader(new InputStreamReader(pros.getInputStream()));
+	    		
+	    		PrintWriter    process_in  = new PrintWriter(pros.getOutputStream(), true);
+	    		process_in.close(); // Need to close input stream so process exits!!!
+	    		
+	    		currentValuesProb = new Hashtable<String, Double>();
+				currentValuesW = new Hashtable<String, Double>();
+	    		
+	    		ArrayList<String> lines = new ArrayList<String>();
+	    		
+	    		// Provide input to process (could come from any stream)
+	    		String temp = null;
 
-	             // Provide input to process (could come from any stream)
-	             String line = null;
-	             //while ((line = fis_reader.readLine()) != null) {
-	             //      process_in.println(line);
-	             //}
-	             //fis_reader.close();
-	             process_in.close(); // Need to close input stream so process exits!!!
+	    		while ((temp = process_out.readLine()) != null)
+	    			lines.add(temp);    		
 
-	             // Get output from process (can also be used by BufferedReader to get
-	             // line-by-line... see how fis_reader is constructed).
-	             boolean foundObj=false;
-	             while (!foundObj && (line = process_out.readLine()) != null ) {
-	                 // process line
-	            	 //System.out.println(line);
-	            	 int pos=line.indexOf("objective");
-	                 if ( pos>= 0) {
-	                      	 
-	                     obj=Double.valueOf(line.substring(pos+10));//pos+characters of objective +1
-	                  //   System.out.println(pros.hashCode() + "objective: "+obj);
-	                     foundObj=true;
-	                 }
-	                 
-	                 
-	                 
-	             }
-	             //TODO: print the probabilities
-	             currentValuesProb=new Hashtable<String,Double>();
-	             currentValuesW=new Hashtable<String,Double>();
-	             double valProb,valW;
-	             while ((line = process_out.readLine()) != null) {
-	                 // process line
-	            	// System.out.println(pros.hashCode() + "output: " + line);
-	            	 int posP=line.indexOf("p");
-	            	 int posW=line.indexOf("w");
-	            	 int posS=line.indexOf(" ");
-	                 if ( posP>= 0) {
-	                	 valProb=Double.valueOf(line.substring(posS+1));
-	                	 String idProb=line.substring(posP+1,posS);
-	                     currentValuesProb.put(idProb, valProb);
-	                 }
-	                 else if (posW>=0){
-	                	 valW=Double.valueOf(line.substring(posS+1));
-	                	 String idW=line.substring(posW+1,posS);
-	                     currentValuesW.put(idW, valW);
-	                 }
-	             }
-	             process_out.close();
-	             //pros.getErrorStream().close();
-                //System.out.println(pros.hashCode() + "waiting");
-	             //System.out.print("Waiting for Vampire [" + _fQueryTime + "s, "  + _nClausesGen + " clause]...");
-                
-	             pros.waitFor();
-	             //pros.
-	             //System.out.println("Exit code: " + pros.exitValue() + ": " + pros.hashCode() + "objective:"+obj+foundObj);
+				process_out.close();
 
-	             if (pros.exitValue() != 0) {
-	            	 return null;
-	             } else
-	            	 return obj;
+				pros.waitFor();
+	    		
+				//parse the process output
+				
+	    		final int PARSE_START 		= 0;
+	    		final int OBJECTIVE_READ 	= 1;
+	    		
+	    		int currentState = PARSE_START;
+	    		
+	    		for (String line : lines) {
+					if (currentState == PARSE_START) {
+						if (line.contains("objective")) {
+							int pos = line.indexOf("objective");
+							obj = Double.valueOf(line.substring(pos + 10)); //pos + characters of objective + 1
+							currentState = OBJECTIVE_READ;
+						}
+					}
+					else if (currentState == OBJECTIVE_READ) {		
+						boolean startsWithP = line.matches("p[0-9].+");
+						boolean startsWithW = line.matches("w[0-9].+");
+						
+						if (startsWithP || startsWithW) {
+							String[] splittedLine = line.split(" ");
+							
+							if (splittedLine != null && splittedLine.length >= 2) {
+								String parameterName = splittedLine[0].substring(1);
+								String parameterValueAsString = splittedLine[1];
+								
+								double parameterValue = Double.valueOf(parameterValueAsString);
+								
+								if (startsWithP)
+									currentValuesProb.put(parameterName, parameterValue);
+								else if (startsWithW)
+									currentValuesW.put(parameterName, parameterValue);
+							}
+						}
+					}
+				}
 
-	         } catch (InterruptedException ie) {
-	                 System.out.println(ie);
-	                 System.out.println("interrupted");
-             
-	                 return null;
-	         } catch (IOException ioe) {
-	                 System.out.println(ioe);
-	                System.out.println("ioexception");
-	                 return null;
-	         }
-	     	
+				if (pros.exitValue() != 0)
+					return null;
+				else
+					return obj;
+				
+	    	 } catch (InterruptedException ie) {
+	    		 ie.printStackTrace(System.err);
+	    		 return null;
+	    	 } catch (IOException ioe) {
+	    		 ioe.printStackTrace(System.err);
+	    		 return null;
+	    	 }
 		}
-	     
-//		 the parameter is ParADD and the result is an ADD
-	     public abstract Object doMinCallOverNodes(Object VDD,String NAME_FILE_CONTRAINTS,boolean pruneAfterEachIt);
+	    
+	    //the parameter is ParADD and the result is an ADD
+	    public abstract Object doMinCallOverNodes(Object VDD,String NAME_FILE_CONTRAINTS,boolean pruneAfterEachIt);
 	     
 	   //Daniel: method used in RTDPIP state sampling
 		public Object doMinCallOverNodesWithRandomCoef(Object VDD, String NAME_FILE_CONTRAINTS) {
