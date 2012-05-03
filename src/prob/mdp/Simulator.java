@@ -29,10 +29,10 @@ public class Simulator {
 	public Random _rand = new Random(5071978);
 	
 	public Simulator(String mdp_file, String value_fun_file) {
-		_mdp = new MDP(HierarchicalParser.ParseFile(mdp_file), DD.TYPE_ADD);
+		_mdp = new MDP(HierarchicalParser.parseFile(mdp_file), DD.TYPE_ADD);
 		_context = (ADD)_mdp._context._context;
 		
-		ArrayList policy_list = HierarchicalParser.ParseFile(value_fun_file);
+		ArrayList policy_list = HierarchicalParser.parseFile(value_fun_file);
 		
 		// Parse the variable list and create all necessary maps
 		Iterator i = policy_list.iterator();

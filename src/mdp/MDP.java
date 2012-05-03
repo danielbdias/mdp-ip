@@ -42,6 +42,8 @@ public abstract class MDP {
 	boolean sampleInitialFromI=true;
 	boolean printPolicy=false;
 	
+	protected boolean simulationMode;
+	
 	// typeSampledRTDPMDPIP   
 	//1: allProbabilities 
 	//2: if p=0  => p=epsilon 
@@ -129,6 +131,8 @@ public abstract class MDP {
    
 	///////////////////////////////
 
+	private HashMap<HashMap, HashMap<Integer, Double>> stationarySimulatorProbabilities = null;
+	
 	public void buildMDP_Fac(ArrayList input,int typeContext,String typeSolution) {
 
 	  if (input == null) {
@@ -238,26 +242,34 @@ public abstract class MDP {
 	  bdTolerance = ((BigDecimal)i.next());
 
 	  //For RTDP and BRTDP Read initial and goal states/////////////////////////////
-	  if(typeSolution.equals("RTDP") || typeSolution.equals("RTDPIP") || typeSolution.equals("BRTDP") ){
+	  if (typeSolution.equals("RTDP") || typeSolution.equals("RTDPIP") || typeSolution.equals("BRTDP") || simulationMode ){
 		  listInitialStates = new ArrayList();
-		  listGoalStates = new ArrayList();
+		  
 		  o = i.next();
+		  
 		  if ( !(o instanceof String) || !((String)o).equalsIgnoreCase("initial")) {
 			  System.out.println("Missing initial state declaration: " + o);
 			  System.exit(1);
 		  }
+		  
 		  o = i.next();
+		  
 		  while (  !(o instanceof String)  ) {
-			 
 			  TreeMap<Integer,Boolean> initialState=createState(o);
 			  listInitialStates.add(initialState);
 			  o = i.next();
 		  }
+	  }
 	  
+	  if (typeSolution.equals("RTDP") || typeSolution.equals("RTDPIP") || typeSolution.equals("BRTDP") ){
+		  listGoalStates = new ArrayList();
+		  
 		  o = i.next();
 		  if ( !(o instanceof String) || !((String)o).equalsIgnoreCase("goal")) {
 			  System.out.println("Missing goal state declaration: " + o);
+			  System.exit(1);
 		  }
+
 		  o = i.next();
 		  while ( !(o instanceof String) ) {
 			  
@@ -265,31 +277,34 @@ public abstract class MDP {
 			  listGoalStates.add(goalState);
 			  o = i.next();
 		  }
-
 	  }
 	  
-	  if(typeSolution.compareTo("RTDPEnum")==0 || typeSolution.compareTo("BRTDPEnum")==0){
-		  listInitialStatesEnum=new ArrayList<State>();
-		  listGoalStatesEnum=new ArrayList<State>();
+	  if (typeSolution.equals("RTDPEnum") || typeSolution.equals("BRTDPEnum")) {
+		  listInitialStatesEnum = new ArrayList<State>();
+		  
 		  o = i.next();
 		  if ( !(o instanceof String) || !((String)o).equalsIgnoreCase("initial")) {
 			  System.out.println("Missing initial state declaration: " + o);
 			  System.exit(1);
 		  }
+		  
 		  o = i.next();
+		  
 		  while (  !(o instanceof String)  ) { 
 			  State initialState=createStateEnum(o);
 			  listInitialStatesEnum.add(initialState);
 			  o = i.next();
 		  }
+		  
+		  listGoalStatesEnum = new ArrayList<State>();
 	  
 		  o = i.next();
-		  if ( !(o instanceof String) || !((String)o).equalsIgnoreCase("goal")) {
+		  
+		  if ( !(o instanceof String) || !((String)o).equalsIgnoreCase("goal"))
 			  System.out.println("Missing goal state declaration: " + o);
-		  }
+
 		  o = i.next();
-		  while ( !(o instanceof String) ) {
-			  
+		  while ( !(o instanceof String) ) {			  
 			  State goalState=createStateEnum(o);
 			  listGoalStatesEnum.add(goalState);
 			  o = i.next();
@@ -578,94 +593,205 @@ private State createStateEnum(Object o) {
 		context.flushCaches();
 		System.out.println("After flush,freeMemory: "+RUNTIME.freeMemory());
    }
-	public abstract Object regress(Object VDD, Action action,double mergeError,TreeMap iD2ADD,boolean simulating,boolean firsTimeSimulating);
+	public abstract Object regress(Object VDD, Action action, double mergeError, TreeMap iD2ADD, boolean simulating, boolean firsTimeSimulating);
 	
 	//////////////////////////////////////////////////////////////FOR SIMULATION MDPIP ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	public ArrayList simulateMDPIP(int numberInitialStates,int numberSamples,int tMax, String NAME_FILE_VALUE) {
+	public ArrayList<Double> simulateMDPIP(int numberInitialStates, int numberOfSimulations, int maxHorizons, String NAME_FILE_VALUE, int simulationType) {
 
 		context.workingWithParameterizedBef = context.workingWithParameterized;
 		context.workingWithParameterized = false;
 		
-		Object valueRes = context.readValueFunction(NAME_FILE_VALUE);
+		Integer valueRes = (Integer) context.readValueFunction(NAME_FILE_VALUE);
 
-	    HashMap initialState2AvgValue = new HashMap();
-	    double totalSum = 0.0;
-	    ArrayList listReward = new ArrayList();
+	    ArrayList<Double> listReward = new ArrayList<Double>();
 	    
 	    Random randomGenInitial = new Random(19580427);
 		Random randomGenNextState = new Random(19580800);
+		
 	    // This policy should be based on the MDPIP regression
 	    // where you do a min_{ p_1 ... P_n } Q(s,a,p_1,...,p_n)
 	    TreeMap action2QDD = calculateQHash(valueRes, true); //here we call the solver
+
+	    context.workingWithParameterized = true;
 	    
-        for (int nI = 1; nI <= numberInitialStates; nI++){
- 
-        	HashMap initialState = sampleInitialState(randomGenInitial);
-            HashMap state = null;
-        	double sumReward=0;
-        	
-        	for (int numS = 1; numS <= numberSamples; numS++){
-            	state = new HashMap(initialState);
-            	System.out.println("Initial state:"+state);
-            	
-        		double rewardState = getReward(state);
-        		
-        		context.workingWithParameterized = context.workingWithParameterizedBef;
-        		
-        		if (context.workingWithParameterized){
-        		     Hashtable sampleProbabilities = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
-        		     convertParADD2ADDCPTs(sampleProbabilities);//fills tmID2ADDNewSample
-        		}
-        		
-        		//because after this line we sampled an MDP given an MDPIP
-        		context.workingWithParameterized=false;
-        		                
-        		for(int t=1;t<=tMax;t++){
-        			Action aBest=findBestA(state,action2QDD);//this is the work of the agent
-        			//System.out.println("action:"+aBest.getName());
-        			if (aBest==null){
-        				System.out.println("Some problem finding best action");
-        				System.exit(0);
-        			}
-        			HashMap nextState=chooseNextState(state,aBest,true,randomGenNextState);//this is the work of the simulator true for using tmID2ADDNewSample
-        			//System.out.println("Next State:"+nextState);
-        			state=remapWithOutPrimes(nextState);
-        			if (printTrafficFormat){
-        				System.out.println("state: "+getTrafficString(state));
-        			}
-        			//TODO: preguntar a Scott cual de los dos es el correcto, yo creo que la primera
-        			rewardState=rewardState+Math.pow(this.bdDiscount.doubleValue(),t)* getReward(state);
-        			//rewardState=this.bdDiscount.doubleValue()*rewardState+getReward(state)
-        			
-        		}
+    	double sumReward = 0;
+    	
+    	for (int simulation = 1; simulation <= numberOfSimulations; simulation++){
+    		System.out.printf("Executing simulation %d...", simulation);
+    		System.out.println();
+    		
+    		double rewardState = simulateSingleMDPIP(maxHorizons, valueRes, randomGenInitial, randomGenNextState, action2QDD, simulationType);
 
-        		listReward.add(rewardState);
-        		sumReward=sumReward+rewardState;
-               
-        	}
-        	double avgValue = sumReward / numberSamples;
-        	System.out.println("Average for state: " + initialState + " is " + avgValue);
-        	System.out.println("Final state: " + state);
-        	
-        	initialState2AvgValue.put(new HashMap(initialState), avgValue);
-        	
-        	totalSum = totalSum + avgValue;
-        	flushCachesSimulator(action2QDD, false, null, null, null);
-        }
-        
-        double mean = totalSum / numberInitialStates;
+    		listReward.add(rewardState);
+    		sumReward += rewardState;
+    		
+    		System.out.println("Simulation executed.");
+    	}
+    	
+    	flushCachesSimulator(action2QDD, false, null, null, null);
+    	
+    	double mean = sumReward / numberOfSimulations;
         double sigma = calculateStandarD(mean, listReward);
-        double standardError = sigma / Math.sqrt(listReward.size());
-
-        System.out.println("Rewards through execution: " + initialState2AvgValue.values());
+        double standardError = sigma / Math.sqrt(numberOfSimulations);
         
-        ArrayList res = new ArrayList();
+        ArrayList<Double> res = new ArrayList<Double>();
         res.add(mean);
         res.add(standardError);
 
         return res;
 	}
+
+	private HashMap getStateRepresentationAsHashMap(TreeMap<Integer, Boolean> state) {
+		HashMap stateRepresentation = new HashMap();
+		
+		for (Integer key : state.keySet()) {
+			int value = (state.get(key) ? 1 : 0);
+			stateRepresentation.put(key, value);
+		}
+		
+		return stateRepresentation;
+	}
 	
+	private double simulateSingleMDPIP(int maxHorizons, int policeValueADD, Random randomGenInitial, Random randomGenNextState, TreeMap action2QDD, int simulationType) {
+		
+		if (this.stationarySimulatorProbabilities != null)
+			this.stationarySimulatorProbabilities.clear();
+		
+		HashMap state = getStateRepresentationAsHashMap(sampleInitialStateFromList(randomGenInitial));
+		
+		double rewardState = getReward(state);
+		                
+		for (int t = 1; t <= maxHorizons; t++) {
+			Action aBest = findBestA(state, action2QDD); //this is the work of the agent
+			
+			if (aBest == null){
+				System.out.println("Some problem finding best action");
+				System.exit(0);
+			}
+			
+			//this is the work of the simulator true for using tmID2ADDNewSample
+			TreeMap<Integer, Integer> nextState = chooseNextStateForMDPIPSimulation(state, policeValueADD, aBest, randomGenNextState, simulationType);
+			
+			state = new HashMap(nextState);
+			    			
+			rewardState += Math.pow(this.bdDiscount.doubleValue(),t) * getReward(state);       			
+		}
+		
+		return rewardState;
+	}
+	
+	private TreeMap<Integer, Integer> chooseNextStateForMDPIPSimulation(HashMap stateAsHashMap, int policeValueADD, Action aBest, Random randomGenerator, int simulationType) {
+		TreeMap<Integer, Boolean> state = new TreeMap<Integer, Boolean>();
+		
+		for (Object variable : stateAsHashMap.keySet()) {
+			Integer variableAsInt = (Integer) variable;
+			Boolean variableValue = ((Integer) stateAsHashMap.get(variable) == 1);
+			
+			state.put(variableAsInt, variableValue);
+		}
+		
+		TreeMap<Integer, Integer> nextState = new TreeMap<Integer, Integer>();
+		
+		if (simulationType == 1 || simulationType == 2) //GlobalMyopicAdversarial or LocalMyopicAdversarial 
+		{
+			int V = -1;
+			
+			if (simulationType == 1)
+				V = policeValueADD;
+			else
+				V = (Integer) this.rewardDD;
+			
+			V = (Integer) context.remapIdWithPrime(V, this.hmPrimeRemap);
+			
+			double min = Double.POSITIVE_INFINITY;
+			Iterator actions = mName2Action.entrySet().iterator();
+			
+			while (actions.hasNext()) {
+				Map.Entry meaction = (Map.Entry) actions.next();
+				Action action = (Action) meaction.getValue();
+
+				context.workingWithParameterized = context.workingWithParameterizedBef; 
+				double Qt = this.computeQ(V, state, action, action.tmID2ADD);
+
+				min = Math.min(min,Qt);
+				
+				if (min == Qt)
+					probNature = new Hashtable(context.currentValuesProb);
+			}
+		}
+		
+		for (int i = 1; i <= this.numVars; i++){
+			
+			double ran = randomGenerator.nextDouble();
+			Integer varPrime = Integer.valueOf(i);
+			Integer var = Integer.valueOf(varPrime + this.numVars);
+			Object cpt_a_xiprime = aBest.tmID2ADD.get(varPrime);
+			double probFalse = 0.0;
+			
+			if (cpt_a_xiprime == null){
+				System.out.println("Prime var not found");
+				System.exit(1);
+			}
+			
+			Polynomial probFalsePol = (Polynomial) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, state, varPrime, false);
+
+			switch (simulationType)
+			{
+				case 1: //GlobalMyopicAdversarial
+				case 2: //LocalMyopicAdversarial
+				{
+					probFalse = probFalsePol.evalWithListValues(probNature, context);
+					break;
+				}
+				case 3: //NonStationary
+				{
+					Object probFalseNode = (Object) context.doMinCallOverNodesWithRandomCoef(
+		        			context.getTerminalNode(probFalsePol), NAME_FILE_CONTRAINTS);
+		        	
+		        	probFalse = ((TerminalNodeKeyADD) context.getInverseNodesCache().get(probFalseNode)).getValue();
+		        	
+					break;
+				}
+				case 4: //Stationary
+				{
+					if (this.stationarySimulatorProbabilities == null)
+						this.stationarySimulatorProbabilities = new HashMap<HashMap, HashMap<Integer,Double>>();
+					
+					HashMap<Integer,Double> probabilitiesPerVariable = null;
+					
+					if (this.stationarySimulatorProbabilities.containsKey(stateAsHashMap))
+						probabilitiesPerVariable = this.stationarySimulatorProbabilities.get(stateAsHashMap);
+					else {
+						probabilitiesPerVariable = new HashMap<Integer, Double>();
+						this.stationarySimulatorProbabilities.put(stateAsHashMap, probabilitiesPerVariable);
+					}
+					
+					if (probabilitiesPerVariable.containsKey(i))
+						probFalse = probabilitiesPerVariable.get(i);
+					else {
+						Object probFalseNode = (Object) context.doMinCallOverNodesWithRandomCoef(
+			        			context.getTerminalNode(probFalsePol), NAME_FILE_CONTRAINTS);
+			        	
+			        	probFalse = ((TerminalNodeKeyADD) context.getInverseNodesCache().get(probFalseNode)).getValue();
+			        	
+			        	probabilitiesPerVariable.put(i, probFalse);
+					}
+		        	
+					break;
+				}
+			}
+			
+			if (ran <= probFalse)
+				nextState.put(var, 0);  		
+			else
+				nextState.put(var, 1);  	
+			
+		}
+		
+		return nextState;
+	}
+
+
 	/**
 	 * A string representation of the traffic state 4-way intersection
 	 * @param state
@@ -843,125 +969,127 @@ private State createStateEnum(Object o) {
 	private void convertParADD2ADDCPTs(Hashtable sampleProbabilities) {
 		// go through all actions and cpts in each action and replace the sampleProbabilities in the leaves
 		System.out.println("  evaluating actions with probabilities ");
-		Iterator actions=mName2Action.entrySet().iterator();
+		
+		Iterator actions = mName2Action.entrySet().iterator();
+		
 		while (actions.hasNext()){
-			Map.Entry meaction=(Map.Entry) actions.next();
-			Action action=(Action) meaction.getValue();
-			//System.out.println("  - evaluate action with probabilities " + action.getName());
-			convertCPTsAction(action,sampleProbabilities); 			
+			Map.Entry meaction = (Map.Entry) actions.next();
+			Action action = (Action) meaction.getValue();
+			convertCPTsAction(action, sampleProbabilities); 			
 		}
 	}
 	
-	
-	
-	private void convertCPTsAction(Action action,Hashtable sampleProbabilities) {
-		action.tmID2ADDNewSample=new TreeMap();
+	private void convertCPTsAction(Action action, Hashtable sampleProbabilities) {
+		action.tmID2ADDNewSample = new TreeMap();
+		Iterator x = this.hmPrimeRemap.entrySet().iterator();
 		Integer xiprime;
-		Iterator x=this.hmPrimeRemap.entrySet().iterator();
-		while (x.hasNext()){
-			Map.Entry xiprimeme = (Map.Entry)x.next();
-			xiprime=(Integer) xiprimeme.getValue();
-			Object cpt_a_xiprime=action.tmID2ADD.get(xiprime);
-			//context.workingWithParameterized=true;
-			//context.view(cpt_a_xiprime);
-			context.reduceConvert=new Hashtable();
-			Integer newcpt_a_xiprime=context.convertCPT((Integer)cpt_a_xiprime,sampleProbabilities);
-			action.tmID2ADDNewSample.put(xiprime,newcpt_a_xiprime);
-			//context.workingWithParameterized=false;
-			//context.view(newcpt_a_xiprime);
-		}
 		
+		while (x.hasNext()) {
+			Map.Entry xiprimeme = (Map.Entry) x.next();
+			xiprime = (Integer) xiprimeme.getValue();
+			Object cpt_a_xiprime = action.tmID2ADD.get(xiprime);
+
+			context.reduceConvert = new Hashtable();
+			Integer newcpt_a_xiprime = context.convertCPT((Integer)cpt_a_xiprime, sampleProbabilities);
+			action.tmID2ADDNewSample.put(xiprime, newcpt_a_xiprime);
+		}	
 	}
 	  
-	HashMap chooseNextState(HashMap state,Action action,Boolean workWithMDPIP,Random randomGenerator){
+	HashMap chooseNextState(HashMap state, Action action, Boolean workWithMDPIP, Random randomGenerator){
 		//we create a topological order in the case that we have asyncronous arcs in the DBN
 		//because this must be sampled before the other ones
-		HashMap nextState=new HashMap();
-		Graph g=createGraphFor(action.varId2DependPrimeList);
-		List xiprimeOrder=g.topologicalSort(false);
+		HashMap nextState = new HashMap();
+		
+		Graph g = createGraphFor(action.varId2DependPrimeList);
+		List xiprimeOrder = g.topologicalSort(false);
 		Integer xiprime;
+		
 		//add the xiprimeOrder in a list
-		List list=new ArrayList();
-		for (int i=0;i<xiprimeOrder.size();i++){
-			list.add(Integer.parseInt((String)xiprimeOrder.get(i)));
-		}
+		List list = new ArrayList();
+		
+		for (int i = 0; i < xiprimeOrder.size(); i++)
+			list.add(Integer.parseInt((String) xiprimeOrder.get(i)));
+
 		//add the xiprimes that not have dependences in the list
-		Iterator it=hmPrimeRemap.keySet().iterator();
-		while(it.hasNext()){
-			xiprime=(Integer)hmPrimeRemap.get(it.next());
-			if(!list.contains(xiprime)){
+		Iterator it = hmPrimeRemap.keySet().iterator();
+		
+		while (it.hasNext()) {
+			xiprime = (Integer) hmPrimeRemap.get(it.next());
+
+			if (!list.contains(xiprime))
 				list.add(xiprime);
-			}
 		}
 		
 		//now sample based on the ordered list
-  		for (int j=0;j<list.size();j++){
-  			xiprime= (Integer)list.get(j);
+  		for (int j = 0; j < list.size(); j++) {
+  			xiprime = (Integer) list.get(j);
+  			
   			Object cpt_a_xiprime;
-  			if(workWithMDPIP){
-  				cpt_a_xiprime=action.tmID2ADDNewSample.get(xiprime);
-  			}
-  			else{
-  				cpt_a_xiprime=action.tmID2ADD.get(xiprime);
-  			}
-  			if(cpt_a_xiprime==null){
+  			
+  			if (workWithMDPIP)
+  				cpt_a_xiprime = action.tmID2ADDNewSample.get(xiprime);
+  			else
+  				cpt_a_xiprime = action.tmID2ADD.get(xiprime);
+
+  			if (cpt_a_xiprime == null) {
   				System.out.println("not find cpt in choose next state");
   				System.exit(1);
   			}
   			
-  			//context.view(cpt_a_xiprime);
-  			double probTrue,probFalse;
-  			if(context.isTerminalNode(cpt_a_xiprime)){
-  				probTrue=((TerminalNodeKeyADD)context.getInverseNodesCache().get(cpt_a_xiprime)).getValue();
-  				//probFalse=((TerminalNodeKeyADD)context.getInverseNodesCache().get(cpt_a_xiprime)).getValue();
-   			}
-  			else{
-   				probTrue=context.getValueForStateInADD((Integer)cpt_a_xiprime,state,nextState,xiprime,1);
-  				//probFalse=context.getValueForStateInADD((Integer)cpt_a_xiprime,state,nextState,xiprime,0);
-  			}
-  			double ran=randomGenerator.nextDouble();
-   			//double ran=Math.random();
-			if (ran<=probTrue){
-				nextState.put(xiprime,1); 
-			}
-			else{
-				nextState.put(xiprime,0); 
-			}
+  			double probTrue;
+  			
+  			if (context.isTerminalNode(cpt_a_xiprime))
+  				probTrue = ((TerminalNodeKeyADD)context.getInverseNodesCache().get(cpt_a_xiprime)).getValue();
+  			else
+   				probTrue = context.getValueForStateInADD((Integer) cpt_a_xiprime, state, nextState, xiprime, 1);
+
+  			double ran = randomGenerator.nextDouble();
+
+			if (ran <= probTrue)
+				nextState.put(xiprime, 1); 
+			else
+				nextState.put(xiprime, 0); 
   		}
+  		
   		return nextState;	
   	}
 	private Graph createGraphFor(HashMap varId2DependPrimeList) {
 		 Graph g = new Graph();
-         g.setBottomToTop(false);
+         
+		 g.setBottomToTop(false);
          g.setMultiEdges(false); // Note: still does not allow cyclic edges
+         
          Iterator it= varId2DependPrimeList.keySet().iterator();
-         while (it.hasNext()){
-        	 Integer varId=(Integer)it.next();
-        	 ArrayList dep=(ArrayList)varId2DependPrimeList.get(varId);
-        	 for(int i=0;i<dep.size();i++){
-        		 g.addUniLink(dep.get(i).toString(),varId.toString());	 
-        	 }
-         }
-         //g.launchViewer();
-         return g;
+         
+         while (it.hasNext()) {
+        	 Integer varId = (Integer) it.next();
         
+        	 ArrayList dep = (ArrayList) varId2DependPrimeList.get(varId);
+        	 
+        	 for (int i = 0; i < dep.size(); i++)
+        		 g.addUniLink(dep.get(i).toString(), varId.toString());	 
+         }
+
+         return g;       
 	}
 	private Action findBestA(HashMap state, TreeMap action2QDD) {
-		double bestQ=Double.NEGATIVE_INFINITY;
-	    Action bestAction=null;
-	    Action qAction=null;
-		Iterator it=action2QDD.keySet().iterator();
-		while(it.hasNext()){
-			qAction=(Action)it.next();
-			//System.out.println(" "+qAction.getName());
-			Object QADD=action2QDD.get(qAction);
-			//context.view(QADD);
-			double valueQ=context.getValueForStateInADD((Integer)QADD,state,null,null,null);
-			if(valueQ> bestQ){
-				bestQ=valueQ;
-				bestAction=qAction;
+		double bestQ = Double.NEGATIVE_INFINITY;
+	    Action bestAction = null;
+	    Action qAction = null;
+		Iterator it = action2QDD.keySet().iterator();
+		
+		while (it.hasNext()) {
+			qAction = (Action) it.next();
+			Object QADD = action2QDD.get(qAction);
+
+			double valueQ = context.getValueForStateInADD((Integer)QADD, state, null, null, null);
+			
+			if (valueQ > bestQ) {
+				bestQ = valueQ;
+				bestAction = qAction;
 			}
 		}
+		
 		return bestAction;
 	}
 	private Action findBestANew(TreeMap<Integer, Boolean>  state, TreeMap action2QDD) {
@@ -1018,19 +1146,21 @@ private State createStateEnum(Object o) {
 	}
 		
 	private TreeMap calculateQHash(Object valueRes,Boolean workWithMDPIP) {
-		TreeMap action2QDD=new TreeMap(new ActionComparator());
+		TreeMap action2QDD = new TreeMap(new ActionComparator());
 		//iterate over each action
-		//System.out.println("  - Regress actions ");
-		Iterator actions=mName2Action.entrySet().iterator();
-		while (actions.hasNext()){
-			Map.Entry meaction=(Map.Entry) actions.next();
-			Action action=(Action) meaction.getValue();
-			//System.out.println("  - Regress action " + action.getName());
-  			context.workingWithParameterized=workWithMDPIP;
-  			action2QDD.put(action,(this.regress(valueRes, action,0,action.tmID2ADD,true,true)));
+
+		Iterator actions = mName2Action.entrySet().iterator();
+		
+		while (actions.hasNext()) {
+			Map.Entry meaction = (Map.Entry) actions.next();
+			Action action = (Action) meaction.getValue();
+  			context.workingWithParameterized = workWithMDPIP;
+  			
+  			action2QDD.put(action, this.regress(valueRes, action, 0, action.tmID2ADD, true, true));
 		}
 		return action2QDD;
 	}
+	
 	public static boolean HasOnlyDigits(String s) {
 		 for (int i = 0; i < s.length(); i++) {
 			 if (!Character.isDigit(s.charAt(i))) {
@@ -1299,128 +1429,104 @@ private State createStateEnum(Object o) {
 		((HashMap)VLower).put(state,maxTotal);
 		maxLowerUpdated=maxTotal;
 	}
-	
-	
-	
-	
-	
-	
+		
 	/**
 	 * Update VUpper and return the action greedy
 	 */
 	private Action updateVUpper(TreeMap<Integer, Boolean> state) {
-		double max=Double.NEGATIVE_INFINITY;
-		Action actionGreedy=null;
-		Iterator actions=mName2Action.entrySet().iterator();
-		int posAction=0;
-		posActionGreedy=-1;
-		while (actions.hasNext()){
-			Map.Entry meaction=(Map.Entry) actions.next();
-			Action action=(Action) meaction.getValue();
-			//context.view(VUpper); 
-			//System.out.println("  Computing Q Upper action " + action.getName());
-			double Qt;
-			context.workingWithParameterized=context.workingWithParameterizedBef; 
-		    Qt=this.computeQ(VUpper, state,action,action.tmID2ADD);
-		    //System.out.println("probNature:"+context.currentValuesProb+"action:"+action.getName()+"Quality:"+Qt);
-			max=Math.max(max,Qt);
-			
-			if(Math.abs(max - Qt) <= 1e-10d){//max==Qt){
-				actionGreedy=action;
-				posActionGreedy=posAction;
-				
-				probNature=new Hashtable(context.currentValuesProb); //new line Karina
-			}
-			posAction++;
+		double max = Double.NEGATIVE_INFINITY;
+		Action actionGreedy = null;
+		Iterator actions = mName2Action.entrySet().iterator();
+		int posAction = 0;
+		posActionGreedy = -1;
 		
+		while (actions.hasNext()) {
+			Map.Entry meaction = (Map.Entry) actions.next();
+			Action action = (Action) meaction.getValue();
+
+			context.workingWithParameterized = context.workingWithParameterizedBef; 
+			double Qt = this.computeQ(VUpper, state, action, action.tmID2ADD);
+
+			max = Math.max(max, Qt);
+			
+			if (Math.abs(max - Qt) <= 1e-10d) {
+				actionGreedy = action;
+				posActionGreedy = posAction;
+				
+				probNature = new Hashtable(context.currentValuesProb);
+			}
+			
+			posAction++;
 		}
 
-		double rew=context.getValueForStateInContext((Integer)this.rewardDD, state, null, null);
-		double maxTotal=rew+this.bdDiscount.doubleValue()*max;
+		double rew = context.getValueForStateInContext((Integer)this.rewardDD, state, null, null);
+		double maxTotal = rew + this.bdDiscount.doubleValue() * max;
         //update the ADD VUpper
-		updateValueBranch(state,'u',maxTotal);
-		//context.view(VUpper);
-		maxUpperUpdated=maxTotal; //Error, maxUpper must not be updated, we need to use other variable
-		return actionGreedy;
+		updateValueBranch(state, 'u', maxTotal);
 
+		maxUpperUpdated = maxTotal; //Error, maxUpper must not be updated, we need to use other variable
+		return actionGreedy;
 	}
 	
-	
-	
-	
 	private void updateValueBranch(TreeMap<Integer, Boolean> state, char c, double value) {
-		Iterator iteratorState=state.keySet().iterator();			
-		if (c=='u'){
-			VUpper=context.insertValueInDD(VUpper, state,  value, iteratorState,this.hmPrimeRemap);		
-		}
-		else if(c=='l'){
-			VLower=context.insertValueInDD(VLower, state,  value, iteratorState,this.hmPrimeRemap);		
-		}
-		else if(c=='g'){
-			VGap=context.insertValueInDD(VGap, state,  value, iteratorState,this.hmPrimeRemap);
-		}
+		Iterator iteratorState = state.keySet().iterator();			
+		
+		if (c == 'u')
+			VUpper = context.insertValueInDD(VUpper, state, value, iteratorState, this.hmPrimeRemap);		
+		else if (c == 'l')
+			VLower = context.insertValueInDD(VLower, state, value, iteratorState, this.hmPrimeRemap);		
+		else if (c == 'g')
+			VGap = context.insertValueInDD(VGap, state, value, iteratorState, this.hmPrimeRemap);
     }
 
 	private double computeQ(Object V,TreeMap<Integer, Boolean> state, Action action, TreeMap iD2ADD) {
 		//it is not necessary to do remapIdWithPrime because V has all prime variables 
 		
-		Object VPrime=V; 
+		Object VPrime = V; 
 		Integer xiprime;
-		Iterator x=this.hmPrimeRemap.entrySet().iterator();
+		Iterator x = this.hmPrimeRemap.entrySet().iterator();
 		//context.view(VPrime);
 		
 		while (x.hasNext()){
+			Map.Entry xiprimeme = (Map.Entry) x.next();
+			xiprime = (Integer) xiprimeme.getValue();
+			Object cpt_a_xiprime = iD2ADD.get(xiprime);
 
-			Map.Entry xiprimeme = (Map.Entry)x.next();
-			xiprime=(Integer) xiprimeme.getValue();
-			Object cpt_a_xiprime=iD2ADD.get(xiprime);
-			//context.view(cpt_a_xiprime);
 			Object Fh,Fl;
 			
-			if(!context.workingWithParameterized){ //new part Karina
-				Double probTrue,probFalse;
-				probTrue=(Double)context.getValuePolyForStateInContext((Integer)cpt_a_xiprime,state,xiprime,true);////new method Karina
-				probFalse=1-probTrue;
-				Fh=context.getTerminalNode(probTrue);
-				Fl=context.getTerminalNode(probFalse);
-
+			if (!context.workingWithParameterized) {
+				Double probTrue, probFalse;
+				probTrue = (Double) context.getValuePolyForStateInContext((Integer)cpt_a_xiprime, state, xiprime, true);
+				probFalse = 1 - probTrue;
+				Fh = context.getTerminalNode(probTrue);
+				Fl = context.getTerminalNode(probFalse);
 			}
-		    else{
-		    	Polynomial probTrue,probFalse;
-				probTrue=(Polynomial)context.getValuePolyForStateInContext((Integer)cpt_a_xiprime,state,xiprime,true);////new method Karina
-				Polynomial polynomial1= new Polynomial(1.0,new Hashtable(),context);
-				probFalse= polynomial1.subPolynomial((Polynomial)probTrue);
-				Fh=context.getTerminalNode(probTrue);
-				Fl=context.getTerminalNode(probFalse);
-
-		    }
-			
+		    else {
+		    	Polynomial probTrue, probFalse;
+				probTrue = (Polynomial) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, state, xiprime, true);
+				Polynomial polynomial1 = new Polynomial(1.0, new Hashtable(), context);
+				probFalse = polynomial1.subPolynomial((Polynomial)probTrue);
+				Fh = context.getTerminalNode(probTrue);
+				Fl = context.getTerminalNode(probFalse);
+		    }	
 			
 			//crear ADD con xiprime con probTrue probFalse
-			Object newCPT=context.getInternalNode(xiprime, Fh, Fl);
+			Object newCPT = context.getInternalNode(xiprime, Fh, Fl);
             //context.view(newCPT);
 			VPrime = context.apply(VPrime, newCPT, Context.PROD);
 			//context.view(VPrime);
-			VPrime=context.apply(xiprime, Context.SUMOUT, VPrime);
+			VPrime = context.apply(xiprime, Context.SUMOUT, VPrime);
 			//context.view(VPrime);
 		}
 		
-		if(context.workingWithParameterized){//new  Karina
-			//TODO: here we inicialize mergeError of the context
-			//context.mergeError = mergeError;
-			//context.view(VPrime);
-			//Important: Here VPrime only have one node
-			VPrime=context.doMinCallOverNodes(VPrime,NAME_FILE_CONTRAINTS,this.pruneAfterEachIt); // the parameter is a ParADD and the result is an ADD
-			//after this we have currentValuesProb
-			//context.workingWithParameterized=false;//para ver el VDD
-						
-			//context.view(VPrime);
-		}
-		context.workingWithParameterized=false;//new line Karina
-//		at the end of the while the VUpperPrime must be a number only
-		return ((TerminalNodeKeyADD)context.getInverseNodesCache().get(VPrime)).getValue();
+		if (context.workingWithParameterized) // the parameter is a ParADD and the result is an ADD
+			VPrime = context.doMinCallOverNodes(VPrime,NAME_FILE_CONTRAINTS,this.pruneAfterEachIt); 
 
+		context.workingWithParameterized = false;
+
+		return ((TerminalNodeKeyADD) context.getInverseNodesCache().get(VPrime)).getValue();
 	}
+	
 	private boolean inGoalSet(TreeMap<Integer, Boolean> state) {
 		return listGoalStates.contains(state); 
 	}
@@ -1990,30 +2096,39 @@ private State createStateEnum(Object o) {
 	}
 
 	//////////////////////////////////////////////////////////////FOR SIMULATING MDPs ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	public ArrayList simulateMDPFromFile(int numberInitialStates,int numberSamples,int tMax, String NAME_FILE_VALUE,String typeSolution) {
-		ArrayList res=new ArrayList();
-		Object valueRes=context.readValueFunction(NAME_FILE_VALUE);
-		//context.view(valueRes);
-		TreeMap action2QDD=calculateQHash(valueRes,false); //here we dont call the solver because we are working with an MDP
-		ArrayList performancelist=new ArrayList();
-		double totalPerformance=0;
-		for(int nSeed=1; nSeed <= NUMBEROFSEEDS; nSeed++){
-			Random randomGenInitial=new Random(System.currentTimeMillis() + nSeed);
-			Random randomGenNextState=new Random(System.currentTimeMillis() + nSeed);
-		    double performance=getPerformance(randomGenInitial, randomGenNextState,numberInitialStates,numberSamples,tMax, action2QDD);	
+	public ArrayList<Double> simulateMDPFromFile(int numberInitialStates,int numberSamples,int tMax, String NAME_FILE_VALUE,String typeSolution) {
+		
+		
+		Object valueRes = context.readValueFunction(NAME_FILE_VALUE);
+
+		TreeMap action2QDD = calculateQHash(valueRes, false); //here we dont call the solver because we are working with an MDP
+		ArrayList performancelist = new ArrayList();
+		double totalPerformance = 0;
+		
+		for(int nSeed = 1; nSeed <= NUMBEROFSEEDS; nSeed++){
+			Random randomGenInitial = new Random(System.currentTimeMillis() + nSeed);
+			Random randomGenNextState = new Random(System.currentTimeMillis() + nSeed);
+			
+		    double performance = getPerformance(randomGenInitial, randomGenNextState, numberInitialStates, numberSamples, tMax, action2QDD);	
 			performancelist.add(performance);
-			totalPerformance=totalPerformance+performance;
-			//System.out.println("Values: "+listReward);
+			
+			totalPerformance = totalPerformance + performance;
 		}
-		double mean=totalPerformance/performancelist.size();
-		double sigma=calculateStandarD(mean,performancelist);
-		double standardError=sigma/Math.sqrt(performancelist.size());
+		
+		double mean = totalPerformance / performancelist.size();
+		double sigma = calculateStandarD(mean, performancelist);
+		double standardError = sigma / Math.sqrt(performancelist.size());
+		
+		System.out.println("mean:" + mean);
+		System.out.println("SE:" + standardError);
+		System.out.println("SD:" + sigma);
+		
+		ArrayList<Double> res = new ArrayList<Double>();
+		
 		res.add(mean);
 		res.add(standardError);
 		res.add(sigma);
-		System.out.println("mean:"+mean);
-		System.out.println("SE:"+standardError);
-		System.out.println("SD:"+sigma);
+		
 		return res;
 	}
 	

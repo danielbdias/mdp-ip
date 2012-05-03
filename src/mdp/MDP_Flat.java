@@ -25,7 +25,7 @@ public class MDP_Flat extends MDP {
 	/** Constructor - filename
 	 **/
 	public MDP_Flat(String filename,int typeContext,int typeAproxPol,String typeSolution) {
-		this(HierarchicalParser.ParseFile(filename),typeContext,typeAproxPol,typeSolution);
+		this(HierarchicalParser.parseFile(filename),typeContext,typeAproxPol,typeSolution);
 	}
 	/** Constructor - pre-parsed file
 	 **/

@@ -38,20 +38,33 @@ public class MDP_Fac  extends MDP{
 	/** Constructor - filename
 	 **/
 	public MDP_Fac(String filename,int typeContext,int typeAproxPol, String typeSolution) {
-		this(HierarchicalParser.ParseFile(filename),typeContext,typeAproxPol,typeSolution);
-		String[] partsFileName = filename.split("/");
-		String netName=partsFileName[partsFileName.length-1];
-		NAME_FILE_VALUE=NAME_FILE_VALPART+netName.substring(0,netName.length()-4);
-		//NAME_FILE_MP_AMPL=NAME_FILE_MPPART+netName.substring(0,netName.length()-4);
+		this(filename, typeContext, typeAproxPol, typeSolution, false);
 	}
+	
+	/** Constructor - filename
+	 **/
+	public MDP_Fac(String filename,int typeContext,int typeAproxPol, String typeSolution, boolean simulation) {
+		this(HierarchicalParser.parseFile(filename), typeContext, typeAproxPol, typeSolution, simulation);
+		
+		String[] partsFileName = filename.split("/");
+		
+		String netName=partsFileName[partsFileName.length-1];
+		
+		NAME_FILE_VALUE = NAME_FILE_VALPART + netName.substring(0, netName.length() - 4);
+		
+		this.simulationMode = simulation;
+	}
+	
 	/** Constructor - pre-parsed file
 	 **/
-	public MDP_Fac(ArrayList input,int typeContext,int typeAproxPol,String typeSolution) {
+	public MDP_Fac(ArrayList input,int typeContext,int typeAproxPol,String typeSolution, boolean simulationMode) {
 		//System.out.println(input);
 		//System.exit(1);
 
 //		_prevDD = _maxDD = _rewardDD = _valueDD = null;
 //		_nDDType    = dd_type;
+		this.simulationMode = simulationMode;
+		
 		alVars     = new ArrayList();
 		alOrder    = new ArrayList();
 		tmVar2ID   = new TreeMap();
@@ -80,34 +93,27 @@ public class MDP_Fac  extends MDP{
 
 	}
 
-	
+	public Object regress(Object VDD, Action action, double mergeError, TreeMap iD2ADD, boolean simulating, boolean firsTimeSimulating){
+		ArrayList primeIdsProd = new ArrayList(); //list of primes ids that was multiplied
 
-    
-    
-	public Object regress(Object VDD, Action action,double mergeError,TreeMap iD2ADD,boolean simulating,boolean firsTimeSimulating){
-		ArrayList primeIdsProd=new ArrayList(); //list of primes ids that was multiplied
-		//if(firsTimeSimulating){//Comentei isso para rodar simulate MDPIP
-			VDD=context.remapIdWithPrime(VDD,this.hmPrimeRemap);
-		//}
-		//context.view(VDD);
+		VDD = context.remapIdWithPrime(VDD, this.hmPrimeRemap);
+
 		Integer xiprime;
-		Iterator x=this.hmPrimeRemap.entrySet().iterator();
-		while (x.hasNext()){
+		Iterator x = this.hmPrimeRemap.entrySet().iterator();
+		
+		while (x.hasNext()) {
 
-			Map.Entry xiprimeme = (Map.Entry)x.next();
+			Map.Entry xiprimeme = (Map.Entry) x.next();
 			xiprime=(Integer) xiprimeme.getValue();
+			
 			Object cpt_a_xiprime=iD2ADD.get(xiprime);
-			//context.workingWithParameterized=false; //only for print the first VDD
-			//context.view(VDD);
-			//context.workingWithParameterized=context.workingWithParameterizedBef;
-			//context.view(cpt_a_xiprime);
-			if(!primeIdsProd.contains(xiprime)){//this cpt was not multiplied before
+			
+			if (!primeIdsProd.contains(xiprime)){
 				VDD = context.apply(VDD, cpt_a_xiprime, Context.PROD);
-				//context.view(VDD);
 				primeIdsProd.add(xiprime);
 			}
-			//context.view(VDD);
-//			 TODO: For asyncronic arcs Make a set of all CPTs to multiply (before loop)
+
+			//			 TODO: For asyncronic arcs Make a set of all CPTs to multiply (before loop)
 			//       Then when summing out xi', remove any CPTs from set
 			//       that involve xi' and multiply them in.
 			ArrayList dependPrimeList=getIdVarPrimeDependOn(xiprime,action.varId2DependPrimeList);
@@ -119,36 +125,26 @@ public class MDP_Fac  extends MDP{
             		primeIdsProd.add(xiprimeSyn);
             	}
             }
-            //context.view(VDD);
-			VDD=context.apply(xiprime, Context.SUMOUT, VDD);
-
-			//context.view(VDD);
+            
+			VDD = context.apply(xiprime, Context.SUMOUT, VDD);
 		} 
-		//context.view(VDD);
 	
 		// Reduce memory if neededs
-		//if(typeContext==3){
-		if(!simulating){
-			//System.out.println("estoy aqui realmente -- da problemas revisar el flush");
-			flushCaches(VDD);// tirei essa parte porque estava dando problema com os exemplos da Monica
-		}
+		if (!simulating) 
+			flushCaches(VDD);
 
-		//}
 		if(context.workingWithParameterized){
-			if(mergeError!=0){
-				//TODO: moving pruneNodesValue -using other prune
-				//VDD=context.pruneNodesValue(VDD, mergeError/2d);//because we prune after the maximization over actions
-			}
-			//TODO: aqui es inicializado el mergeError del contexto
+			
 			context.mergeError = mergeError;
-			//context.view(VDD);
-			VDD=context.doMinCallOverNodes(VDD,NAME_FILE_CONTRAINTS,this.pruneAfterEachIt); // the parameter is ParADD and the result is an ADD
-			//context.workingWithParameterized=false;//para ver el VDD
-			//context.view(VDD);
+
+			VDD = context.doMinCallOverNodes(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt); // the parameter is ParADD and the result is an ADD
 		}
-		context.workingWithParameterized=false;
+		
+		context.workingWithParameterized = false;
+		
 		return VDD;
 	}
+	
 	private ArrayList getIdVarPrimeDependOn(Integer xiprime, HashMap varId2DependPrimeList) {
 		ArrayList dependPrimeList=new ArrayList();
 		Iterator it=varId2DependPrimeList.keySet().iterator();

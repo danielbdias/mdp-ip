@@ -63,7 +63,7 @@ public class MDPConverter
      ** logic.ADD.
      **/
     public static ArrayList ADDFileToTree(String filename) {
-	return ADDFileToTree(HierarchicalParser.ParseFile(filename));
+	return ADDFileToTree(HierarchicalParser.parseFile(filename));
     }
 
     public static ArrayList ADDFileToTree(ArrayList token_list) {
