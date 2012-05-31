@@ -23,27 +23,16 @@ import mdp.State;
 
 import util.MapList;
 
-
-
-public class ContextADD extends Context{
-
-	
-	
+public class ContextADD extends Context {
 	//private Integer unllocatedIdApply;
 
     //APRICODD
-   
     private Hashtable reduceRemapLeavesCache;
     
     private HashSet reduceInternal;
     private double currentError;
-
-	
-	
-	
     
 	public ContextADD() {
-		
 		unllocatedIdNode=new Integer(0);
 		nodesCache=new Hashtable();
 		inverseNodesCache=new Hashtable();
@@ -116,15 +105,15 @@ public class ContextADD extends Context{
     
     //Terminal node for ADD
     public Integer getTerminalNode(double fval){
-    Double fvalue=new Double(fval);
-    NodeKey tnodek=new TerminalNodeKeyADD(fvalue);
-	//find the tnodek  
-	Integer id=(Integer) this.nodesCache.get(tnodek); 
-	if (id==null){
-		id=this.getNextUnllocatedId();
-		this.putNodeCache(tnodek,id);
-	}
-	return id;
+	    Double fvalue=new Double(fval);
+	    NodeKey tnodek=new TerminalNodeKeyADD(fvalue);
+		//find the tnodek  
+		Integer id=(Integer) this.nodesCache.get(tnodek); 
+		if (id==null){
+			id=this.getNextUnllocatedId();
+			this.putNodeCache(tnodek,id);
+		}
+		return id;
     }
     //TODO:new part for parameterized
     //Terminal node for parameterizedADDs
@@ -277,7 +266,7 @@ public class ContextADD extends Context{
 	    	}
 	    	else{
 	    		f2var=((InternalNodeKeyADD)this.getNodeInverseCache((Integer)f2)).getVar();
-	    		var=f2var;
+		    	var=f2var;
 	    	}
             //set up nodes for recursion
 	    	if (var==null){ 
@@ -575,19 +564,6 @@ public class ContextADD extends Context{
 	    	}
 	    	return Fr;
 		}
-		
-		
-	
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
 
 		private TerminalNodeKey findNodeInFinalMapRec(HashMap finalMap, TerminalNodeKey nodeKey) {
 			while(finalMap.get(nodeKey)!=null){
@@ -597,17 +573,6 @@ public class ContextADD extends Context{
 			return nodeKey;
 		}
 		
-		
-		/*private TerminalNodeKey findNodeFinalMapRec(HashMap finalMap, TerminalNodeKey nodeKey) {
-	 		TerminalNodeKey resp=nodeKey;
-	 		TerminalNodeKey respAnt=null;
-	 		while (resp!=null){
-	 			respAnt=resp;
-	 			resp=(TerminalNodeKey)finalMap.get(resp);
-	 		}
-	 		return respAnt;
-		}*/
-
 		private HashMap compressLeavesVer2(ArrayList array) {
 			HashMap finalMap = new HashMap();
 			 while(array.size()>=2 && this.mergeError>0){  
@@ -949,6 +914,56 @@ public class ContextADD extends Context{
 			
 		}	
 		
+	    public Object doMaxCallOverNodes(Object VDD, String NAME_FILE_CONTRAINTS, boolean pruneAfterEachIt) {
+
+			if (this.isTerminalNode(VDD)) { 
+				TerminalNodeKeyPar node = (TerminalNodeKeyPar) this.getInverseNodesCache().get(VDD);
+				
+				Polynomial polynomial = node.getPolynomial(); 
+				
+				if (polynomial.getTerms().size() == 0)
+					return this.getTerminalNode(polynomial.getC());
+				
+				/////////////////////OBJECTIVE-IP PRUNE/////////////////////////////////////////////
+				if (pruneAfterEachIt)
+					return callNonLinearSolverObjectiveIP(node, NAME_FILE_CONTRAINTS);
+				//////////////////////////////////////////////////////////////////////////////////////
+				else { 
+					//////Call solver with the polynomial//////////////////////////////////////////
+					createFileAMPL(polynomial.toString(this,"p"), NAME_FILE_CONTRAINTS, "max");
+					
+					Double obj = callNonLinearSolver();
+					
+					//after this I have the currentValuesProb
+					contNoReuse++;
+
+					if (obj == null) {
+						System.out.println("doMaxCallOverNodes: Problems with the solver it return null");
+						System.exit(0);
+					}
+
+					return this.getTerminalNode(obj);
+				}
+			}
+
+			/////////////////////recursive call for each ADD branch////////////////////////////////////////////
+			Integer Fr = (Integer) reduceCacheMaxPar.get(VDD);
+
+			if (Fr == null) {
+				InternalNodeKey intNodeKey = (InternalNodeKey) this.getInverseNodesCache().get(VDD);
+				Object Fh = doMaxCallOverNodes(intNodeKey.getHigh(), NAME_FILE_CONTRAINTS, pruneAfterEachIt);
+				Object Fl = doMaxCallOverNodes(intNodeKey.getLower(), NAME_FILE_CONTRAINTS, pruneAfterEachIt);
+				Integer Fvar = intNodeKey.getVar();
+				Fr = (Integer) this.GetNode(Fvar, Fh, Fl);
+				reduceCacheMaxPar.put(VDD, Fr);
+			} else	{
+				reuseCacheIntNode++;
+			}
+ 
+			///////////////////////////////////////////////////////////////////////////////////////////////////
+			return Fr;//could be integer or AditArc
+	    }
+		
 //		 the parameter is ParADD and the result is an ADD
 	    public Object doMinCallOverNodes(Object VDD,String NAME_FILE_CONTRAINTS,boolean pruneAfterEachIt) {
 
@@ -958,7 +973,7 @@ public class ContextADD extends Context{
 	    			 return this.getTerminalNode(node.getPolynomial().getC());
 	    		 }
 	    		 /////////////////////OBJECTIVE-IP PRUNE/////////////////////////////////////////////
-	    		 if(pruneAfterEachIt==false){
+	    		 if (pruneAfterEachIt){
 	    			 return callNonLinearSolverObjectiveIP(node, NAME_FILE_CONTRAINTS);
 	    		 }
 	    		 //////////////////////////////////////////////////////////////////////////////////////
@@ -991,7 +1006,11 @@ public class ContextADD extends Context{
 	    	 return Fr;//could be integer or AditArc
 	     }
 	
-		private Object callNonLinearSolverObjectiveIP(TerminalNodeKeyPar node, String name_file_contraints) {
+	    private Object callNonLinearSolverObjectiveIP(TerminalNodeKeyPar node, String name_file_contraints) {
+	    	return this.callNonLinearSolverObjectiveIP(node, name_file_contraints, "min");
+	    }
+	    
+		private Object callNonLinearSolverObjectiveIP(TerminalNodeKeyPar node, String name_file_contraints, String optimization) {
 //			 construct a hashtable from the polynomial
 			 ArrayList currentIdsClash=new ArrayList();
 			 currentDirectionList=node.getPolynomial().constructDirectionList(listVarProb,this,currentIdsClash);//it is necessary to calculate currentIdsClash
@@ -1013,7 +1032,7 @@ public class ContextADD extends Context{
 				 System.out.println("IT MUST NOT HAPPEN: doMinCallOverNodes");
 				 System.exit(0);
 			 }
-			 createFileAMPL(newPolAprox.toString(this,"p"),name_file_contraints);
+			 createFileAMPL(newPolAprox.toString(this,"p"),name_file_contraints, optimization);
 			 //createFileAMPL(node.getPolynomial().toString(this),NAME_FILE_CONTRAINTS);
 
 			 Double obj=callNonLinearSolver();  			 //after this we have the currentValuesProb
@@ -1130,7 +1149,7 @@ public class ContextADD extends Context{
 			try {
 	     		
 	             BufferedWriter out = new BufferedWriter(new FileWriter(NAME_FILE_VALUE));
-	             
+
 	             String  valueiDDString=getString((Integer)valueiDD);        
 	             out.write(valueiDDString);
 	             out.append(System.getProperty("line.separator"));

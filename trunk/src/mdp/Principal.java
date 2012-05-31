@@ -179,7 +179,28 @@ public class Principal {
 			   
 			   myMDP.flushCachesRTDP(true); //true because we dont want to save Vupper
 		   }
-		   else if(typeSolution.compareTo("MP")==0){
+		   else if (typeSolution.compareTo("BoundedSPUDD") == 0){
+			   myMDP.pruneAfterEachIt = pruneEachIt;
+			   ResetTimer();
+			   
+			   int contNumNodes = myMDP.solveBoundedSPUDDIP(maxIter);
+			   long timeSeg  = GetElapsedTime() / 1000;
+			   
+			   Double Error = 0.0;
+			   
+			   System.out.println("Name: " + filename + "  maxIter: " + maxIter + "  mergeError: " + mergeError 
+					   + "  typeContext: " + typeContext + "  ContNumNodes: " + contNumNodes + " Time: " + timeSeg
+					   + " Reuse: " + myMDP.context.contReuse + " No reuse:  " + myMDP.context.contNoReuse 
+					   + " Reduced to value: " + myMDP.context.numberReducedToValue + " NumCallSolver:  " + myMDP.context.numCallSolver 
+					   + " Reuse Cache Internal Node instead of  Call Solver: " + myMDP.context.reuseCacheIntNode);
+			   
+			   System.out.println("Error: " + Error);
+			   
+			   printReport(filename, maxIter, mergeError, typeContext, contNumNodes, timeSeg, 
+					   fileNameReport, myMDP.context.contReuse, myMDP.context.contNoReuse, myMDP.context.numberReducedToValue, 
+					   myMDP.context.numCallSolver, myMDP.context.reuseCacheIntNode, Error, myMDP.pruneAfterEachIt, typeSolution);
+		   }
+		   else if (typeSolution.compareTo("MP")==0){
 			   ResetTimer();
 			   myMDP.solveMP();
 			   long time1  = GetElapsedTime();

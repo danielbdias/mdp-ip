@@ -90,25 +90,6 @@ public class Polynomial {
 		return stringPol;
 	}
 	
-	public String toStringWithRandCoef(Context context,String nameVariable) {
-		String stringPol=new String(Context._df.format(c));
-		Iterator it = terms.keySet().iterator();
-		
-		while (it.hasNext()){
-			double w = Math.random();
- 			double sign = Math.random();
- 			int signW = 1;
- 			  
- 			if (sign <= 0.5)
- 				signW = -1;
-			
-			Integer id=(Integer)it.next();
-			stringPol= stringPol + "+" + Context._df.format((Double)terms.get(id) * w * sign) + "*" + parseProb(((Context)context).getLabelProd(id),nameVariable);
-		}
-  	
-		return stringPol;
-	}
-	
 	public String toStringCoef(Context context) {
 		String stringPol=new String(Context._df.format(c));
 		Iterator it=terms.keySet().iterator();

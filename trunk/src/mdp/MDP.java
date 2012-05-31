@@ -2,45 +2,20 @@ package mdp;
 
 import graph.Graph;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.Stack;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.io.*;
+import java.math.*;
+import java.util.*;
 
-import add.Context;
-import add.ContextADD;
-import add.ContextAditADD;
-import add.ContextTable;
-import add.InternalNodeKeyADD;
-import add.Polynomial;
-import add.Table;
-import add.TerminalNodeKeyADD;
-import add.TerminalNodeKeyPar;
+import add.*;
 
 public abstract class MDP {
 	public boolean pruneAfterEachIt;//=true;
-	boolean forceNumberIt=true;
-	boolean printFinalADD=false;
-	boolean dumpValue=true;
-	boolean printTrafficFormat=false;
-	boolean sampleInitialFromI=true;
-	boolean printPolicy=false;
+	boolean forceNumberIt = true;
+	boolean printFinalADD = false;
+	boolean dumpValue = true;
+	boolean printTrafficFormat = false;
+	boolean sampleInitialFromI = true;
+	boolean printPolicy = false;
 	
 	protected boolean simulationMode;
 	
@@ -49,7 +24,7 @@ public abstract class MDP {
 	//2: if p=0  => p=epsilon 
 	//3: using  the result of a problem with constraints p>= epsilon 
 	//4: add random coefficients for each constraint p
-	int typeSampledRTDPMDPIP = 4;
+	int typeSampledRTDPMDPIP = 1;
 	
 	double epsilon = 0.000001;
 	
@@ -57,10 +32,10 @@ public abstract class MDP {
 //  public final static int VERBOSE_LEVEL = 0; // Determines how much output is displayed
 //  public final static boolean ALWAYS_FLUSH = false;         // Always flush DD caches?
 	public final static double FLUSH_PERCENT_MINIMUM = 0.1d; // used to flush
-	public final static String  NAME_FILE_CONTRAINTS = Config.getConfig().getAmplConstraintFile();
-	public final static String  NAME_FILE_CONTRAINTS_GREATERZERO = Config.getConfig().getAmplConstraintFileGreaterZero();
-	public final static String  NAME_FILE_VALPART = Config.getConfig().getReportsDir() + "value";
-	public final static String  NAME_FILE_MPPART = Config.getConfig().getReportsDir() + "AMPL";
+	public final static String NAME_FILE_CONTRAINTS = Config.getConfig().getAmplConstraintFile();
+	public final static String NAME_FILE_CONTRAINTS_GREATERZERO = Config.getConfig().getAmplConstraintFileGreaterZero();
+	public final static String NAME_FILE_VALPART = Config.getConfig().getReportsDir() + "value";
+	public final static String NAME_FILE_MPPART = Config.getConfig().getReportsDir() + "AMPL";
 	public String NAME_FILE_VALUE;
 
   /* Static variables */
@@ -130,8 +105,7 @@ public abstract class MDP {
 	public Object valueWHDD;
    
 	///////////////////////////////
-
-	private HashMap<HashMap, HashMap<Integer, Double>> stationarySimulatorProbabilities = null;
+	private HashMap<HashMap, Hashtable> stationarySimulatorProbabilities = null;
 	
 	public void buildMDP_Fac(ArrayList input,int typeContext,String typeSolution) {
 
@@ -353,56 +327,61 @@ public abstract class MDP {
 	  }
  }
   
-  
-/**
- * create a State represented with non prime variables
- * @param o: an ArrayList with the variables
- * @return
- */  
-private TreeMap<Integer, Boolean> createState(Object o) {
+	/**
+	 * create a State represented with non prime variables
+	 * @param o: an ArrayList with the variables
+	 * @return
+	 */  
+	private TreeMap<Integer, Boolean> createState(Object o) {
+		
+		TreeMap<Integer,Boolean> state = new TreeMap();
+		
+		//set false all variables in state  
+		for (int i = this.numVars + 1; i <= this.numVars * 2; i++)
+			state.put(i, false);
 	
-	    TreeMap<Integer,Boolean> state=new TreeMap();
-	    //set false all variables in state  
-	    for (int i=this.numVars+1; i<= (this.numVars)*2;i++){
-	    	state.put(Integer.valueOf(i),false);
-	    }
-	    //change to true the variables in the SPUDD file
-        ArrayList alVarsPos = (ArrayList)((ArrayList)o).clone();
-    	Iterator vars = alVarsPos.iterator();
-    	while (vars.hasNext()) {
-    	    String vname = ((String)vars.next());// + "'"; Verificar si necesitamos ' o no   NO NECESITAMOS
-    	    Integer id=(Integer)tmVar2ID.get(vname);
-    	    state.put(id,true);
-  	    }
-    	return state; 
-}
+		//change to true the variables in the SPUDD file
+		ArrayList alVarsPos = (ArrayList)((ArrayList)o).clone();
+	
+		Iterator vars = alVarsPos.iterator();
+	
+		while (vars.hasNext()) {
+			String vname = (String) vars.next();
+	    	Integer id = (Integer) tmVar2ID.get(vname);
+	    	state.put(id, true);
+	  	}
+	    
+		return state; 
+	}
 
-// For RTDPEnum and BRTDPEnum
-private State createStateEnum(Object o) {
-	
-	TreeMap<Integer,Boolean> values=new TreeMap<Integer,Boolean>();
-    //set false all variables in state  
-    for (int i=this.numVars+1; i<= (this.numVars)*2;i++){
-    	values.put(Integer.valueOf(i),false);
-    }
-    //change to true the variables in the SPUDD file
-    int identifier=0; // take into account the position (prime) variable  
-    ArrayList alVarsPos = (ArrayList)((ArrayList)o).clone();
-	Iterator vars = alVarsPos.iterator();
-	while (vars.hasNext()) {
-	    String vname = ((String)vars.next());// + "'"; Verificar si necesitamos ' o no   NO NECESITAMOS
-	    Integer id=(Integer)tmVar2ID.get(vname);
-	    values.put(id,true);
-	    identifier=(int) (identifier+Math.pow(2,2*numVars-id)) ; 
-	    }
-	
-	State state=new State(values,identifier);
-	return state; 
-}
+	// For RTDPEnum and BRTDPEnum
+	private State createStateEnum(Object o) {
+		
+		TreeMap<Integer,Boolean> values = new TreeMap<Integer,Boolean>();
+	    
+		//set false all variables in state  
+	    for (int i = this.numVars + 1; i <= this.numVars * 2; i++)
+	    	values.put(i, false);
+
+	    //change to true the variables in the SPUDD file
+	    int identifier = 0; // take into account the position (prime) variable  
+	    ArrayList alVarsPos = (ArrayList)((ArrayList)o).clone();
+		Iterator vars = alVarsPos.iterator();
+		
+		while (vars.hasNext()) {
+		    String vname = ((String)vars.next());// + "'"; Verificar si necesitamos ' o no   NO NECESITAMOS
+		    Integer id = (Integer) tmVar2ID.get(vname);
+		    
+		    values.put(id, true);
+		    
+		    identifier += (int) Math.pow(2, 2 * numVars - id); 
+		}
+		
+		return new State(values, identifier); 
+	}
 
 	//For constraints in MDPIP  
     private void createFileConstraints(ArrayList constraints, String nameFileConstraint) {
-		
     	try {
             BufferedWriter out = new BufferedWriter(new FileWriter(nameFileConstraint));
             writeConstraints(constraints,out);
@@ -411,14 +390,11 @@ private State createStateEnum(Object o) {
         	System.out.println("Problem with the Constraint file");
         	System.exit(0);
         }
-
 	}
-    
-    
 
     private void writeConstraints(ArrayList constraints, BufferedWriter out) throws IOException {
-        for(int i=0;i< constraints.size();i++){
-        	String line=createLineFileConst((ArrayList)constraints.get(i));
+        for (int i = 0; i < constraints.size(); i++){
+        	String line = createLineFileConst((ArrayList)constraints.get(i));
         	out.write(line);
         	out.append(System.getProperty("line.separator"));
         }		
@@ -459,100 +435,185 @@ private State createStateEnum(Object o) {
 		return line+";";
 	}
 	
+	public int solveBoundedSPUDDIP(int maxNumberIterations) {
+		//Solve a pessimistic SPUDD
+		context.workingWithParameterized = true;
+		int result = this.solve(maxNumberIterations, 0.0, OptimizationType.Maximization, OptimizationType.Minimization);
+			
+		List<String> bestActions = this.findBestActionPerState(this.enumerateFactoredStates());
+		
+		//Solve an optimist SPUDD
+		context.workingWithParameterized = true;
+		result += this.solve(maxNumberIterations, 0.0, OptimizationType.Maximization, OptimizationType.Maximization, bestActions);
+		
+		return result;
+	}
+	
+	private List<String> findBestActionPerState(List<HashMap<Integer, Boolean>> states) {	
+		TreeMap action2QDD = calculateQHash(valueiDD, true); //here we call the solver
+		
+		HashMap<String, Action> usedActions = new HashMap<String, Action>();
+		
+		for (HashMap<Integer, Boolean> state : states) {
+			List<Action> bestActions = new ArrayList<Action>();
+			
+			double bestQ = Double.NEGATIVE_INFINITY;
+		    Action qAction = null;
+			Iterator it = action2QDD.keySet().iterator();
+			
+			while (it.hasNext()) {
+				qAction = (Action) it.next();
+				Object QADD = action2QDD.get(qAction);
+
+				double valueQ = context.getValueForStateInADD((Integer)QADD, state, null, null, null);
+				
+				if (valueQ == bestQ) {
+					bestActions.add(qAction);
+				}
+				else if (valueQ > bestQ) {
+					bestQ = valueQ;
+					
+					bestActions.clear();
+					bestActions.add(qAction);
+				}
+			}
+			
+			for (Action action : bestActions) 
+				if (!usedActions.containsKey(action.getName()))
+					usedActions.put(action.getName(), action);
+		}
+		
+		return new ArrayList<String>(usedActions.keySet());
+	}
+
+	private List<HashMap<Integer, Boolean>> enumerateFactoredStates() {
+		ArrayList<HashMap<Integer, Boolean>> states = new ArrayList<HashMap<Integer,Boolean>>();
+
+		ArrayList<Integer> variables = new ArrayList<Integer>();
+		
+		for (Object key : this.hmPrimeRemap.keySet()) {
+			int variable = (Integer) key; 
+			variables.add(variable);
+		}
+		
+		this.enumerableFactoredStatesRecursive(states, 0, variables, new HashMap<Integer, Boolean>());
+		
+		return states;
+	}
+
+	private void enumerableFactoredStatesRecursive(ArrayList<HashMap<Integer, Boolean>> states, 
+			int variableIndex, ArrayList<Integer> variables, HashMap<Integer, Boolean> state) {
+		if (variableIndex >= variables.size()){
+			//adds a copy
+			states.add(new HashMap<Integer, Boolean>(state));
+		}
+		else {
+			int variable = variables.get(variableIndex);
+
+			state.put(variable, true);
+			this.enumerableFactoredStatesRecursive(states, variableIndex + 1, variables, state);
+			
+			state.put(variable, false);
+			this.enumerableFactoredStatesRecursive(states, variableIndex + 1, variables, state);
+		}
+	}
+
 	public int solve(int maxNumberIterations, double mergeError) {
-		if(this.pruneAfterEachIt){
-			NAME_FILE_VALUE=NAME_FILE_VALUE+"_"+Double.toString(mergeError).replace(".", "_")+"APRI"+".net";//NAME_FILE_VALUE is inicializated in MDP_Fac(...)
+		return this.solve(maxNumberIterations, mergeError, OptimizationType.Maximization, OptimizationType.Minimization);
+	}
+	
+	public int solve(int maxNumberIterations, double mergeError, OptimizationType firstOptimization, OptimizationType secondOptimization) {
+		List<String> actionsToUse = new ArrayList<String>();
+		
+		for (Object actionAsObject : mName2Action.values()) {
+			Action action = (Action) actionAsObject;
+			actionsToUse.add(action.getName());
 		}
-		else{
-			NAME_FILE_VALUE=NAME_FILE_VALUE+"_"+Double.toString(mergeError).replace(".", "_")+"REGR"+".net";
-		}
-		int numIterations=0;   
+		
+		return this.solve(maxNumberIterations, mergeError, firstOptimization, secondOptimization, actionsToUse);
+    }
+
+	//TODO: move this method to MDP_Flat
+	private int solve(int maxNumberIterations, double mergeError, OptimizationType firstOptimization, OptimizationType secondOptimization, List<String> actionsToUse) {
+		NAME_FILE_VALUE += ("_" + Double.toString(mergeError).replace(".", "_"));
+		
+		if (this.pruneAfterEachIt)
+			NAME_FILE_VALUE += "APRI.net";//NAME_FILE_VALUE is inicializated in MDP_Fac(...
+		else
+			NAME_FILE_VALUE += "REGR.net";
+		
+		int numIterations = 0;   
         Object QiPlus1DD, DiffDD;
     	valueiDD = rewardDD;
-        //context.view(valueiDD);
-    	double Rmax=context.apply(valueiDD, Context.MAXVALUE);
-    	double Vmax=Rmax;
-    	context.workingWithParameterizedBef=context.workingWithParameterized;
+
+    	double Rmax = context.apply(valueiDD, Context.MAXVALUE);
+    	double Vmax = Rmax;
+    	context.workingWithParameterizedBef = context.workingWithParameterized;
     	context.createBoundsProb(NAME_FILE_CONTRAINTS);
-    	while(numIterations<maxNumberIterations){
-       		valueiPlus1DD=context.getTerminalNode(Double.NEGATIVE_INFINITY);
-    		//iterate over each action
-    		Iterator actions=mName2Action.entrySet().iterator();
-    		while (actions.hasNext()){
-    			Map.Entry meaction=(Map.Entry) actions.next();
-    			Action action=(Action) meaction.getValue();
+    	
+    	while (numIterations < maxNumberIterations) {
+    		valueiPlus1DD = context.getTerminalNode(Double.NEGATIVE_INFINITY);
+   		
+    		for (String actionName : actionsToUse) {
+    			Action action = (Action) mName2Action.get(actionName);
     			System.out.println("  - Regress action " + action.getName());
-    			//context.view(valueiDD);
-      			context.workingWithParameterized=context.workingWithParameterizedBef;
-    			QiPlus1DD=this.regress(valueiDD, action,mergeError*Vmax,action.tmID2ADD,false,false);
+
+      			context.workingWithParameterized = context.workingWithParameterizedBef;
+    			QiPlus1DD = this.regress(valueiDD, action, mergeError * Vmax, action.tmID2ADD, secondOptimization, false, false);
     			
-    			//context.view(QiPlus1DD);
-    			//context.view(valueiPlus1DD);
-     			valueiPlus1DD=context.apply(valueiPlus1DD, QiPlus1DD, Context.MAX);
-     			//context.view(valueiPlus1DD);
+    			if (firstOptimization == OptimizationType.Maximization)
+    				valueiPlus1DD = context.apply(valueiPlus1DD, QiPlus1DD, Context.MAX);
+    			else
+    				valueiPlus1DD = context.apply(valueiPlus1DD, QiPlus1DD, Context.MIN);
      			
         	    flushCaches(null);			
-    		}
-    		//traje estas 2 lineas aqui de regress    	
-    		//context.view(valueiPlus1DD);
-    		valueiPlus1DD=context.apply(valueiPlus1DD, context.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
-    		valueiPlus1DD=context.apply(valueiPlus1DD, this.rewardDD, Context.SUM);
+    		}   	
+
+    		valueiPlus1DD = context.apply(valueiPlus1DD, context.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
+    		valueiPlus1DD = context.apply(valueiPlus1DD, this.rewardDD, Context.SUM);
     				
-    		//context.view(valueiPlus1DD);
-    		//context.view(valueiDD);
-    		DiffDD=context.apply(valueiPlus1DD, valueiDD, Context.SUB);
-    		Double maxDiff=(Double) context.apply(DiffDD, Context.MAXVALUE);
-    		Double minDiff=(Double) context.apply(DiffDD, Context.MINVALUE);
-    		Double BellErro=Math.max(maxDiff.doubleValue(),-minDiff.doubleValue());
-    		//if(BellErro.compareTo((1-bdDiscount.doubleValue())*this.bdTolerance.doubleValue())/(2*bdDiscount.doubleValue())<0){
-    		//for testing we comment this line 
-    		if (BellErro.compareTo(this.bdTolerance.doubleValue())<0 && !forceNumberIt){
-    			 int contNumNodes=this.context.contNumberNodes(valueiPlus1DD);
-    			 System.out.println("Terminate after "+numIterations+" iterations");
-    			 //context.view(valueiPlus1DD);
+    		DiffDD = context.apply(valueiPlus1DD, valueiDD, Context.SUB);
+    		Double maxDiff = (Double) context.apply(DiffDD, Context.MAXVALUE);
+    		Double minDiff = (Double) context.apply(DiffDD, Context.MINVALUE);
+    		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
+ 
+    		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
+    			 int contNumNodes = this.context.contNumberNodes(valueiPlus1DD);
+    			 System.out.println("Terminate after " + numIterations + " iterations");
     			 return contNumNodes;
     		}
     		
-    		valueiDD=valueiPlus1DD;
+    		valueiDD = valueiPlus1DD;
     		
-    		if (mergeError!=0 && !this.context.workingWithParameterized&&pruneAfterEachIt){
-    			
-    			//context.view(valueiDD);
+    		if (mergeError != 0.0 && !this.context.workingWithParameterized && pruneAfterEachIt){
     			System.out.println("Prune ADD");
-      			valueiDD=context.pruneNodesValue(valueiDD, mergeError*Vmax);
-      			
-     			//context.view(valueiDD);
+      			valueiDD = context.pruneNodesValue(valueiDD, mergeError * Vmax);
     		}
-    		System.out.println("Iteration:  "+numIterations +" NumCallSolver:  "+context.numCallSolver+" Reuse Cache Internal Node instead of  Call Solver: "+context.reuseCacheIntNode +" reuse: "+context.contReuse+" no reuse: "+context.contNoReuse+" reduced to value:  "+context.numberReducedToValue+ " reuse using lattice "+context.contReuseUsingLattice);
     		
-    		//context.view(valueiDD);
-    		numIterations=numIterations+1;
-    	//  Display lattice with primitive concepts
-		//	Graph g1 = context.lattice.getGraph(false/* suppress primitive concepts */); 
-		//	g1.launchViewer();
-    		Vmax=Rmax+this.bdDiscount.doubleValue()*Vmax;
+    		System.out.println("Iteration: " + numIterations + " NumCallSolver:  " + context.numCallSolver 
+    				+ " Reuse Cache Internal Node instead of  Call Solver: " + context.reuseCacheIntNode 
+    				+ " reuse: " + context.contReuse + " no reuse: " + context.contNoReuse + " reduced to value:  " + context.numberReducedToValue 
+    				+ " reuse using lattice " + context.contReuseUsingLattice);    		
     		
-    	}
-    	if(printFinalADD){
-    	
-    	  context.view(valueiDD);
-    	}
-    	if(printPolicy){
-    		System.out.println("not implemented yet");
+    		numIterations = numIterations + 1;
 
+    		Vmax = Rmax + this.bdDiscount.doubleValue() * Vmax;
     	}
     	
-    	if(dumpValue && this.typeContext==1){
-    	  System.out.println("dumping VUpper in" + NAME_FILE_VALUE);
-    	  context.dump(valueiDD,NAME_FILE_VALUE);
+    	if (printFinalADD)
+    		context.view(valueiDD);
+    	    	
+    	if (dumpValue && this.typeContext == 1){
+    		System.out.println("dumping VUpper in" + NAME_FILE_VALUE);
+    		context.dump(valueiDD, NAME_FILE_VALUE);
     	}
-        int contNumNodes=this.context.contNumberNodes(valueiDD);
-        //System.out.println("Number of Nodes:  "+contNumNodes);
-    	flushCaches(null);		
+    	
+        int contNumNodes = this.context.contNumberNodes(valueiDD);
+    	flushCaches(null);
+    	
         return contNumNodes;    	
-    }
-    
-	
+	}
+
 	public void flushCaches(Object VDD) {
 		if (((double)RUNTIME.freeMemory() / 
 		     (double)RUNTIME.totalMemory()) > FLUSH_PERCENT_MINIMUM) {
@@ -593,7 +654,7 @@ private State createStateEnum(Object o) {
 		context.flushCaches();
 		System.out.println("After flush,freeMemory: "+RUNTIME.freeMemory());
    }
-	public abstract Object regress(Object VDD, Action action, double mergeError, TreeMap iD2ADD, boolean simulating, boolean firsTimeSimulating);
+	public abstract Object regress(Object VDD, Action action, double mergeError, TreeMap iD2ADD, OptimizationType optimization, boolean simulating, boolean firsTimeSimulating);
 	
 	//////////////////////////////////////////////////////////////FOR SIMULATION MDPIP ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	public ArrayList<Double> simulateMDPIP(int numberInitialStates, int numberOfSimulations, int maxHorizons, String NAME_FILE_VALUE, int simulationType) {
@@ -656,6 +717,13 @@ private State createStateEnum(Object o) {
 		
 		if (this.stationarySimulatorProbabilities != null)
 			this.stationarySimulatorProbabilities.clear();
+		else
+			this.stationarySimulatorProbabilities = new HashMap<HashMap, Hashtable>();
+		
+		if (simulationType == 4) { //Stationary
+			context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
+			probNature = new Hashtable<String, Double>(context.currentValuesProb);
+		}
 		
 		HashMap state = getStateRepresentationAsHashMap(sampleInitialStateFromList(randomGenInitial));
 		
@@ -680,7 +748,7 @@ private State createStateEnum(Object o) {
 		return rewardState;
 	}
 	
-	private TreeMap<Integer, Integer> chooseNextStateForMDPIPSimulation(HashMap stateAsHashMap, int policeValueADD, Action aBest, Random randomGenerator, int simulationType) {
+	private TreeMap<Integer, Integer> chooseNextStateForMDPIPSimulation(HashMap stateAsHashMap, int policyValueADD, Action aBest, Random randomGenerator, int simulationType) {
 		TreeMap<Integer, Boolean> state = new TreeMap<Integer, Boolean>();
 		
 		for (Object variable : stateAsHashMap.keySet()) {
@@ -694,30 +762,29 @@ private State createStateEnum(Object o) {
 		
 		if (simulationType == 1 || simulationType == 2) //GlobalMyopicAdversarial or LocalMyopicAdversarial 
 		{
-			int V = -1;
-			
-			if (simulationType == 1)
-				V = policeValueADD;
-			else
-				V = (Integer) this.rewardDD;
-			
-			V = (Integer) context.remapIdWithPrime(V, this.hmPrimeRemap);
-			
-			double min = Double.POSITIVE_INFINITY;
-			Iterator actions = mName2Action.entrySet().iterator();
-			
-			while (actions.hasNext()) {
-				Map.Entry meaction = (Map.Entry) actions.next();
-				Action action = (Action) meaction.getValue();
-
-				context.workingWithParameterized = context.workingWithParameterizedBef; 
-				double Qt = this.computeQ(V, state, action, action.tmID2ADD);
-
-				min = Math.min(min,Qt);
+			if (!this.stationarySimulatorProbabilities.containsKey(stateAsHashMap)) {
+				int V = -1;
 				
-				if (min == Qt)
-					probNature = new Hashtable(context.currentValuesProb);
+				if (simulationType == 1)
+					V = policyValueADD;
+				else
+					V = (Integer) this.rewardDD;
+				
+				V = (Integer) context.remapIdWithPrime(V, this.hmPrimeRemap);
+				
+				context.workingWithParameterized = context.workingWithParameterizedBef; 
+				this.computeQ(V, state, aBest, aBest.tmID2ADD);
+				probNature = new Hashtable(context.currentValuesProb);
+				
+				this.stationarySimulatorProbabilities.put(stateAsHashMap, probNature);
 			}
+			else {
+				probNature = this.stationarySimulatorProbabilities.get(stateAsHashMap);
+			}
+		}
+		else if (simulationType == 3) { //NonStationary
+			context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
+			probNature = new Hashtable<String, Double>(context.currentValuesProb);
 		}
 		
 		for (int i = 1; i <= this.numVars; i++){
@@ -734,63 +801,16 @@ private State createStateEnum(Object o) {
 			}
 			
 			Polynomial probFalsePol = (Polynomial) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, state, varPrime, false);
-
-			switch (simulationType)
-			{
-				case 1: //GlobalMyopicAdversarial
-				case 2: //LocalMyopicAdversarial
-				{
-					probFalse = probFalsePol.evalWithListValues(probNature, context);
-					break;
-				}
-				case 3: //NonStationary
-				{
-					Object probFalseNode = (Object) context.doMinCallOverNodesWithRandomCoef(
-		        			context.getTerminalNode(probFalsePol), NAME_FILE_CONTRAINTS);
-		        	
-		        	probFalse = ((TerminalNodeKeyADD) context.getInverseNodesCache().get(probFalseNode)).getValue();
-		        	
-					break;
-				}
-				case 4: //Stationary
-				{
-					if (this.stationarySimulatorProbabilities == null)
-						this.stationarySimulatorProbabilities = new HashMap<HashMap, HashMap<Integer,Double>>();
-					
-					HashMap<Integer,Double> probabilitiesPerVariable = null;
-					
-					if (this.stationarySimulatorProbabilities.containsKey(stateAsHashMap))
-						probabilitiesPerVariable = this.stationarySimulatorProbabilities.get(stateAsHashMap);
-					else {
-						probabilitiesPerVariable = new HashMap<Integer, Double>();
-						this.stationarySimulatorProbabilities.put(stateAsHashMap, probabilitiesPerVariable);
-					}
-					
-					if (probabilitiesPerVariable.containsKey(i))
-						probFalse = probabilitiesPerVariable.get(i);
-					else {
-						Object probFalseNode = (Object) context.doMinCallOverNodesWithRandomCoef(
-			        			context.getTerminalNode(probFalsePol), NAME_FILE_CONTRAINTS);
-			        	
-			        	probFalse = ((TerminalNodeKeyADD) context.getInverseNodesCache().get(probFalseNode)).getValue();
-			        	
-			        	probabilitiesPerVariable.put(i, probFalse);
-					}
-		        	
-					break;
-				}
-			}
+			probFalse = probFalsePol.evalWithListValues(probNature, context);
 			
 			if (ran <= probFalse)
-				nextState.put(var, 0);  		
+				nextState.put(var, 0);
 			else
-				nextState.put(var, 1);  	
-			
+				nextState.put(var, 1);
 		}
 		
 		return nextState;
 	}
-
 
 	/**
 	 * A string representation of the traffic state 4-way intersection
@@ -923,15 +943,6 @@ private State createStateEnum(Object o) {
 		context.flushCaches();
 		//System.out.println("After flush,freeMemory: "+RUNTIME.freeMemory());
    }
-	
-/*	private double calculateMean(ArrayList listReward) {
-		double sum=0;
-		int n=listReward.size();
-		for (int i=0;i<n;i++){
-			sum=sum+(Double)listReward.get(i);
-		}
-		return sum/n; 
-	}*/
 	
 	public double calculateStandarD(double mean, ArrayList listReward) {
 		double sum=0;
@@ -1156,7 +1167,7 @@ private State createStateEnum(Object o) {
 			Action action = (Action) meaction.getValue();
   			context.workingWithParameterized = workWithMDPIP;
   			
-  			action2QDD.put(action, this.regress(valueRes, action, 0, action.tmID2ADD, true, true));
+  			action2QDD.put(action, this.regress(valueRes, action, 0, action.tmID2ADD, OptimizationType.Minimization, true, true));
 		}
 		return action2QDD;
 	}
@@ -1345,9 +1356,6 @@ private State createStateEnum(Object o) {
 		return samplingVGap(VGap,randomGenerator);
 	}
 
-
-
-
 	private TreeMap<Integer, Boolean> samplingVGap(Object beginF,Random randomGenerator) {
 		TreeMap<Integer, Boolean> nextState=new TreeMap<Integer, Boolean>();
 		Object F=beginF;
@@ -1530,13 +1538,6 @@ private State createStateEnum(Object o) {
 	private boolean inGoalSet(TreeMap<Integer, Boolean> state) {
 		return listGoalStates.contains(state); 
 	}
-	//private Double getBellErroVGap() {
-
-		//Double maxDiff=(Double) context.apply(VGap, Context.MAXVALUE);
-		//Double minDiff=(Double) context.apply(VGap, Context.MINVALUE);
-		//return  Math.max(maxDiff.doubleValue(),-minDiff.doubleValue());
-
-	//}
 
 	public static void ResetTimer() {
 		timeTrials = System.currentTimeMillis();
@@ -1647,7 +1648,8 @@ private State createStateEnum(Object o) {
 	public  ArrayList<Object[]> solveRTDPIPFac(int maxDepth, long timeOut,  
 			String typeSolution, int numTrials, int interval, int numberInitialStates, 
 			Random randomGenInitial, Random randomGenNextState) {
-		NAME_FILE_VALUE=NAME_FILE_VALUE+"_"+typeSolution+".net";
+		
+		NAME_FILE_VALUE += ("_" + typeSolution + ".net");
 		
 		Stack<TreeMap<Integer,Boolean>> visited = new Stack<TreeMap<Integer,Boolean>>();
 		
@@ -1738,7 +1740,6 @@ private State createStateEnum(Object o) {
 	
 		return result;
 	}
-	
 	
 	public  ArrayList<Object[]> solveLRTDPIPFac(int maxDepth, long timeOut,  
 			String typeSolution, int numTrials, int interval, int numberInitialStates, 
@@ -1889,73 +1890,65 @@ private State createStateEnum(Object o) {
         totalTrialTimeSec = totalTrialTime / 1000;		
 		return totalTrialTimeSec;
 	}
-	
 
-	 public boolean LRTDP_IP_CheckSolved(Random randomGenNextState,State state,HashSet<State> solvedStates)
-		  {
-		    boolean rv = true;
-		    Stack<State> open = new Stack<State>();
-		    Stack<State> closed = new Stack<State>();
-		    open.push(state);
+	public boolean LRTDP_IP_CheckSolved(Random randomGenNextState,State state,HashSet<State> solvedStates)
+	{
+		boolean rv = true;
+		
+		Stack<State> open = new Stack<State>();
+		Stack<State> closed = new Stack<State>();
+		open.push(state);
 		    
-
-		    HashSet<State> aux=new HashSet<State>(); //aux =open union close
+		HashSet<State> aux = new HashSet<State>(); //aux =open union close
 		  
-		   
-
-		    while (!open.empty()) {
-		    	
-		      state = open.pop();
-		      closed.push(state);
-		      // The residual was too big, so will update the nodes in the open
-		      // list and not mark any node as solved
+	    while (!open.empty()) {
+	    	state = open.pop();
+		    closed.push(state);
+		    // The residual was too big, so will update the nodes in the open
+		    // list and not mark any node as solved
 		      
-			  TreeMap<Integer, Boolean> state_prime= remapWithPrimes(state.getValues());//Because Vupper has only prime variables
-			  double valueState = (Double) context.getValueForStateInContext((Integer) VUpper, state_prime, null, null);
+			TreeMap<Integer, Boolean> state_prime = remapWithPrimes(state.getValues());//Because Vupper has only prime variables
+			double valueState = (Double) context.getValueForStateInContext((Integer) VUpper, state_prime, null, null);
 		      
-			  Action greedyAction = updateVUpper(state.getValues()); // here it is computed maxUpperUpdated
+			Action greedyAction = updateVUpper(state.getValues()); // here it is computed maxUpperUpdated
 			  
-			
-			  Double residual = Math.abs(valueState-maxUpperUpdated);
-			  if (residual == null || residual > epsilon){
-					rv = false;
-					continue;
-			  }
-		      	      
-              
-		      // Here we need to loop over all the states that have non-zero probability
-		      // of happening when applying greedyAction. Notice that we can reuse the
-		      // probability distribution P(s'|cur_s,greedyAction) computed on the call
-		      // to updateVUpper (as opposed to call the non-linear solver again).
-		      SuccProbabilitiesM succ=getSuccessors(state,greedyAction);
-		      State next_s;
-		      Iterator it=succ.getNextStatesProbs().keySet().iterator();
-		      while(it.hasNext()){
-		        next_s=(State)it.next();
-		        if (!solvedStates.contains(next_s) && !aux.contains(next_s)) {
-		          open.push(next_s);
-		          aux.add(next_s);
-		        }
-		      }
-		    }
+			Double residual = Math.abs(valueState-maxUpperUpdated);
+			if (residual == null || residual > epsilon){
+				rv = false;
+				continue;
+			}
+		      	                 
+			// Here we need to loop over all the states that have non-zero probability
+			// of happening when applying greedyAction. Notice that we can reuse the
+			// probability distribution P(s'|cur_s,greedyAction) computed on the call
+			// to updateVUpper (as opposed to call the non-linear solver again).
+			SuccProbabilitiesM succ = getSuccessors(state, greedyAction);
+			State next_s;
+			Iterator it = succ.getNextStatesProbs().keySet().iterator();
+			while(it.hasNext()){
+				next_s=(State)it.next();
+				if (!solvedStates.contains(next_s) && !aux.contains(next_s)) {
+					open.push(next_s);
+					aux.add(next_s);
+				}
+			}
+	    }
 
-		    assert(open.empty());
+		assert(open.empty());
 
-		    if (rv) {// Marking all nodes in the closed list as solved
-		      while (!closed.empty()) {
-		        state = closed.pop();
+		if (rv) {// Marking all nodes in the closed list as solved
+			while (!closed.empty()) {
+				state = closed.pop();
 		        solvedStates.add(state);
-		      }
 		    }
-		    else{
-		    	//update states with residuasl and ancestors??
-		    	//TODO: está faltando essa parte?
-		    	
-		    }
+		}
+		else {
+		    //update states with residuasl and ancestors??
+		    //TODO: está faltando essa parte?
+		}
     
-		    return rv;
-		  }
-
+		return rv;
+	}
 	
 	/**
 	 *  if state's sucessors have not been computed before, 
@@ -1978,8 +1971,6 @@ private State createStateEnum(Object o) {
 	      return succ;
 	      	
 	}
-
-
 
 
 	public void dumpADDtoFile(Object V){
@@ -2013,12 +2004,18 @@ private State createStateEnum(Object o) {
 	}
 
 
-	private TreeMap<Integer, Boolean> chooseNextStateRTDP(TreeMap<Integer, Boolean> state, Action actionGreedy,Random randomGenerator) {
-		return sampling(state,actionGreedy.tmID2ADD, randomGenerator);
+	private TreeMap<Integer, Boolean> chooseNextStateRTDP(TreeMap<Integer, Boolean> state, Action actionGreedy, Random randomGenerator) {
+		return sampling(state, actionGreedy.tmID2ADD, randomGenerator);
 	}
+	
 
 	private TreeMap<Integer, Boolean> sampling(TreeMap<Integer, Boolean> state, TreeMap iD2ADD, Random randomGenerator) {
-		TreeMap<Integer, Boolean> nextState=new TreeMap<Integer, Boolean>();
+		TreeMap<Integer, Boolean> nextState = new TreeMap<Integer, Boolean>();
+		
+		if (typeSampledRTDPMDPIP == 4) {
+			context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
+			context.probSample = new Hashtable<String, Double>(context.currentValuesProb);
+		}
 		
 		for (int i = 1; i <= this.numVars; i++){
 			
@@ -2033,29 +2030,23 @@ private State createStateEnum(Object o) {
 				System.exit(1);
 			}
 			
-			if (!context.workingWithParameterized) { //new line Karina
+			if (!context.workingWithParameterized) { 
 				probFalse = (Double) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, state, varPrime, false);
-
-				if (ran <= probFalse)
-					nextState.put(var, false);  		
-				else
-					nextState.put(var, true);  	
-				
 			}
-			else{//new part for IP
-				Polynomial probFalsePol = (Polynomial) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, state, varPrime, false);
-				
+			else {
+				Polynomial probFalsePol = (Polynomial) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, state, varPrime, false);			
 				probFalse = samplingOneVariableIP(probFalsePol);
-				
-				if (ran <= probFalse)
-					nextState.put(var, false);  		
-				else
-					nextState.put(var, true);  	
 			}
+			
+			if (ran <= probFalse)
+				nextState.put(var, false);  		
+			else
+				nextState.put(var, true);
 		}
 		
 		return nextState;
 	}
+	
 	
 	private double samplingOneVariableIP(Polynomial probFalsePol) {
 		// typeSampledRTDPMDPIP   
@@ -2082,14 +2073,8 @@ private State createStateEnum(Object o) {
             if (typeSampledRTDPMDPIP == 2 && probFalse == 0.0) //OPTION 2 
             	probFalse = epsilon;
 		}
-        else if (typeSampledRTDPMDPIP == 3){// OPTION 3 
+        else if (typeSampledRTDPMDPIP == 3 || typeSampledRTDPMDPIP == 4){// OPTION 3 
         	probFalse = probFalsePol.evalWithListValues(context.probSample, context);
-        }
-        else if (typeSampledRTDPMDPIP == 4) {
-        	Object probFalseNode = (Object) context.doMinCallOverNodesWithRandomCoef(
-        			context.getTerminalNode(probFalsePol), NAME_FILE_CONTRAINTS);
-        	
-        	probFalse = ((TerminalNodeKeyADD) context.getInverseNodesCache().get(probFalseNode)).getValue();
         }
 		
 		return probFalse;
@@ -2760,27 +2745,7 @@ private State createStateEnum(Object o) {
 	return VADD;
 }
 
-/*	private Object createADDFromTable(Context contextADD,Object V,boolean upper) {
-	Object VADD;
-	if (upper){
-		   VADD=contextADD.getTerminalNode(maxUpper);
-		}
-		else{
-			   VADD=contextADD.getTerminalNode(minLower);
-		}
 
-	Table table=(Table)((ContextTable)contextADD).getInverseNodesCache().get(valueiDD);
-	for(int i=0;i<table.getValues().size();i++){
-		
-		Double valueV=(Double)table.getValues().get(i);
-		
-		TreeMap <Integer,Boolean> stateTM=getConfigurationTable(i,table.getVars());
-		Iterator iteratorState=stateTM.keySet().iterator();
-		VADD=contextADD.insertValueInDD(VADD, stateTM,  valueV, iteratorState,this.hmPrimeRemap);	
-	}
-	//contextADD.view(VADD);
-	return VADD;
-}*/
 
 	private TreeMap <Integer,Boolean>getConfigurationTable(int pos, TreeSet listVar) {
 	TreeMap <Integer,Boolean>conf= new TreeMap<Integer,Boolean>();
