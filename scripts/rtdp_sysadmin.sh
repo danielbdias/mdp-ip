@@ -8,7 +8,7 @@
 #Parameter definition
 ###########################################################################
 
-ROOT_DIR=/home/karina/mdp-ip
+ROOT_DIR=/home/daniel/workspaces/java/mdpip/ADD
 
 #Algorithm name
 ALGORITHM=rtdpip
@@ -17,7 +17,7 @@ ALGORITHM=rtdpip
 PROBLEM_DIR=$ROOT_DIR/problemsMDPIP
 
 #Indicate which problem will be used in tests
-PROBLEM_TYPE=bi_ring_IP
+PROBLEM_TYPE=uni_ring_IP
 
 #Indicate the directory where the results will be saved
 REPORTS_DIR=$ROOT_DIR/reportsMDPIP
@@ -50,15 +50,15 @@ execute_problem(){
 
 	echo Executing problem $PROBLEM_TYPE"_"$current_problem_index
 
-	current_problem=$PROBLEM_DIR/$PROBLEM_TYPE"_"$current_problem_index"_Interval07.net"
-	current_report=$RESULTS_DIR/$PROBLEM_TYPE"_test_"$test_type"_Interval07.txt"
-	current_log=$RESULTS_DIR/$PROBLEM_TYPE"_"$current_problem_index"_Interval07.log"
+	current_problem=$PROBLEM_DIR/$PROBLEM_TYPE"_"$current_problem_index".net"
+	current_report=$RESULTS_DIR/$PROBLEM_TYPE"_test_"$test_type".txt"
+	current_log=$RESULTS_DIR/$PROBLEM_TYPE"_"$current_problem_index".log"
 	
 
 	java -Xms200m -Xmx2048m -classpath $CLASSPATH -cp $BINARIES_DIR $MAIN_CLASS $current_problem $NUMBER_OF_RUNS_PER_TEST 0 1 $current_report 0 Fact NOT TRUE RTDPIP $MAX_DEPTH $timeout 1000 0.0 $MAX_TRIALS 60 60 1 1 > $current_log
 
-	current_value_function=$REPORTS_DIR/"value"$PROBLEM_TYPE"_"$current_problem_index"_Interval07_RTDPIP.net"
-	new_value_function=$RESULTS_DIR/"value"$PROBLEM_TYPE"_"$current_problem_index"_Interval07_RTDPIP_"$test_type".net"
+	current_value_function=$REPORTS_DIR/"value"$PROBLEM_TYPE"_"$current_problem_index"_RTDPIP.net"
+	new_value_function=$RESULTS_DIR/"value"$PROBLEM_TYPE"_"$current_problem_index"_RTDPIP_"$test_type".net"
 
 	mv $current_value_function $new_value_function
 

@@ -8,6 +8,8 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.TreeMap;
 
+import javax.activity.InvalidActivityException;
+
 import mdp.State;
 
 public class ContextAditADD extends Context {
@@ -790,7 +792,12 @@ private AditArc buildHashInternalNodes(AditArc arc) {
 
 
 
-
+		public AditArc doMaxCallOverNodes(Object VDD, String NAME_FILE_CONTRAINTS, boolean pruneAfterEachIt) {
+			System.out.println("method not implemented");
+			System.exit(-1);
+			
+			return null;
+		}
 
 
 		//		 the parameter is ParADD and the result is an ADD

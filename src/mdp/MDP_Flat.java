@@ -92,7 +92,7 @@ public class MDP_Flat extends MDP {
 		return transTable;
 	}
 	
-	public Object regress(Object VDD, Action action,double mergeError,TreeMap iD2ADD,boolean simulating, boolean firsTimeSimulating){
+	public Object regress(Object VDD, Action action,double mergeError,TreeMap iD2ADD, OptimizationType optimization, boolean simulating, boolean firsTimeSimulating){
 
 		VDD=context.remapIdWithPrime(VDD,this.hmPrimeRemap); 
 		//context.view(VDD);
@@ -126,9 +126,11 @@ public class MDP_Flat extends MDP {
 				//context.view(VDD);
 			}
 			context.mergeError = mergeError;
-			VDD=context.doMinCallOverNodes(VDD,NAME_FILE_CONTRAINTS,this.pruneAfterEachIt); // the parameter is ParADD and the result is an ADD
-			context.workingWithParameterized=false;//para ver el VDD
-			//context.view(VDD);
+			
+			if (optimization == OptimizationType.Maximization)
+				VDD = context.doMaxCallOverNodes(VDD,NAME_FILE_CONTRAINTS,this.pruneAfterEachIt);
+			else
+				VDD = context.doMinCallOverNodes(VDD,NAME_FILE_CONTRAINTS,this.pruneAfterEachIt);
 		}
 		context.workingWithParameterized=false;
 		return VDD;

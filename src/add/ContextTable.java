@@ -394,6 +394,12 @@ public class ContextTable extends Context {
 		
 	}
 	
+	public Object doMaxCallOverNodes(Object VDD, String NAME_FILE_CONTRAINTS, boolean pruneAfterEachIt) {
+		System.out.println("not implemented");
+		System.exit(-1);
+		return null;
+	}
+	
 //	 the parameter is ParADD and the result is an ADD
     public Object doMinCallOverNodes(Object VDD,String NAME_FILE_CONTRAINTS,boolean pruneAfterEachIt) {
 	            //TODO : working in it

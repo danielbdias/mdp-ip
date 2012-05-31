@@ -93,7 +93,7 @@ public class MDP_Fac  extends MDP{
 
 	}
 
-	public Object regress(Object VDD, Action action, double mergeError, TreeMap iD2ADD, boolean simulating, boolean firsTimeSimulating){
+	public Object regress(Object VDD, Action action, double mergeError, TreeMap iD2ADD, OptimizationType optimization, boolean simulating, boolean firsTimeSimulating){
 		ArrayList primeIdsProd = new ArrayList(); //list of primes ids that was multiplied
 
 		VDD = context.remapIdWithPrime(VDD, this.hmPrimeRemap);
@@ -104,11 +104,11 @@ public class MDP_Fac  extends MDP{
 		while (x.hasNext()) {
 
 			Map.Entry xiprimeme = (Map.Entry) x.next();
-			xiprime=(Integer) xiprimeme.getValue();
+			xiprime = (Integer) xiprimeme.getValue();
 			
-			Object cpt_a_xiprime=iD2ADD.get(xiprime);
+			Object cpt_a_xiprime = iD2ADD.get(xiprime);
 			
-			if (!primeIdsProd.contains(xiprime)){
+			if (!primeIdsProd.contains(xiprime)){			
 				VDD = context.apply(VDD, cpt_a_xiprime, Context.PROD);
 				primeIdsProd.add(xiprime);
 			}
@@ -116,11 +116,12 @@ public class MDP_Fac  extends MDP{
 			//			 TODO: For asyncronic arcs Make a set of all CPTs to multiply (before loop)
 			//       Then when summing out xi', remove any CPTs from set
 			//       that involve xi' and multiply them in.
-			ArrayList dependPrimeList=getIdVarPrimeDependOn(xiprime,action.varId2DependPrimeList);
-            for(int i=0; i<dependPrimeList.size();i++){
-            	Integer xiprimeSyn=(Integer)dependPrimeList.get(i);
-            	Object cpt_a_xiprimeSyn=iD2ADD.get(xiprimeSyn);
-            	if(!primeIdsProd.contains(xiprimeSyn)){//this cpt was not multiplied before
+			ArrayList dependPrimeList = getIdVarPrimeDependOn(xiprime,action.varId2DependPrimeList);
+			
+            for (int i = 0; i < dependPrimeList.size(); i++){
+            	Integer xiprimeSyn = (Integer) dependPrimeList.get(i);
+            	Object cpt_a_xiprimeSyn = iD2ADD.get(xiprimeSyn);
+            	if (!primeIdsProd.contains(xiprimeSyn)){//this cpt was not multiplied before
             		VDD = context.apply(VDD, cpt_a_xiprimeSyn, Context.PROD);
             		primeIdsProd.add(xiprimeSyn);
             	}
@@ -130,14 +131,16 @@ public class MDP_Fac  extends MDP{
 		} 
 	
 		// Reduce memory if neededs
-		if (!simulating) 
-			flushCaches(VDD);
+//		if (!simulating) 
+//			flushCaches(VDD);
 
-		if(context.workingWithParameterized){
-			
+		if (context.workingWithParameterized){
 			context.mergeError = mergeError;
-
-			VDD = context.doMinCallOverNodes(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt); // the parameter is ParADD and the result is an ADD
+			
+			if (optimization == OptimizationType.Maximization)
+				VDD = context.doMaxCallOverNodes(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt);
+			else
+				VDD = context.doMinCallOverNodes(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt); // the parameter is ParADD and the result is an ADD
 		}
 		
 		context.workingWithParameterized = false;

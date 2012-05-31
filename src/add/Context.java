@@ -23,8 +23,9 @@ import logic.lattice.Lattice;
 import mdp.Action;
 import mdp.Config;
 import mdp.State;
+
 public abstract class Context {
-//	operation constants
+	//	operation constants
 	public final static Sum SUM =new Sum();
 	public final static Prod PROD =new Prod();
 	public final static SimpleProd SIMPLE_PROD = new SimpleProd();
@@ -56,6 +57,7 @@ public abstract class Context {
     protected Hashtable inverseLabelsProdId; //Integer(id) --> String (label product of probabilities)
     protected Integer unllocatedIdLabelProd;
     protected Hashtable reduceCacheMinPar=new Hashtable();
+    protected Hashtable reduceCacheMaxPar=new Hashtable();
     public final static String  NAME_FILE_AMPL = Config.getConfig().getAmplTempFile();
     public final static String  NAME_FILE_AMPL_BOUNDS = Config.getConfig().getAmplBoundTempFile();
     
@@ -64,7 +66,6 @@ public abstract class Context {
     public int reuseCacheIntNode=0,clash=0, noclash=0,contReuse=0,contNoReuse=0,numberReducedToValue=0,contReuseUsingLattice=0;
     public Hashtable<String, Double> currentValuesProb=new Hashtable<String, Double>();     //  idProb--> valProb
     public Hashtable<String, Double> probSample;     //  idProb--> valProb
-    
     
     protected Hashtable currentDirectionList=new Hashtable();
     protected Hashtable cacheResultsSolver=new Hashtable();
@@ -80,11 +81,10 @@ public abstract class Context {
     public Hashtable reduceConvert;;
     ///////////////
     
-//	 Nodes (and children) to keep when flushing caches
+    //	 Nodes (and children) to keep when flushing caches
     protected HashSet hsSpecialNodes = new HashSet();
     protected Hashtable nodesCacheNew=new Hashtable();
 	protected Hashtable inverseNodesCacheNew=new Hashtable();
-    
     
     public abstract NodeKey getNodeInverseCache(Integer f);
     public abstract Integer getIdCache(NodeKey nodek);
@@ -93,14 +93,10 @@ public abstract class Context {
     public abstract Object getInternalNode(Integer fvar, Object Fh, Object Fl);
   	public abstract Object GetNode(Integer fvar, Object fh, Object fl);
 	public abstract boolean isTerminalNode(Object f);
-	
-
-	
 
 	//operations
 	public abstract Object apply(Object f1, Object f2, BinaryOperation op);
 	public abstract Double apply(Object f1, UnaryOperationSimple op);
-	
 	
     //for restrict
 	public abstract Object reduceRestrict(Integer idVar,UnaryOperationComplex op,Object id);
@@ -116,9 +112,9 @@ public abstract class Context {
 	 
 	//for APRICODD
 	public abstract Object pruneNodesValue(Object valueiDD, double mergeError);
-	 public  double mergeError = -1 ;
-	 public int typeAproxPol;
-	 public Lattice lattice;
+	public  double mergeError = -1 ;
+	public int typeAproxPol;
+	public Lattice lattice;
 	//for Parameterized ADD
 	public boolean workingWithParameterized=false;
 	public boolean workingWithParameterizedBef=false;
@@ -135,7 +131,6 @@ public abstract class Context {
 	public Hashtable<String,Double> currentValuesW=new Hashtable<String,Double>();     //  idW--> valW
 	
 	// Designate/remove/clear nodes to persist through flushing
-	
     public void clearSpecialNodes() {
 	 hsSpecialNodes.clear();
     }
@@ -183,29 +178,26 @@ public abstract class Context {
 	}
     public abstract void copyInNewCacheNode(Object id);    
    
-    
     //viewing
 	public abstract Graph toGraph(Object current);
 	public void view(Object current) {
 		Graph g = toGraph(current);
 		g.launchViewer(1300, 770);
 	}
-	
-	 
-	 //reading a file and put in the MDP
-	 
-		/**
-		 * Build an ADD from a list (node is a list, high comes first for internal
-		 * nodes)
-		 * (C1                      ---list.get(0)
-		 *     (C4 (0.95) (0.475)   ---list.get(1)
-		 *     (C4 (0.0475)(0.0238))---list.get(2)
-		 * 
-		 * [                         ---list.get(0)     
-		 * 1                         ---list.get(1)
-		 * ]                         ---list.get(2)
-		 * 
-		 **/
+
+	//reading a file and put in the MDP
+	/**
+	 * Build an ADD from a list (node is a list, high comes first for internal
+	 * nodes)
+	 * (C1                      ---list.get(0)
+	 *     (C4 (0.95) (0.475)   ---list.get(1)
+	 *     (C4 (0.0475)(0.0238))---list.get(2)
+	 * 
+	 * [                         ---list.get(0)     
+	 * 1                         ---list.get(1)
+	 * ]                         ---list.get(2)
+	 * 
+	 **/
 	 public Object buildDDFromUnorderedTree(ArrayList list, TreeMap tmVar2ID,Integer firstVarId,HashMap varId2DependPrimeList) {
 
 		 Object o = list.get(0);
@@ -366,14 +358,16 @@ public abstract class Context {
 		}
 		//for parameterized
 	
-			
+		protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS) {
+			this.createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min");
+		}
 		
-	    protected void createFileAMPL(String objective,String NAME_FILE_CONTRAINTS) {
+	    protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS, String optimizationType) {
 	 		
 	     	try {
 	     		
 	             BufferedWriter out = new BufferedWriter(new FileWriter(NAME_FILE_AMPL));
-	             writeVarObjective(objective,out);
+	             writeVarObjective(objective, out, optimizationType);
 	             BufferedReader input= new BufferedReader(new FileReader(NAME_FILE_CONTRAINTS));
 	             String line = null;
 	             while (( line = input.readLine()) != null){
@@ -392,9 +386,15 @@ public abstract class Context {
 
 	 	}
 	    
+	    private void writeVarObjective(String objective, BufferedWriter out) throws IOException {
+	    	this.writeVarObjective(objective, out, "min");
+	    }
 	    
-	    
-		private void writeVarObjective(String objective, BufferedWriter out) throws IOException {
+		private void writeVarObjective(String objective, BufferedWriter out, String optimizationType) throws IOException {
+			String optimization = "minimize";
+			if (optimizationType.equals("max"))
+				optimization = "maximize";
+			
 	    	out.write(SOLVER);
             out.append(System.getProperty("line.separator"));
             Iterator it=listVarProb.iterator();
@@ -403,7 +403,7 @@ public abstract class Context {
            	 out.append(System.getProperty("line.separator"));
             }
             
-            out.append("minimize obj: " + objective + ";");
+            out.append(optimization + " obj: " + objective + ";");
             out.append(System.getProperty("line.separator"));
 			
 		}
@@ -505,98 +505,59 @@ public abstract class Context {
 		}
 	    
 	    //the parameter is ParADD and the result is an ADD
-	    public abstract Object doMinCallOverNodes(Object VDD,String NAME_FILE_CONTRAINTS,boolean pruneAfterEachIt);
-	     
-	   //Daniel: method used in RTDPIP state sampling
-		public Object doMinCallOverNodesWithRandomCoef(Object VDD, String NAME_FILE_CONTRAINTS) {
-
-	    	if (this.isTerminalNode(VDD)){ 
-	    		TerminalNodeKeyPar node = (TerminalNodeKeyPar) this.getInverseNodesCache().get(VDD);
-	    		 
-	    		if (node.getPolynomial().getTerms().size() == 0) //if the node does not have probabilities then we do not call the nonlinear solver
-	    			return this.getTerminalNode(node.getPolynomial().getC());
-
-	    		String polynomial = node.getPolynomial().toStringWithRandCoef(this,"p");
-    		
-	    		//////Call solver with the polynomial//////////////////////////////////////////
-				createFileAMPL(polynomial, NAME_FILE_CONTRAINTS);
-				
-				Double obj = callNonLinearSolver();
-				
-				//contNoReuse++;
-				
-				if (obj == null){
-					System.out.println("doMinCallOverNodes: Problems with the solver it return null");
-					System.exit(0);
-				}
-				
-				return this.getTerminalNode(obj);
-	    	 }
-	    	 
-	    	 /////////////////////recursive call for each ADD branch////////////////////////////////////////////
-	    	 Integer Fr = (Integer) reduceCacheMinPar.get(VDD);
-	    	 
-	    	 if (Fr == null) {
-	    		 InternalNodeKey intNodeKey = (InternalNodeKey) this.getInverseNodesCache().get(VDD);
-	    		 Object Fh = doMinCallOverNodesWithRandomCoef(intNodeKey.getHigh(), NAME_FILE_CONTRAINTS);
-	    		 Object Fl = doMinCallOverNodesWithRandomCoef(intNodeKey.getLower(), NAME_FILE_CONTRAINTS);
-	    		 Integer Fvar = intNodeKey.getVar();
-	    		 Fr = (Integer) this.GetNode(Fvar, Fh, Fl);
-	    		 reduceCacheMinPar.put(VDD, Fr);
-	    	 } else	{
-	    		 reuseCacheIntNode++;
-	    	 }
-	    	 
-	    	 ///////////////////////////////////////////////////////////////////////////////////////////////////
-	    	 return Fr;//could be integer or AditArc
-	     }
-	     
+	    public abstract Object doMinCallOverNodes(Object VDD, String NAME_FILE_CONTRAINTS, boolean pruneAfterEachIt);
+	    
+	    public abstract Object doMaxCallOverNodes(Object VDD, String NAME_FILE_CONTRAINTS, boolean pruneAfterEachIt);
 	     
 		 public abstract int contNumberNodes(Object valueiDD);
 ///////////////////////////////////////////////////////////////////
 		 //create file in order to obtain a bound of each probability
 		 public HashMap createBoundsProb(String NAME_FILE_CONTRAINTS) {
-			 probBound=new HashMap();
-			 Iterator it=listVarProb.iterator();
-             while(it.hasNext()){
-            	 String prob=(String)it.next();
-            	 createFileAMPL("p"+prob,NAME_FILE_CONTRAINTS);
-            	 Double objP=callNonLinearSolver();
-            	 createFileAMPL("-p"+prob,NAME_FILE_CONTRAINTS);
-            	 Double objN=callNonLinearSolver();
-            	 ArrayList bounds=new ArrayList();
-            	 bounds.add(Math.min(Math.abs(objP),Math.abs(objN)));
-            	 bounds.add(Math.max(Math.abs(objP),Math.abs(objN)));
-                 probBound.put(prob,bounds );
+			 probBound = new HashMap();
+			 Iterator it = listVarProb.iterator();
+             
+			 while (it.hasNext()){
+            	 String prob = (String) it.next();
+            	 
+            	 createFileAMPL("p" + prob, NAME_FILE_CONTRAINTS);
+            	 Double objP = callNonLinearSolver();
+            	 
+            	 createFileAMPL("-p" + prob, NAME_FILE_CONTRAINTS);
+            	 Double objN = callNonLinearSolver();
+            	 
+            	 ArrayList bounds = new ArrayList();
+            	 bounds.add(Math.min(Math.abs(objP), Math.abs(objN)));
+            	 bounds.add(Math.max(Math.abs(objP), Math.abs(objN)));
+                 probBound.put(prob, bounds);
              }
+			 
              return probBound;
-
-		}
-		 
+		 }
 		 
 		 //	create file in order to get probabilities for RTDP-IP sample
 		 public void getProbSampleCallingSolver(String NAME_FILE_CONTRAINTS_GREATERZERO) {
 			 
-			 createFileAMPL("0",NAME_FILE_CONTRAINTS_GREATERZERO);
-			 Double obj=callNonLinearSolver(); //fill   currentValuesProb and currentValuesW
-			 if (obj==null){
+			 createFileAMPL("0", NAME_FILE_CONTRAINTS_GREATERZERO);
+			 
+			 Double obj = callNonLinearSolver(); //fill   currentValuesProb and currentValuesW
+			 
+			 if (obj == null) {
 				 System.out.println("createProbSample: Problems with the solver. It returns null");
 				 System.exit(0);
 			 }
-             probSample=new Hashtable(currentValuesProb);	
-            
+			 
+             probSample = new Hashtable(currentValuesProb);	
 		}
- 
-		 
 
-	     public static boolean containsClash(Hashtable dirlist) {
-	    	 for (Object val : dirlist.values() ) {
-	    		 if ("C".equals(val)) return true;
-	    	 }
-	    	 return false;
-	     }
-		abstract public void dump(Object valueiDD,String NAME_FILE_VALUE);
-	
+	    public static boolean containsClash(Hashtable dirlist) {
+	    	for (Object val : dirlist.values() ) {
+	    		if ("C".equals(val)) return true;
+	    	}
+	    	
+	    	return false;
+	    }
+	     
+		abstract public void dump(Object valueiDD,String NAME_FILE_VALUE);	
 		
         public String getString(Integer valueiDD){
         	String Fr= (String) printCache.get(valueiDD);
@@ -635,35 +596,47 @@ public abstract class Context {
     	    	
  		
 		
-	 	  public Double getValueForStateInADD(Integer F,HashMap state,HashMap nextState,Integer xiprime,Integer valXiprime){
+	 	  public Double getValueForStateInADD(Integer F, HashMap state, HashMap nextState, Integer xiprime, Object valXiprime){
 		  
 	    	if(isTerminalNode(F)){
 	    		return ((TerminalNodeKeyADD)inverseNodesCache.get(F)).getValue();
 	    	}
 	    	InternalNodeKeyADD intNodeKey=(InternalNodeKeyADD)inverseNodesCache.get(F);
 	    	Integer Fvar= intNodeKey.getVar();
-	    	Integer val=(Integer)state.get(Fvar);
-	    	if(val==null){//var is in the nextState
-	    	        val= (Integer)nextState.get(Fvar);	
-	    	}
-	    	if(val==null && Fvar!=null && Fvar.compareTo(xiprime)==0){
-	    		 val=valXiprime;
-	    	}
-	    	if (val==null){
+	    	
+	    	Object val = state.get(Fvar);
+	    	
+	    	if (val == null)//var is in the nextState
+	    		val = (Integer) nextState.get(Fvar);	
+	    	
+	    	if (val == null && Fvar != null && Fvar.compareTo(xiprime) == 0)
+	    		val = valXiprime;
+
+	    	if (val == null) {
 	    		System.out.println("There is not  variable Fvar ");
 	    		System.exit(0);
 	    	}
-	    	Double reward=null;
-	    	if (val==1){
-	    	       reward=getValueForStateInADD(intNodeKey.getHigh(),state,nextState,xiprime,valXiprime);
+	    	
+	    	Boolean valAsBoolean = false;
+	    	
+	    	if (val instanceof Boolean)
+	    		valAsBoolean = (Boolean) val;
+	    	else if (val instanceof Integer) {
+	    		Integer valAsInt = (Integer) val;
+	    		valAsBoolean = (valAsInt == 1);
 	    	}
-	    	else if (val==0){
-	    		   reward=getValueForStateInADD(intNodeKey.getLower(),state,nextState,xiprime,valXiprime);
-	    	}
+	    	
+	    	Double reward = null;
+	    	
+	    	if (valAsBoolean) 
+	    		reward = getValueForStateInADD(intNodeKey.getHigh(), state, nextState, xiprime, valXiprime);
+	    	else
+	    		reward = getValueForStateInADD(intNodeKey.getLower(), state, nextState, xiprime, valXiprime);
 	    	
 	    	return reward;
   	  }
-  	  public  Hashtable sampleProbabilitiesSubjectTo(String NAME_FILE_CONTRAINTS) {
+  	  
+	public  Hashtable sampleProbabilitiesSubjectTo(String NAME_FILE_CONTRAINTS) {
   		  Iterator it = listVarProb.iterator();
   		  String objective = "";
   		  
@@ -862,77 +835,77 @@ public abstract class Context {
 	}
 		
 	///////////////////for MP//////////////////////////////////////////////////////////////////////////////
-	 public void createFileAMPLMP(String objective,String NAME_FILE_CONTRAINTS_MP, String NAME_FILE_CONTRAINTS,ArrayList listBasisFunctions, HashSet nameNewVariables) {
-	 		
-	     	try {
-	     		
-	             BufferedWriter out = new BufferedWriter(new FileWriter(NAME_FILE_AMPL));
-	             out.write(SOLVER);
-	             out.append(System.getProperty("line.separator"));
-	             Iterator it=listVarProb.iterator();
-	             while(it.hasNext()){
-	            	 out.append("var p" + it.next() + ">=0, <=1;");
-	            	 out.append(System.getProperty("line.separator"));
-	             }
-	             //print w
-	             for(int i=0;i<=listBasisFunctions.size();i++){
-	            	 out.append("var w" + i + ">=-1000, <=1000;");
-	            	 out.append(System.getProperty("line.separator"));      	            	 
-	             }
-	             //print newVariables
-	             Iterator itvar=nameNewVariables.iterator();
-	             while(itvar.hasNext()){
-	            	 out.append("var " + itvar.next()+";");
-	            	 out.append(System.getProperty("line.separator"));   
-	             }
+	 public void createFileAMPLMP(String objective, String NAME_FILE_CONTRAINTS_MP, String NAME_FILE_CONTRAINTS,
+			 ArrayList listBasisFunctions, HashSet nameNewVariables) {
+		 try {
+			 BufferedWriter out = new BufferedWriter(new FileWriter(NAME_FILE_AMPL));
+	         out.write(SOLVER);
+	         out.append(System.getProperty("line.separator"));
+	         
+	         Iterator it=listVarProb.iterator();
+	         
+	         while (it.hasNext()) {
+	        	 out.append("var p" + it.next() + ">=0, <=1;");
+	        	 out.append(System.getProperty("line.separator"));
+	         }
+	         
+	         //print w
+	         for (int i = 0; i <= listBasisFunctions.size(); i++){
+	        	 out.append("var w" + i + ">=-1000, <=1000;");
+	        	 out.append(System.getProperty("line.separator"));      	            	 
+	         }
+	         
+	         //print newVariables
+	         Iterator itvar = nameNewVariables.iterator();
+	         
+	         while (itvar.hasNext()){
+	        	 out.append("var " + itvar.next()+";");
+	        	 out.append(System.getProperty("line.separator"));   
+	         }
 	              
-	             //print obj
-	             out.append("minimize obj: " + objective + ";");
+	         //print obj
+	         out.append("minimize obj: " + objective + ";");
+	         out.append(System.getProperty("line.separator"));
+	             
+	         //copy the original contraints
+	         BufferedReader input2= new BufferedReader(new FileReader(NAME_FILE_CONTRAINTS));
+	         String line2 = null;
+	         while (( line2 = input2.readLine()) != null){
+	        	 out.append(line2);
 	             out.append(System.getProperty("line.separator"));
+	         }
 	             
-	             //copy the original contraints
-	             BufferedReader input2= new BufferedReader(new FileReader(NAME_FILE_CONTRAINTS));
-	             String line2 = null;
-	             while (( line2 = input2.readLine()) != null){
-	                 out.append(line2);
-	                 out.append(System.getProperty("line.separator"));
-	             }
-	             
-	             
-	             //copy the new set of constraints
-	             BufferedReader input= new BufferedReader(new FileReader(NAME_FILE_CONTRAINTS_MP));
-	             String line = null;
-	             while (( line = input.readLine()) != null){
-	                 out.append(line);
-	                 out.append(System.getProperty("line.separator"));
-	             }
-
-	             
-	             
-	             
-	             
-	             out.append("solve;");
+	         //copy the new set of constraints
+	         BufferedReader input= new BufferedReader(new FileReader(NAME_FILE_CONTRAINTS_MP));
+	         String line = null;
+	         while (( line = input.readLine()) != null){
+	        	 out.append(line);
 	             out.append(System.getProperty("line.separator"));
-	             //print the probabilities founded
-	             Iterator it1=listVarProb.iterator();
-	             while(it1.hasNext()){
-	            	 String pnumber=(String)it1.next();
-	            	 out.append("print 'p" + pnumber + "',p"+ pnumber+";");
-	            	 out.append(System.getProperty("line.separator"));
-	             }
-	             //print w founded
-	             for(int i=0;i<=listBasisFunctions.size();i++){
-	            	 out.append("print 'w" + i + "',w"+ i+";");
-	            	 out.append(System.getProperty("line.separator")); 
-	             }
-	             
-	             input.close();
-	             out.close();
-	         } catch (IOException e) {
-	         	System.out.println("Problem with the creation AMPL file for MP");
-	         	System.exit(0);
 	         }
 
-	 	}
-
+	         out.append("solve;");
+	         out.append(System.getProperty("line.separator"));
+	         
+	         //print the probabilities founded
+	         Iterator it1=listVarProb.iterator();
+	         
+	         while (it1.hasNext()){
+	        	 String pnumber=(String)it1.next();
+	        	 out.append("print 'p" + pnumber + "',p"+ pnumber+";");
+	        	 out.append(System.getProperty("line.separator"));
+	         }
+	         
+	         //print w founded
+	         for(int i=0;i<=listBasisFunctions.size();i++){
+	        	 out.append("print 'w" + i + "',w"+ i+";");
+	        	 out.append(System.getProperty("line.separator")); 
+	         }
+	             
+	         input.close();
+	         out.close();
+		 } catch (IOException e) {
+         	System.out.println("Problem with the creation AMPL file for MP");
+         	System.exit(0);
+         }
+ 	}
 }
