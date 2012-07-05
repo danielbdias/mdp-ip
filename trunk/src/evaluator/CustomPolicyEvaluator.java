@@ -12,7 +12,41 @@ public class CustomPolicyEvaluator {
 				
 		ArrayList<String[]> policyEvaluationList = new ArrayList<String[]>();
 		
-		for (String simulationNature : new String[] { "NonStationary", "GlobalMyopicAdversarial" }) {
+		for (int i = 20; i <= 100; i += 20) {
+			policyEvaluationList.add(new String[] {
+					"//home//daniel//workspaces//java//mdpip//ADD//problemsMDPIP//uni_ring_IP_4Mod" + i + ".net",
+					"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//ResultsDanielRTDPIPUAI2012//resultsIntervalGapOption1(usado)//spudd//valueuni_ring_IP_4Mod" + i + "_0_0REGR.net",
+					"2",
+					"50",
+					"160",
+					"MDPIP",
+					"Total",
+					"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//uai2012//uni_ring_interval//uni_ring_IP_4_sim_results_spuddip_interval_nonstationary.txt",
+					"NonStationary"
+			});
+		}
+
+		for (String type : new String[] { "onequarter", "tenpercent", "fivepercent" })
+			for (int i = 20; i <= 100; i += 20) {
+				policyEvaluationList.add(new String[] {
+						"//home//daniel//workspaces//java//mdpip//ADD//problemsMDPIP//uni_ring_IP_4Mod" + i + ".net",
+						"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//ResultsDanielRTDPIPUAI2012//resultsIntervalGapOption1(usado)//rtdpip//valueuni_ring_IP_4Mod" + i + "_RTDPIP_" + type + ".net",
+						"2",
+						"50",
+						"160",
+						"MDPIP",
+						"Total",
+						"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//uai2012//uni_ring_interval//uni_ring_IP_4_sim_results_rtdpip_" + type + "_interval_nonstationary.txt",
+						"NonStationary"
+				});
+			}
+		
+//		policyEvaluationList.addAll(getArgsForSpudd("traffic", "GlobalMyopicAdversarial", "traffic_old", "uai2012//traffic", 3, 6));
+//		
+//		for (String rtdpType : new String[] { "onequarter", "tenpercent", "fivepercent" })
+//			policyEvaluationList.addAll(getArgsForRtdp("traffic", "GlobalMyopicAdversarial", "test01_traffic_old", "uai2012//traffic", rtdpType, 3, 6));
+		
+//		for (String simulationNature : new String[] { "NonStationary", "GlobalMyopicAdversarial" }) {
 //			policyEvaluationList.addAll(getArgsForApricodd("uni_ring_IP", simulationNature, "uni_ring_ip", "uai2012//uni_ring_IP_apricodd", 1, 8));
 			
 //			policyEvaluationList.addAll(getArgsForSpudd("traffic", simulationNature, "traffic_old", "uai2012//traffic", 3, 6));
@@ -28,7 +62,7 @@ public class CustomPolicyEvaluator {
 //			}
 			
 			//TODO: pensar no uniring com intervalos de imprecisão
-		}
+//		}
 		
 		for (String[] arguments : policyEvaluationList)
 			PolicyEvaluator.main(arguments);
