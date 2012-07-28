@@ -635,32 +635,73 @@ public abstract class Context {
 	    	
 	    	return reward;
   	  }
-  	  
-	public  Hashtable sampleProbabilitiesSubjectTo(String NAME_FILE_CONTRAINTS) {
-  		  Iterator it = listVarProb.iterator();
-  		  String objective = "";
-  		  
-  		  while (it.hasNext()) {
-  			  String prob = (String) it.next();
-  			  double w = Math.random();
-  			  double sign = Math.random();
-  			  int signW = 1;
-  			  
-  			  if (sign <= 0.5)
-  				  signW = -1;
-
-  			  if (objective == "")
-  				  objective = w * signW + "*p" + prob;
-  			  else
-  				  objective = w * signW + "*p" + prob + "+" + objective; 			  
-  		  }
-  		  
-  		  createFileAMPL(objective, NAME_FILE_CONTRAINTS);
-  		  
-  		  callNonLinearSolver(); //it creates the currentValueProbabilities
-  		  
-  		  return currentValuesProb;
+	 	  
+	private double[] getRandomCoefficients(int numberOfCoefficients) {
+		double[] coefficients = new double[numberOfCoefficients];
+		
+		for (int i = 0; i < coefficients.length; i++) {
+			double coefficient = Math.random();
+			double signal = Math.random();
+			
+			if (signal > 0.5)
+				coefficients[i] = coefficient;
+			else
+				coefficients[i] = -coefficient;
+		}
+		
+		return coefficients;
 	}
+	
+	private String generateRandomObjective() {
+		double[] coefficients = this.getRandomCoefficients(listVarProb.size());
+		
+		String objective = "";
+  		
+		Iterator iter = listVarProb.iterator();
+		
+		for (int i = 0; i < coefficients.length; i++) {
+			String prob = (String) iter.next();
+			
+			if (objective.isEmpty())
+				objective = (coefficients[i] + "*p" + prob);
+			else
+				objective = (coefficients[i] + "*p" + prob + "+" + objective);
+		}
+		
+		return objective;
+	}
+	
+	public Hashtable<String, Double> sampleProbabilitiesSubjectTo(String NAME_FILE_CONTRAINTS) {
+		String objective = generateRandomObjective();
+  		  
+  		createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min");
+  		callNonLinearSolver();
+  		
+  		Hashtable<String, Double> firstPoint = currentValuesProb;
+  		
+  		createFileAMPL(objective, NAME_FILE_CONTRAINTS, "max");
+  		callNonLinearSolver();
+  		
+  		Hashtable<String, Double> secondPoint = currentValuesProb;
+  		
+  		Hashtable<String, Double> randomProbabilities = new Hashtable<String, Double>();
+  		
+  		double signedRandomNumber = Math.random();
+  		signedRandomNumber = (Math.random() > 0.5 ? signedRandomNumber : -signedRandomNumber);
+  		
+  		for (String key : firstPoint.keySet()) {
+			double mean = (firstPoint.get(key) + secondPoint.get(key)) / 2;
+			double halfDist = Math.abs(firstPoint.get(key) - secondPoint.get(key)) / 2;
+			
+			double pointDimensionValue = mean + halfDist * signedRandomNumber;
+			randomProbabilities.put(key, pointDimensionValue);
+		}
+  		
+  		this.probSample = randomProbabilities;
+  		
+  		return randomProbabilities;
+	}
+	
   	public Integer convertCPT(Integer F, Hashtable sampleProbabilities) {
 		if(this.isTerminalNode(F)){
 			//evaluate the parameterized leave with the sampleProbabilities 

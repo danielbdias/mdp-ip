@@ -216,7 +216,8 @@ public abstract class MDP {
 	  bdTolerance = ((BigDecimal)i.next());
 
 	  //For RTDP and BRTDP Read initial and goal states/////////////////////////////
-	  if (typeSolution.equals("RTDP") || typeSolution.equals("RTDPIP") || typeSolution.equals("BRTDP") || simulationMode ){
+	  if (typeSolution.equals("RTDP") || typeSolution.equals("RTDPIP") || typeSolution.equals("Total") 
+			  || typeSolution.equals("BRTDP") || simulationMode ){
 		  listInitialStates = new ArrayList();
 		  
 		  o = i.next();
@@ -518,6 +519,19 @@ public abstract class MDP {
 		}
 	}
 
+	private void logValueInFile(String solution, double value, long time) {
+		try {
+			java.io.FileWriter writer = 
+				new FileWriter("//home//daniel//Development//workspaces//java//mestrado//mdpip//ADD//reportsMDPIP//initialvalue_" + solution + ".txt", true);
+			
+			writer.write(time + " " + value + "\n");
+			
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	public int solve(int maxNumberIterations, double mergeError) {
 		return this.solve(maxNumberIterations, mergeError, OptimizationType.Maximization, OptimizationType.Minimization);
 	}
@@ -533,7 +547,6 @@ public abstract class MDP {
 		return this.solve(maxNumberIterations, mergeError, firstOptimization, secondOptimization, actionsToUse);
     }
 
-	//TODO: move this method to MDP_Flat
 	private int solve(int maxNumberIterations, double mergeError, OptimizationType firstOptimization, OptimizationType secondOptimization, List<String> actionsToUse) {
 		NAME_FILE_VALUE += ("_" + Double.toString(mergeError).replace(".", "_"));
 		
@@ -544,12 +557,18 @@ public abstract class MDP {
 		
 		int numIterations = 0;   
         Object QiPlus1DD, DiffDD;
-    	valueiDD = rewardDD;
-
-    	double Rmax = context.apply(valueiDD, Context.MAXVALUE);
-    	double Vmax = Rmax;
+        
+        double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
+		maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
+		
+		valueiDD = context.getTerminalNode(maxUpper);
+		
+    	double Vmax = Rmax; 
     	context.workingWithParameterizedBef = context.workingWithParameterized;
     	context.createBoundsProb(NAME_FILE_CONTRAINTS);
+    	
+    	long initialTime = System.currentTimeMillis();
+    	long initialStateNumberOfLogs = 0;
     	
     	while (numIterations < maxNumberIterations) {
     		valueiPlus1DD = context.getTerminalNode(Double.NEGATIVE_INFINITY);
@@ -566,7 +585,17 @@ public abstract class MDP {
     			else
     				valueiPlus1DD = context.apply(valueiPlus1DD, QiPlus1DD, Context.MIN);
      			
-        	    flushCaches(null);			
+        	    flushCaches(null);		
+        	    
+        	    long elapsedTime = (System.currentTimeMillis() - initialTime) / 1000;
+        	    
+        	    if (initialStateNumberOfLogs < elapsedTime) {
+        	    	TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
+        	    	Double value = context.getValueForStateInContext((Integer) valueiPlus1DD, initialState, null, null);
+        	    	
+        	    	this.logValueInFile("SPUDD", value, elapsedTime);
+        	    	initialStateNumberOfLogs = elapsedTime;
+        	    }
     		}   	
 
     		valueiPlus1DD = context.apply(valueiPlus1DD, context.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
@@ -1676,7 +1705,9 @@ public abstract class MDP {
 
 		context.workingWithParameterizedBef = context.workingWithParameterized;
 		
-		//for (int trial = 1; trial <= numTrials; trial++){
+		long initialTime = System.currentTimeMillis();
+    	long initialStateNumberOfLogs = 0;
+		
 		while (totalTrialTimeSec <= timeOut){	
 			int depth = 0;
 			visited.clear();// clear visited states stack
@@ -1684,7 +1715,7 @@ public abstract class MDP {
 			TreeMap<Integer,Boolean> state = sampleInitialStateFromList(randomGenInitial); 
 
 			//do trial //////////////////////////////////
-			while (!inGoalSet(state) && (state !=null) && depth < maxDepth) {
+			while (!inGoalSet(state) && (state !=null)) {// && depth < maxDepth) {
 				if (totalTrialTimeSec > timeOut) break;
 				
 				depth++;
@@ -1705,7 +1736,26 @@ public abstract class MDP {
 				
 				totalTrialTime = GetElapsedTime();
 	            totalTrialTimeSec = totalTrialTime / 1000;
+	            
+	            long elapsedTime = (System.currentTimeMillis() - initialTime) / 1000;
+        	    
+        	    if (initialStateNumberOfLogs < elapsedTime) {
+        	    	TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
+        	    	
+        	    	TreeMap<Integer, Boolean> remappedInitialState = new TreeMap<Integer, Boolean>();
+        	    	for (Object key : hmPrimeRemap.keySet())
+        	    		remappedInitialState.put((Integer) hmPrimeRemap.get(key), initialState.get(key));
+        	    	
+        	    	Double value = context.getValueForStateInContext((Integer) this.VUpper, remappedInitialState, null, null);
+        	    	
+        	    	this.logValueInFile("RTDPIP", value, elapsedTime);
+        	    	initialStateNumberOfLogs = elapsedTime;
+        	    }
 			}
+			
+			//adiciona o goal na lista de estados visitados para ele ser
+			//considerado nos backups
+			visited.add(state);
 			
 			//do optimization
 			while (!visited.empty()) {
@@ -1717,6 +1767,8 @@ public abstract class MDP {
 			totalTrialTime = GetElapsedTime();
             totalTrialTimeSec = totalTrialTime / 1000;
 		}
+		
+		//context.view(VUpper);
 		
 		ArrayList<Object[]> result = new ArrayList<Object[]>();
 		
@@ -1778,15 +1830,17 @@ public abstract class MDP {
 		State s = new State(sampleInitialStateFromList(randomGenInitial));
 		
 		int trialCounter = 0;		
+		
 		while (totalTrialTimeSec <= timeOut && !solvedStates.contains(s)){	// TODO: Verificar que contains funcione
-           totalTrialTimeSec=lrtdpTrial(maxDepth, timeOut, randomGenNextState, s, solvedStates);
-           trialCounter++;
+			totalTrialTimeSec = lrtdpTrial(maxDepth, timeOut, randomGenNextState, s, solvedStates);
+			trialCounter++;
    	    	if (numTrials > 0 && trialCounter >= numTrials) {
    	    		System.out.println("LRTDP reached the maxTrials (" + numTrials+ "). Stopping..");
    	    		break;
    	    	}
-   		   s = new State(sampleInitialStateFromList(randomGenInitial));
+   	    	s = new State(sampleInitialStateFromList(randomGenInitial));
 		}
+		
 		assert((numTrials > 0 && trialCounter >= numTrials)|| (solvedStates.contains(s))|| totalTrialTimeSec > timeOut);
 		
 		ArrayList<Object[]> result = new ArrayList<Object[]>();
@@ -1820,24 +1874,23 @@ public abstract class MDP {
 	*/
 	public long lrtdpTrial(int maxDepth, long timeOut, Random randomGenNextState, State state, HashSet <State> solvedStates ){
 		int depth = 0;
-		long totalTrialTime=0;
-		long totalTrialTimeSec=0;
+		long totalTrialTime = 0;
+		long totalTrialTimeSec = 0;
 		Stack<State> visited = new Stack<State>();
 		
 	    /* BEGIN TRIAL */
 		boolean debugTrial = false;
-			
 		
 		while (true) {
-	         //Exiting conditions
-			  if (state == null) {
-				  	if (debugTrial){ System.out.println("Exiting trial because state == null"); }
-				  	break;
-			  }
-			  else if (solvedStates.contains(state)) {
-			        if (debugTrial){ System.out.println("Exiting trial because state is marked as solved"); }
-			        break;
-			  }
+			//Exiting conditions
+			if (state == null) {
+				if (debugTrial){ System.out.println("Exiting trial because state == null"); }
+				break;
+			}
+			else if (solvedStates.contains(state)) {
+				if (debugTrial){ System.out.println("Exiting trial because state is marked as solved"); }
+				break;
+			}
 			  else if (inGoalSet(state.getValues())) {
 			        if (debugTrial){ System.out.println("Exiting trial because state is a goal state"); }
 			        break;
@@ -1891,13 +1944,15 @@ public abstract class MDP {
 		return totalTrialTimeSec;
 	}
 
-	public boolean LRTDP_IP_CheckSolved(Random randomGenNextState,State state,HashSet<State> solvedStates)
+	public boolean LRTDP_IP_CheckSolved(Random randomGenNextState, State state, HashSet<State> solvedStates)
 	{
 		boolean rv = true;
 		
 		Stack<State> open = new Stack<State>();
 		Stack<State> closed = new Stack<State>();
-		open.push(state);
+		
+		if (!solvedStates.contains(state))
+			open.push(state);
 		    
 		HashSet<State> aux = new HashSet<State>(); //aux =open union close
 		  
@@ -2012,10 +2067,8 @@ public abstract class MDP {
 	private TreeMap<Integer, Boolean> sampling(TreeMap<Integer, Boolean> state, TreeMap iD2ADD, Random randomGenerator) {
 		TreeMap<Integer, Boolean> nextState = new TreeMap<Integer, Boolean>();
 		
-		if (typeSampledRTDPMDPIP == 4) {
-			context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
-			context.probSample = new Hashtable<String, Double>(context.currentValuesProb);
-		}
+		if (typeSampledRTDPMDPIP == 4)
+			context.probSample = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
 		
 		for (int i = 1; i <= this.numVars; i++){
 			
