@@ -10,6 +10,8 @@ public class Config {
 	
 	private final String CONFIG_FILE = "config.properties";
 	
+	private final String ROOT_DIR_PLACEHOLDER = "{root.dir}";
+	
 	private Properties propertiesData = null;
 	
 	/**
@@ -59,43 +61,77 @@ public class Config {
 	public String getAmplTempFile() {
 		final String configKey = "ampl.tempfile";
 		
-		return this.getConfigValue(configKey);
+		String configValue = this.getConfigValue(configKey);
+		
+		if (configValue.contains(ROOT_DIR_PLACEHOLDER))
+			configValue = configValue.replace(ROOT_DIR_PLACEHOLDER, this.getRootDir());
+		
+		return configValue;
 	}
 	
 	public String getAmplBoundTempFile() {
 		final String configKey = "ampl.bound.tempfile";
 		
-		return this.getConfigValue(configKey);
+		String configValue = this.getConfigValue(configKey);
+		
+		if (configValue.contains(ROOT_DIR_PLACEHOLDER))
+			configValue = configValue.replace(ROOT_DIR_PLACEHOLDER, this.getRootDir());
+		
+		return configValue;
 	}
-	
-	
-	
 	
 	public String getAmplConstraintFile() {
 		final String configKey = "ampl.constraintfile";
 		
-		return this.getConfigValue(configKey);
+		String configValue = this.getConfigValue(configKey);
+		
+		if (configValue.contains(ROOT_DIR_PLACEHOLDER))
+			configValue = configValue.replace(ROOT_DIR_PLACEHOLDER, this.getRootDir());
+		
+		return configValue;
 	}
 	
 	public String getAmplConstraintFileGreaterZero() {
 		final String configKey = "ampl.constraintfileGreaterZero";
 		
-		return this.getConfigValue(configKey);
+		String configValue = this.getConfigValue(configKey);
+		
+		if (configValue.contains(ROOT_DIR_PLACEHOLDER))
+			configValue = configValue.replace(ROOT_DIR_PLACEHOLDER, this.getRootDir());
+		
+		return configValue;
 	}
+
 	public String getProblemsDir() {
 		final String configKey = "problems.dir";
 		
-		return this.getConfigValue(configKey);
+		String configValue = this.getConfigValue(configKey);
+		
+		if (configValue.contains(ROOT_DIR_PLACEHOLDER))
+			configValue = configValue.replace(ROOT_DIR_PLACEHOLDER, this.getRootDir());
+		
+		return configValue;
 	}
 	
 	public String getReportsDir() {
 		final String configKey = "reports.dir";
 		
-		return this.getConfigValue(configKey);
+		String configValue = this.getConfigValue(configKey);
+		
+		if (configValue.contains(ROOT_DIR_PLACEHOLDER))
+			configValue = configValue.replace(ROOT_DIR_PLACEHOLDER, this.getRootDir());
+		
+		return configValue;
 	}
 	
 	public String getOperatingSystemName() {
 		final String configKey = "user.os";
+		
+		return this.getConfigValue(configKey);
+	}
+	
+	public String getRootDir() {
+		final String configKey = "root.dir";
 		
 		return this.getConfigValue(configKey);
 	}

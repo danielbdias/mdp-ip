@@ -11,7 +11,7 @@
 ROOT_DIR=/home/daniel/workspaces/java/mdpip/ADD
 
 #Algorithm name
-ALGORITHM=rtdpip
+ALGORITHM=rtdp
 
 #Directory where the problems are located
 PROBLEM_DIR=$ROOT_DIR/problemsMDPIP
@@ -24,7 +24,7 @@ REPORTS_DIR=$ROOT_DIR/reportsMDPIP
 RESULTS_DIR=$REPORTS_DIR/results/$ALGORITHM
 
 #Test execution
-NUMBER_OF_RUNS_PER_TEST=50
+NUMBER_OF_RUNS_PER_TEST=75
 
 #Max depth to explore with RTDP
 MAX_DEPTH=1000 
@@ -69,43 +69,43 @@ execute_problem(){
 echo Starting tests...
 echo 
 
-echo Tests with 25% of time...
+echo Tests with 100% of time...
 
-TEST_TYPE="onequarter"
+TEST_TYPE="full"
 
-execute_problem $TEST_TYPE 1 1
-execute_problem $TEST_TYPE 2 1
-execute_problem $TEST_TYPE 3 4
-execute_problem $TEST_TYPE 4 11
-execute_problem $TEST_TYPE 5 41
-execute_problem $TEST_TYPE 6 124
-#execute_problem $TEST_TYPE 7 312
-#execute_problem $TEST_TYPE 8 965
+#execute_problem $TEST_TYPE 1 1
+#execute_problem $TEST_TYPE 2 8
+#execute_problem $TEST_TYPE 3 26
+execute_problem $TEST_TYPE 4 74
+#execute_problem $TEST_TYPE 5 276
+#execute_problem $TEST_TYPE 6 740
+#execute_problem $TEST_TYPE 7 2030
+#execute_problem $TEST_TYPE 8 5854
 
-echo Tests with 10% of time...
+#echo Tests with 50% of time...
 
-TEST_TYPE="tenpercent"
+#TEST_TYPE="onehalf"
 
-execute_problem $TEST_TYPE 1 1
-execute_problem $TEST_TYPE 2 1
-execute_problem $TEST_TYPE 3 1
-execute_problem $TEST_TYPE 4 4
-execute_problem $TEST_TYPE 5 16
-execute_problem $TEST_TYPE 6 49
-#execute_problem $TEST_TYPE 7 125
-#execute_problem $TEST_TYPE 8 386
+#execute_problem $TEST_TYPE 1 1
+#execute_problem $TEST_TYPE 2 4
+#execute_problem $TEST_TYPE 3 13
+#execute_problem $TEST_TYPE 4 37
+#execute_problem $TEST_TYPE 5 138
+#execute_problem $TEST_TYPE 6 370
+#execute_problem $TEST_TYPE 7 1015
+#execute_problem $TEST_TYPE 8 2927
 
-echo Tests with 5% of time...
+#echo Tests with 25% of time...
 
-TEST_TYPE="fivepercent"
+#TEST_TYPE="onequarter"
 
-execute_problem $TEST_TYPE 1 1
-execute_problem $TEST_TYPE 2 1
-execute_problem $TEST_TYPE 3 1
-execute_problem $TEST_TYPE 4 2
-execute_problem $TEST_TYPE 5 8
-execute_problem $TEST_TYPE 6 25
-#execute_problem $TEST_TYPE 7 63
-#execute_problem $TEST_TYPE 8 183
+#execute_problem $TEST_TYPE 1 1
+#execute_problem $TEST_TYPE 2 2
+#execute_problem $TEST_TYPE 3 7
+#execute_problem $TEST_TYPE 4 19
+#execute_problem $TEST_TYPE 5 69
+#execute_problem $TEST_TYPE 6 185
+#execute_problem $TEST_TYPE 7 508
+#execute_problem $TEST_TYPE 8 1464
 
 echo End of tests

@@ -24,7 +24,7 @@ public abstract class MDP {
 	//2: if p=0  => p=epsilon 
 	//3: using  the result of a problem with constraints p>= epsilon 
 	//4: add random coefficients for each constraint p
-	int typeSampledRTDPMDPIP = 1;
+	int typeSampledRTDPMDPIP = 4;
 	
 	double epsilon = 0.000001;
 	
@@ -519,10 +519,27 @@ public abstract class MDP {
 		}
 	}
 
-	private void logValueInFile(String solution, double value, long time) {
+	private void logValueInFile(String logFile, double value, long time) {
 		try {
-			java.io.FileWriter writer = 
-				new FileWriter("//home//daniel//Development//workspaces//java//mestrado//mdpip//ADD//reportsMDPIP//initialvalue_" + solution + ".txt", true);
+			String[] fileComponents = logFile.split(File.separator);
+			
+			if (fileComponents != null && fileComponents.length > 0) {
+				fileComponents[fileComponents.length - 1] = "initial_" + fileComponents[fileComponents.length - 1];
+				
+				logFile = "";
+				
+				for (int i = 0; i < fileComponents.length - 1; i++) {
+					String component = fileComponents[i];
+					logFile += (component + File.separator);
+				}
+					
+				logFile += fileComponents[fileComponents.length - 1];
+			}
+			
+			if (logFile.endsWith(".net"))
+				logFile = logFile.replace(".net", ".txt");
+			
+			java.io.FileWriter writer = new FileWriter(logFile, true);
 			
 			writer.write(time + " " + value + "\n");
 			
@@ -568,7 +585,6 @@ public abstract class MDP {
     	context.createBoundsProb(NAME_FILE_CONTRAINTS);
     	
     	long initialTime = System.currentTimeMillis();
-    	long initialStateNumberOfLogs = 0;
     	
     	while (numIterations < maxNumberIterations) {
     		valueiPlus1DD = context.getTerminalNode(Double.NEGATIVE_INFINITY);
@@ -586,16 +602,6 @@ public abstract class MDP {
     				valueiPlus1DD = context.apply(valueiPlus1DD, QiPlus1DD, Context.MIN);
      			
         	    flushCaches(null);		
-        	    
-        	    long elapsedTime = (System.currentTimeMillis() - initialTime) / 1000;
-        	    
-        	    if (initialStateNumberOfLogs < elapsedTime) {
-        	    	TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
-        	    	Double value = context.getValueForStateInContext((Integer) valueiPlus1DD, initialState, null, null);
-        	    	
-        	    	this.logValueInFile("SPUDD", value, elapsedTime);
-        	    	initialStateNumberOfLogs = elapsedTime;
-        	    }
     		}   	
 
     		valueiPlus1DD = context.apply(valueiPlus1DD, context.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
@@ -627,6 +633,13 @@ public abstract class MDP {
     		numIterations = numIterations + 1;
 
     		Vmax = Rmax + this.bdDiscount.doubleValue() * Vmax;
+    		
+    		long elapsedTime = (System.currentTimeMillis() - initialTime);
+    	    
+	    	TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
+	    	Double value = context.getValueForStateInContext((Integer) valueiPlus1DD, initialState, null, null);
+	    	
+	    	this.logValueInFile(NAME_FILE_VALUE, value, elapsedTime);
     	}
     	
     	if (printFinalADD)
@@ -1706,7 +1719,6 @@ public abstract class MDP {
 		context.workingWithParameterizedBef = context.workingWithParameterized;
 		
 		long initialTime = System.currentTimeMillis();
-    	long initialStateNumberOfLogs = 0;
 		
 		while (totalTrialTimeSec <= timeOut){	
 			int depth = 0;
@@ -1736,21 +1748,6 @@ public abstract class MDP {
 				
 				totalTrialTime = GetElapsedTime();
 	            totalTrialTimeSec = totalTrialTime / 1000;
-	            
-	            long elapsedTime = (System.currentTimeMillis() - initialTime) / 1000;
-        	    
-        	    if (initialStateNumberOfLogs < elapsedTime) {
-        	    	TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
-        	    	
-        	    	TreeMap<Integer, Boolean> remappedInitialState = new TreeMap<Integer, Boolean>();
-        	    	for (Object key : hmPrimeRemap.keySet())
-        	    		remappedInitialState.put((Integer) hmPrimeRemap.get(key), initialState.get(key));
-        	    	
-        	    	Double value = context.getValueForStateInContext((Integer) this.VUpper, remappedInitialState, null, null);
-        	    	
-        	    	this.logValueInFile("RTDPIP", value, elapsedTime);
-        	    	initialStateNumberOfLogs = elapsedTime;
-        	    }
 			}
 			
 			//adiciona o goal na lista de estados visitados para ele ser
@@ -1766,10 +1763,21 @@ public abstract class MDP {
 			
 			totalTrialTime = GetElapsedTime();
             totalTrialTimeSec = totalTrialTime / 1000;
+            
+            //medição para o estado inicial
+            long elapsedTime = (System.currentTimeMillis() - initialTime);
+            
+            TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
+	    	
+	    	TreeMap<Integer, Boolean> remappedInitialState = new TreeMap<Integer, Boolean>();
+	    	for (Object key : hmPrimeRemap.keySet())
+	    		remappedInitialState.put((Integer) hmPrimeRemap.get(key), initialState.get(key));
+	    	
+	    	Double value = context.getValueForStateInContext((Integer) this.VUpper, remappedInitialState, null, null);
+	    	        	    	
+	    	this.logValueInFile(NAME_FILE_VALUE, value, elapsedTime);
 		}
-		
-		//context.view(VUpper);
-		
+				
 		ArrayList<Object[]> result = new ArrayList<Object[]>();
 		
 		context.workingWithParameterized = false;

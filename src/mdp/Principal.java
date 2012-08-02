@@ -140,7 +140,8 @@ public class Principal {
 		   }
 		   //====================================================================================
 		   else if(typeSolution.compareTo("RTDPIP")==0){
-			   myMDP.pruneAfterEachIt = pruneEachIt;
+			   //myMDP.pruneAfterEachIt = pruneEachIt;
+			   myMDP.pruneAfterEachIt = false;
 			   			   
 			   Random randomGenInitial = new Random(19580434);
 			   Random randomGenNextState = new Random(19580807);
