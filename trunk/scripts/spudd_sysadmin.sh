@@ -17,17 +17,17 @@ ALGORITHM=spudd
 PROBLEM_DIR=$ROOT_DIR/problemsMDPIP
 
 #Indicate which problem will be used in tests
-PROBLEM_TYPE=bi_ring_IP
+PROBLEM_TYPE=indep_ring_IP
 
 #Indicate the directory where the results will be saved
 RESULTS_DIR=$ROOT_DIR/reportsMDPIP/results/$ALGORITHM
 
 #Define the range to be tested
 INITIAL_PROBLEM=1
-LAST_PROBLEM=6
+LAST_PROBLEM=8
 
 #Test execution
-NUMBER_OF_RUNS_PER_TEST=50
+NUMBER_OF_RUNS_PER_TEST=75
 
 #Java execution parameters
 BINARIES_DIR=$ROOT_DIR/bin
@@ -48,9 +48,9 @@ while test $current_problem_index -le $LAST_PROBLEM
 do
 	echo Executing problem $PROBLEM_TYPE"_"$current_problem_index
 
-	current_problem=$PROBLEM_DIR/$PROBLEM_TYPE"_"$current_problem_index"_Interval07.net"
-	current_report=$RESULTS_DIR/$PROBLEM_TYPE"_test_Interval07.txt"
-	current_log=$RESULTS_DIR/$PROBLEM_TYPE"_"$current_problem_index"_Interval07.log"
+	current_problem=$PROBLEM_DIR/$PROBLEM_TYPE"_"$current_problem_index".net"
+	current_report=$RESULTS_DIR/$PROBLEM_TYPE"_test.txt"
+	current_log=$RESULTS_DIR/$PROBLEM_TYPE"_"$current_problem_index".log"
 
 	java -Xms200m -Xmx2048m -classpath $CLASSPATH -cp $BINARIES_DIR $MAIN_CLASS $current_problem $NUMBER_OF_RUNS_PER_TEST 0 1 $current_report 0 Fact NOT FALSE Total 160 1000 1000 0.0 300 60 60 1 1 > $current_log
 

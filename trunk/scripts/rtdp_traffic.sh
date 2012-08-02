@@ -11,7 +11,7 @@
 ROOT_DIR=/home/daniel/workspaces/java/mdpip/ADD
 
 #Algorithm name
-ALGORITHM=rtdpip
+ALGORITHM=rtdp
 
 #Directory where the problems are located
 PROBLEM_DIR=$ROOT_DIR/problemsMDPIP
@@ -69,31 +69,16 @@ execute_problem(){
 echo Starting tests...
 echo 
 
-echo Tests with 25% of time...
+echo Tests with 100% of time...
 
-TEST_TYPE="onequarter"
+TEST_TYPE="full"
 
-execute_problem $TEST_TYPE 3 107
-execute_problem $TEST_TYPE 4 372
-execute_problem $TEST_TYPE 5 1298
-execute_problem $TEST_TYPE 6 4529
+execute_problem $TEST_TYPE 3 470
 
-echo Tests with 10% of time...
+#echo Tests with 50% of time...
 
-TEST_TYPE="tenpercent"
+#TEST_TYPE="onehalf"
 
-execute_problem $TEST_TYPE 3 42
-execute_problem $TEST_TYPE 4 148
-execute_problem $TEST_TYPE 5 519
-execute_problem $TEST_TYPE 6 1811
-
-echo Tests with 5% of time...
-
-TEST_TYPE="fivepercent"
-
-execute_problem $TEST_TYPE 3 21
-execute_problem $TEST_TYPE 4 74
-execute_problem $TEST_TYPE 5 259
-execute_problem $TEST_TYPE 6 905
+#execute_problem $TEST_TYPE 3 235
 
 echo End of tests
