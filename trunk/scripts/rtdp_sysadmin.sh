@@ -69,43 +69,56 @@ execute_problem(){
 echo Starting tests...
 echo 
 
-echo Tests with 100% of time...
+echo Tests with 50% of time...
 
-TEST_TYPE="full"
+TEST_TYPE="onehalf"
 
-#execute_problem $TEST_TYPE 1 1
-#execute_problem $TEST_TYPE 2 8
-#execute_problem $TEST_TYPE 3 26
-execute_problem $TEST_TYPE 4 74
-#execute_problem $TEST_TYPE 5 276
-#execute_problem $TEST_TYPE 6 740
-#execute_problem $TEST_TYPE 7 2030
-#execute_problem $TEST_TYPE 8 5854
+execute_problem $TEST_TYPE 1 1
+execute_problem $TEST_TYPE 2 3
+execute_problem $TEST_TYPE 3 11
+execute_problem $TEST_TYPE 4 40
+execute_problem $TEST_TYPE 5 107
+execute_problem $TEST_TYPE 6 367
+execute_problem $TEST_TYPE 7 906
+execute_problem $TEST_TYPE 8 3411
 
-#echo Tests with 50% of time...
+echo Tests with 25% of time...
 
-#TEST_TYPE="onehalf"
+TEST_TYPE="onequarter"
 
-#execute_problem $TEST_TYPE 1 1
-#execute_problem $TEST_TYPE 2 4
-#execute_problem $TEST_TYPE 3 13
-#execute_problem $TEST_TYPE 4 37
-#execute_problem $TEST_TYPE 5 138
-#execute_problem $TEST_TYPE 6 370
-#execute_problem $TEST_TYPE 7 1015
-#execute_problem $TEST_TYPE 8 2927
+execute_problem $TEST_TYPE 1 1
+execute_problem $TEST_TYPE 2 2
+execute_problem $TEST_TYPE 3 5
+execute_problem $TEST_TYPE 4 20
+execute_problem $TEST_TYPE 5 51
+execute_problem $TEST_TYPE 6 186
+execute_problem $TEST_TYPE 7 482
+execute_problem $TEST_TYPE 8 1607
 
-#echo Tests with 25% of time...
+echo Tests with 10% of time...
 
-#TEST_TYPE="onequarter"
+TEST_TYPE="tenpercent"
 
-#execute_problem $TEST_TYPE 1 1
-#execute_problem $TEST_TYPE 2 2
-#execute_problem $TEST_TYPE 3 7
-#execute_problem $TEST_TYPE 4 19
-#execute_problem $TEST_TYPE 5 69
-#execute_problem $TEST_TYPE 6 185
-#execute_problem $TEST_TYPE 7 508
-#execute_problem $TEST_TYPE 8 1464
+execute_problem $TEST_TYPE 1 1
+execute_problem $TEST_TYPE 2 1
+execute_problem $TEST_TYPE 3 2
+execute_problem $TEST_TYPE 4 9
+execute_problem $TEST_TYPE 5 22
+execute_problem $TEST_TYPE 6 70
+execute_problem $TEST_TYPE 7 184
+execute_problem $TEST_TYPE 8 575
+
+echo Tests with 5% of time...
+
+TEST_TYPE="fivepercent"
+
+execute_problem $TEST_TYPE 1 1
+execute_problem $TEST_TYPE 2 1
+execute_problem $TEST_TYPE 3 1
+execute_problem $TEST_TYPE 4 5
+execute_problem $TEST_TYPE 5 12
+execute_problem $TEST_TYPE 6 35
+execute_problem $TEST_TYPE 7 29
+execute_problem $TEST_TYPE 8 293
 
 echo End of tests
