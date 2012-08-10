@@ -331,8 +331,9 @@ public double evalWithListValues(Hashtable Values,Context context) {
 		  Double coef=(Double)this.terms.get(id);
 		  String labelsProd=(String)context.getLabelProd(id);
 		  String[] tokensLabel = labelsProd.split(",");
-		  for (int i = 0; i < tokensLabel.length; ++i) {
-			  multTerm=multTerm*(Double)Values.get(tokensLabel[i]);
+		  if (Values.size() > 0) {
+			  for (int i = 0; i < tokensLabel.length; ++i)
+				  multTerm=multTerm*(Double)Values.get(tokensLabel[i]);
 		  }
 		  sum=sum+coef*multTerm;
 	}		

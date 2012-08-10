@@ -779,6 +779,8 @@ public abstract class MDP {
 				System.exit(0);
 			}
 			
+			System.out.println("Horizon " + t + ": " + aBest.getName());
+			
 			//this is the work of the simulator true for using tmID2ADDNewSample
 			TreeMap<Integer, Integer> nextState = chooseNextStateForMDPIPSimulation(state, policeValueADD, aBest, randomGenNextState, simulationType);
 			
