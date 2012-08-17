@@ -2,6 +2,9 @@ package evaluator;
 
 import java.util.ArrayList;
 
+import mdp.ADDEnumerator;
+import mdp.MDPType;
+
 public class CustomPolicyEvaluator {
 
 	/**
@@ -9,136 +12,168 @@ public class CustomPolicyEvaluator {
 	 */
 	public static void main(String[] args) {
 		//"Stationary", "NonStationary", "GlobalMyopicAdversarial", "LocalMyopicAdversarial"
-				
-		ArrayList<String[]> policyEvaluationList = new ArrayList<String[]>();
+			
+		//For each policy simulation, we must pass the follow arguments:
+		//1) Problem file path (example, bi_ring_IP_1.net)
+		//2) Number of initial states in the problem
+		//3) Number of simulations to be run in the simulator
+		//4) Size of the simulation horizon
+		//5) Type of MDP to be simulated (MDP or MDPIP)
+		//6) Type of the solution to be simulated (Total, for SPUDD, or RTDP, 
+		//   for Real Time Dynamic Programming)
+		//7) Output report file path (example, simulation_report.txt)
+		//8) Nature type of the simulation (used only in MDP-IPs, "GlobalMyopicAdversarial", 
+		//   "LocalMyopicAdversarial", "NonStationary" and "Stationary")
 		
-		for (int i = 20; i <= 100; i += 20) {
-			policyEvaluationList.add(new String[] {
-					"//home//daniel//workspaces//java//mdpip//ADD//problemsMDPIP//uni_ring_IP_4Mod" + i + ".net",
-					"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//ResultsDanielRTDPIPUAI2012//resultsIntervalGapOption1(usado)//spudd//valueuni_ring_IP_4Mod" + i + "_0_0REGR.net",
-					"2",
-					"50",
-					"160",
-					"MDPIP",
-					"Total",
-					"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//uai2012//uni_ring_interval//uni_ring_IP_4_sim_results_spuddip_interval_nonstationary.txt",
-					"NonStationary"
-			});
-		}
-
-		for (String type : new String[] { "onequarter", "tenpercent", "fivepercent" })
-			for (int i = 20; i <= 100; i += 20) {
-				policyEvaluationList.add(new String[] {
-						"//home//daniel//workspaces//java//mdpip//ADD//problemsMDPIP//uni_ring_IP_4Mod" + i + ".net",
-						"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//ResultsDanielRTDPIPUAI2012//resultsIntervalGapOption1(usado)//rtdpip//valueuni_ring_IP_4Mod" + i + "_RTDPIP_" + type + ".net",
-						"2",
-						"50",
-						"160",
-						"MDPIP",
-						"Total",
-						"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//uai2012//uni_ring_interval//uni_ring_IP_4_sim_results_rtdpip_" + type + "_interval_nonstationary.txt",
-						"NonStationary"
-				});
-			}
-		
-//		policyEvaluationList.addAll(getArgsForSpudd("traffic", "GlobalMyopicAdversarial", "traffic_old", "uai2012//traffic", 3, 6));
+//		ArrayList<String[]> policyEvaluationList = new ArrayList<String[]>();
 //		
-//		for (String rtdpType : new String[] { "onequarter", "tenpercent", "fivepercent" })
-//			policyEvaluationList.addAll(getArgsForRtdp("traffic", "GlobalMyopicAdversarial", "test01_traffic_old", "uai2012//traffic", rtdpType, 3, 6));
+//		scenario04(policyEvaluationList);
+//				
+//		for (String[] arguments : policyEvaluationList)
+//			PolicyEvaluator.main(arguments);
 		
-//		for (String simulationNature : new String[] { "NonStationary", "GlobalMyopicAdversarial" }) {
-//			policyEvaluationList.addAll(getArgsForApricodd("uni_ring_IP", simulationNature, "uni_ring_ip", "uai2012//uni_ring_IP_apricodd", 1, 8));
-			
-//			policyEvaluationList.addAll(getArgsForSpudd("traffic", simulationNature, "traffic_old", "uai2012//traffic", 3, 6));
-//			policyEvaluationList.addAll(getArgsForSpudd("uni_ring_IP", simulationNature, "sysadmin_uniring", "uai2012//uni_ring_min", 1, 8));
-//			policyEvaluationList.addAll(getArgsForSpudd("bi_ring_IP", simulationNature, "sysadmin_biring", "uai2012//bi_ring_rand", 1, 8));
-//			policyEvaluationList.addAll(getArgsForSpudd("bi_ring_IP", simulationNature, "sysadmin_biring", "uai2012//bi_ring_min", 1, 8));
-			
-//			for (String rtdpType : new String[] { "onequarter", "tenpercent", "fivepercent" }) {
-//				policyEvaluationList.addAll(getArgsForRtdp("traffic", simulationNature, "test01_traffic_old", "uai2012//traffic", rtdpType, 3, 6));
-//				policyEvaluationList.addAll(getArgsForRtdp("uni_ring_IP", simulationNature, "test_01_sysadmin_uniring", "uai2012//uni_ring_min", rtdpType, 1, 8));
-//				policyEvaluationList.addAll(getArgsForRtdp("bi_ring_IP", simulationNature, "test_04_sysadmin_biring", "uai2012//bi_ring_rand", rtdpType, 1, 8));
-//				policyEvaluationList.addAll(getArgsForRtdp("bi_ring_IP", simulationNature, "test_01_sysadmin_biring", "uai2012//bi_ring_min", rtdpType, 1, 8));	
-//			}
-			
-			//TODO: pensar no uniring com intervalos de imprecisão
-//		}
-		
-		for (String[] arguments : policyEvaluationList)
-			PolicyEvaluator.main(arguments);
+		anotherTask();
 		
 		System.out.println("End of simulation");
 	}
-
-	protected static ArrayList<String[]> getArgsForSpudd(String problem, String simulationNature, 
-			String inputFolder, String outputFolder, int initialProblem, int finalProblem) {
+	
+	protected static void anotherTask() {
+		ArrayList<String[]> addEnumerationList = new ArrayList<String[]>();
 		
-		ArrayList<String[]> list = new ArrayList<String[]>();
+		String[] times = { "Full", "OneHalf", "OneQuarter", "TenPercent", "FivePercent" };
+		String rootDir = "//home//daniel//workspaces//java//mdpip//ADD";
+		String baseFolderName = "SysAdmin_UniRing_";
 		
-		for (int i = initialProblem; i <= finalProblem; i++) {
-			String[] args = {
-					"//home//daniel//workspaces//java//mdpip//ADD//problemsMDPIP//" + problem + "_" + i + ".net",
-					"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//spudd//" + inputFolder + "//value" + problem + "_" + i + "_0_0REGR.net",
-					"2",
-					"50",
-					"160",
-					"MDPIP",
-					"Total",
-					"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//" + outputFolder + "//" + problem + "_sim_results_spuddip_" + simulationNature + ".txt",
-					simulationNature
-			};
-
-			list.add(args);
-		}
+		for (String time : times) {
+			String problemFile = "uni_ring_IP_4.net";
+			String addFile = "valueuni_ring_IP_4_RTDPIP_" + time.toLowerCase() + ".net";
+			String outputFile = "uni_ring_IP_statevalues_results_" + time.toLowerCase() + ".txt";
 			
-		return list;
-	}
-
-	protected static ArrayList<String[]> getArgsForApricodd(String problem, String simulationNature, 
-			String inputFolder, String outputFolder, int initialProblem, int finalProblem) {
-		
-		ArrayList<String[]> list = new ArrayList<String[]>();
-		
-		for (int i = initialProblem; i <= finalProblem; i++) {
-			String[] args = {
-					"//home//daniel//workspaces//java//mdpip//ADD//problemsMDPIP//" + problem + "_" + i + ".net",
-					"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//apricodd//" + inputFolder + "//value" + problem + "_" + i + "_0_15APRI.net",
-					"2",
-					"50",
-					"160",
-					"MDPIP",
-					"Total",
-					"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//" + outputFolder + "//" + problem + "_sim_results_apricodd_" + simulationNature + ".txt",
-					simulationNature
-			};
-
-			list.add(args);
+			addEnumerationList.add(new String[] {
+				rootDir + "//problemsMDPIP//" + problemFile,
+				"Total",
+				"1",
+				"0",
+				rootDir + "//reportsMDPIP//results//rtdp//Random//" + baseFolderName + time  + "//" + addFile,
+				rootDir + "//reportsMDPIP//results//rtdp//Random//" + outputFile
+			});		
 		}
-			
-		return list;
+		
+		for (String[] arguments : addEnumerationList)
+			ADDEnumerator.main(arguments);
 	}
 	
-	protected static ArrayList<String[]> getArgsForRtdp(String problem, String simulationNature, 
-			String inputFolder, String outputFolder, String type, int initialProblem, int finalProblem) {
+	protected static void scenario04(ArrayList<String[]> policyEvaluationList) {
+		//RTDP - partial reward
 		
-		ArrayList<String[]> list = new ArrayList<String[]>();
+		String[] times = { "5hundred", "10hundred", "15hundred", "20hundred", "30hundred", "40hundred", "50hundred" };
+		String rootDir = "//home//daniel//workspaces//java//mdpip//ADD";
+		String baseFolderName = "SysAdmin_UniRing4_Fragmented";
 		
-		for (int i = initialProblem; i <= finalProblem; i++) {
-			String[] args = {
-				"//home//daniel//workspaces//java//mdpip//ADD//problemsMDPIP//" + problem + "_" + i +".net",
-				"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//rtdpip//" + inputFolder + "//value" + problem + "_" + i +"_RTDPIP_" + type + ".net",
-				"30",
+		for (String time : times) {
+			String problemFile = "uni_ring_IP_4.net";
+			String addFile = "valueuni_ring_IP_4_RTDPIP_" + time.toLowerCase() + ".net";
+			String outputFile = "uni_ring_IP_sim_results_fragmented.txt";
+			
+			policyEvaluationList.add(new String[] {
+				rootDir + "//problemsMDPIP//" + problemFile,
+				rootDir + "//reportsMDPIP//results//rtdp//Min//" + baseFolderName + "//" + addFile,
+				"1",
 				"50",
 				"160",
 				"MDPIP",
-				"RTDPIP",
-				"//home//daniel//workspaces//java//mdpip//ADD//reportsMDPIP//results//" + outputFolder + "//" + problem + "_sim_results_rtdpip_" + type + "_" + simulationNature + ".txt",
-				simulationNature
-			};
-			
-			list.add(args);
+				"Total",
+				rootDir + "//reportsMDPIP//results//rtdp//Min//" + outputFile,
+				"GlobalMyopicAdversarial"
+			});
 		}
+	}
+
+	protected static void scenario03(ArrayList<String[]> policyEvaluationList) {
+		//SPUDD - partial reward
 		
-		return list;
+		String[] times = { "5hundred", "10hundred", "15hundred", "20hundred", "30hundred", "40hundred", "50hundred" };
+		String rootDir = "//home//daniel//workspaces//java//mdpip//ADD";
+		String baseFolderName = "SysAdmin_UniRing4_Fragmented";
+		
+		for (String time : times) {
+			String problemFile = "uni_ring_IP_4.net";
+			String addFile = "valueuni_ring_IP_4_0_0REGR_" + time.toLowerCase() + ".net";
+			String outputFile = "uni_ring_IP_sim_results_fragmented.txt";
+			
+			policyEvaluationList.add(new String[] {
+				rootDir + "//problemsMDPIP//" + problemFile,
+				rootDir + "//reportsMDPIP//results//spudd//" + baseFolderName + "//" + addFile,
+				"1",
+				"50",
+				"160",
+				"MDPIP",
+				"Total",
+				rootDir + "//reportsMDPIP//results//spudd//" + outputFile,
+				"GlobalMyopicAdversarial"
+			});
+		}
+	}
+	
+	protected static void scenario02(ArrayList<String[]> policyEvaluationList) {
+		//RTDP - simulation reward
+		
+		String[] times = { "Full", "OneHalf", "OneQuarter", "TenPercent", "FivePercent" };
+		String rootDir = "//home//daniel//workspaces//java//mdpip//ADD";
+		String baseFolderName = "SysAdmin_UniRing_";
+		
+		int startInstance = 1;
+		int endInstance = 8;
+		
+		for (String time : times) {
+			for (int i = startInstance; i <= endInstance; i++) {
+				String problemFile = "uni_ring_IP_" + i + ".net";
+				String addFile = "valueuni_ring_IP_" + i + "_RTDPIP_" + time.toLowerCase() + ".net";
+				String outputFile = "uni_ring_IP_sim_results_" + time.toLowerCase() + ".txt";
+				
+				policyEvaluationList.add(new String[] {
+					rootDir + "//problemsMDPIP//" + problemFile,
+					rootDir + "//reportsMDPIP//results//rtdp//Random//" + baseFolderName + time  + "//" + addFile,
+					"1",
+					"50",
+					"160",
+					"MDPIP",
+					"Total",
+					rootDir + "//reportsMDPIP//results//rtdp//Random//" + outputFile,
+					"GlobalMyopicAdversarial"
+				});
+			}
+		}
+	}
+	
+	protected static void scenario01(ArrayList<String[]> policyEvaluationList) {
+		//SPUDD - simulation reward
+		
+		String[] times = { "Full", "OneHalf", "OneQuarter", "TenPercent", "FivePercent" };
+		String rootDir = "//home//daniel//workspaces//java//mdpip//ADD";
+		String baseFolderName = "SysAdmin_UniRing_";
+		
+		int startInstance = 1;
+		int endInstance = 8;
+		
+		for (String time : times) {
+			for (int i = startInstance; i <= endInstance; i++) {
+				String problemFile = "uni_ring_IP_" + i + ".net";
+				String addFile = "valueuni_ring_IP_" + i + "_0_0REGR_" + time.toLowerCase() + ".net";
+				String outputFile = "uni_ring_IP_sim_results_" + time.toLowerCase() + ".txt";
+				
+				policyEvaluationList.add(new String[] {
+					rootDir + "//problemsMDPIP//" + problemFile,
+					rootDir + "//reportsMDPIP//results//spudd//" + baseFolderName + time  + "//" + addFile,
+					"1",
+					"50",
+					"160",
+					"MDPIP",
+					"Total",
+					rootDir + "//reportsMDPIP//results//spudd//" + outputFile,
+					"GlobalMyopicAdversarial"
+				});
+			}
+		}
 	}
 }

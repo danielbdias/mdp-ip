@@ -17,7 +17,7 @@ ALGORITHM=spudd
 PROBLEM_DIR=$ROOT_DIR/problemsMDPIP
 
 #Indicate which problem will be used in tests
-PROBLEM_TYPE=indep_ring_IP
+PROBLEM_TYPE=uni_ring_IP
 
 #Indicate the directory where the results will be saved
 REPORTS_DIR=$ROOT_DIR/reportsMDPIP
@@ -72,57 +72,67 @@ echo
 #execute_problem $TEST_TYPE 7 75
 #execute_problem $TEST_TYPE 8 75
 
-echo Tests with 50% of time...
+#echo Tests with 50% of time...
 
-TEST_TYPE="onehalf"
+#TEST_TYPE="onehalf"
 
-execute_problem $TEST_TYPE 1 41
-execute_problem $TEST_TYPE 2 41
-execute_problem $TEST_TYPE 3 41
-execute_problem $TEST_TYPE 4 41
-execute_problem $TEST_TYPE 5 41
-execute_problem $TEST_TYPE 6 41
-execute_problem $TEST_TYPE 7 41
-execute_problem $TEST_TYPE 8 41
+#execute_problem $TEST_TYPE 1 41
+#execute_problem $TEST_TYPE 2 41
+#execute_problem $TEST_TYPE 3 41
+#execute_problem $TEST_TYPE 4 41
+#execute_problem $TEST_TYPE 5 41
+#execute_problem $TEST_TYPE 6 41
+#execute_problem $TEST_TYPE 7 41
+#execute_problem $TEST_TYPE 8 41
 
-echo Tests with 25% of time...
+#echo Tests with 25% of time...
 
-TEST_TYPE="onequarter"
+#TEST_TYPE="onequarter"
 
-execute_problem $TEST_TYPE 1 23
-execute_problem $TEST_TYPE 2 23
-execute_problem $TEST_TYPE 3 23
-execute_problem $TEST_TYPE 4 23
-execute_problem $TEST_TYPE 5 23
-execute_problem $TEST_TYPE 6 23
-execute_problem $TEST_TYPE 7 23
-execute_problem $TEST_TYPE 8 23
+#execute_problem $TEST_TYPE 1 23
+#execute_problem $TEST_TYPE 2 23
+#execute_problem $TEST_TYPE 3 23
+#execute_problem $TEST_TYPE 4 23
+#execute_problem $TEST_TYPE 5 23
+#execute_problem $TEST_TYPE 6 23
+#execute_problem $TEST_TYPE 7 23
+#execute_problem $TEST_TYPE 8 23
 
-echo Tests with 10% of time...
+#echo Tests with 10% of time...
 
-TEST_TYPE="tenpercent"
+#TEST_TYPE="tenpercent"
 
-execute_problem $TEST_TYPE 1 11
-execute_problem $TEST_TYPE 2 11
-execute_problem $TEST_TYPE 3 11
-execute_problem $TEST_TYPE 4 11
-execute_problem $TEST_TYPE 5 11
-execute_problem $TEST_TYPE 6 11
-execute_problem $TEST_TYPE 7 11
-execute_problem $TEST_TYPE 8 11
+#execute_problem $TEST_TYPE 1 11
+#execute_problem $TEST_TYPE 2 11
+#execute_problem $TEST_TYPE 3 11
+#execute_problem $TEST_TYPE 4 11
+#execute_problem $TEST_TYPE 5 11
+#execute_problem $TEST_TYPE 6 11
+#execute_problem $TEST_TYPE 7 11
+#execute_problem $TEST_TYPE 8 11
 
-echo Tests with 5% of time...
+#echo Tests with 5% of time...
 
-TEST_TYPE="fivepercent"
+#TEST_TYPE="fivepercent"
 
-execute_problem $TEST_TYPE 1 7
-execute_problem $TEST_TYPE 2 7
-execute_problem $TEST_TYPE 3 7
-execute_problem $TEST_TYPE 4 7
-execute_problem $TEST_TYPE 5 7
-execute_problem $TEST_TYPE 6 7
-execute_problem $TEST_TYPE 7 7
-execute_problem $TEST_TYPE 8 7
+#execute_problem $TEST_TYPE 1 7
+#execute_problem $TEST_TYPE 2 7
+#execute_problem $TEST_TYPE 3 7
+#execute_problem $TEST_TYPE 4 7
+#execute_problem $TEST_TYPE 5 7
+#execute_problem $TEST_TYPE 6 7
+#execute_problem $TEST_TYPE 7 7
+#execute_problem $TEST_TYPE 8 7
+
+echo Custom tests...
+
+execute_problem "5hundred" 4 8
+execute_problem "10hundred" 4 13
+execute_problem "15hundred" 4 19
+execute_problem "20hundred" 4 24
+execute_problem "30hundred" 4 35
+execute_problem "40hundred" 4 44
+execute_problem "50hundred" 4 54
 
 echo End of tests
 
