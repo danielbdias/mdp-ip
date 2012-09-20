@@ -2,9 +2,6 @@ package evaluator;
 
 import java.util.ArrayList;
 
-import mdp.ADDEnumerator;
-import mdp.MDPType;
-
 public class CustomPolicyEvaluator {
 
 	/**
@@ -25,153 +22,66 @@ public class CustomPolicyEvaluator {
 		//8) Nature type of the simulation (used only in MDP-IPs, "GlobalMyopicAdversarial", 
 		//   "LocalMyopicAdversarial", "NonStationary" and "Stationary")
 		
-//		ArrayList<String[]> policyEvaluationList = new ArrayList<String[]>();
-//		
-//		scenario04(policyEvaluationList);
-//				
-//		for (String[] arguments : policyEvaluationList)
-//			PolicyEvaluator.main(arguments);
+		ArrayList<String[]> policyEvaluationList = new ArrayList<String[]>();
 		
-		anotherTask();
+//		scenarioSPUDD(policyEvaluationList, "SysAdmin_UniRing", "uni_ring_IP", 1, 8);
+//		scenarioSPUDD(policyEvaluationList, "Traffic", "traffic", 3, 6);
+//		scenarioSPUDD(policyEvaluationList, "Navigation", "navigation", 0, 5);
+//		
+//		scenarioRTDP(policyEvaluationList, "SysAdmin_UniRing", "uni_ring_IP", 1, 8, "Min");
+//		scenarioRTDP(policyEvaluationList, "Navigation", "navigation", 0, 5, "Min");
+//		scenarioRTDP(policyEvaluationList, "Traffic", "traffic", 3, 6, "Random");
+//		scenarioRTDP(policyEvaluationList, "SysAdmin_UniRing", "uni_ring_IP", 1, 8, "Random");
+		scenarioRTDP(policyEvaluationList, "Navigation", "navigation", 0, 5, "Random");
+		
+		for (String[] arguments : policyEvaluationList)
+			PolicyEvaluator.main(arguments);
 		
 		System.out.println("End of simulation");
 	}
 	
-	protected static void anotherTask() {
-		ArrayList<String[]> addEnumerationList = new ArrayList<String[]>();
-		
-		String[] times = { "Full", "OneHalf", "OneQuarter", "TenPercent", "FivePercent" };
+	protected static void scenarioSPUDD(ArrayList<String[]> policyEvaluationList, String baseFolderName, String instanceName, int startInstance, int endInstance) {
 		String rootDir = "//home//daniel//workspaces//java//mdpip//ADD";
-		String baseFolderName = "SysAdmin_UniRing_";
-		
-		for (String time : times) {
-			String problemFile = "uni_ring_IP_4.net";
-			String addFile = "valueuni_ring_IP_4_RTDPIP_" + time.toLowerCase() + ".net";
-			String outputFile = "uni_ring_IP_statevalues_results_" + time.toLowerCase() + ".txt";
 			
-			addEnumerationList.add(new String[] {
-				rootDir + "//problemsMDPIP//" + problemFile,
-				"Total",
-				"1",
-				"0",
-				rootDir + "//reportsMDPIP//results//rtdp//Random//" + baseFolderName + time  + "//" + addFile,
-				rootDir + "//reportsMDPIP//results//rtdp//Random//" + outputFile
-			});		
-		}
-		
-		for (String[] arguments : addEnumerationList)
-			ADDEnumerator.main(arguments);
-	}
-	
-	protected static void scenario04(ArrayList<String[]> policyEvaluationList) {
-		//RTDP - partial reward
-		
-		String[] times = { "5hundred", "10hundred", "15hundred", "20hundred", "30hundred", "40hundred", "50hundred" };
-		String rootDir = "//home//daniel//workspaces//java//mdpip//ADD";
-		String baseFolderName = "SysAdmin_UniRing4_Fragmented";
-		
-		for (String time : times) {
-			String problemFile = "uni_ring_IP_4.net";
-			String addFile = "valueuni_ring_IP_4_RTDPIP_" + time.toLowerCase() + ".net";
-			String outputFile = "uni_ring_IP_sim_results_fragmented.txt";
+		for (int i = startInstance; i <= endInstance; i++) {
+			String problemFile = instanceName + "_" + i + ".net";
+			String addFile = "value" + instanceName + "_" + i + "_0_0REGR_full.net";
+			String outputFile = instanceName + "_sim_results.txt";
 			
 			policyEvaluationList.add(new String[] {
 				rootDir + "//problemsMDPIP//" + problemFile,
-				rootDir + "//reportsMDPIP//results//rtdp//Min//" + baseFolderName + "//" + addFile,
+				rootDir + "//reportsMDPIP//results//spudd//" + baseFolderName  + "//" + addFile,
 				"1",
 				"50",
-				"160",
-				"MDPIP",
-				"Total",
-				rootDir + "//reportsMDPIP//results//rtdp//Min//" + outputFile,
-				"GlobalMyopicAdversarial"
-			});
-		}
-	}
-
-	protected static void scenario03(ArrayList<String[]> policyEvaluationList) {
-		//SPUDD - partial reward
-		
-		String[] times = { "5hundred", "10hundred", "15hundred", "20hundred", "30hundred", "40hundred", "50hundred" };
-		String rootDir = "//home//daniel//workspaces//java//mdpip//ADD";
-		String baseFolderName = "SysAdmin_UniRing4_Fragmented";
-		
-		for (String time : times) {
-			String problemFile = "uni_ring_IP_4.net";
-			String addFile = "valueuni_ring_IP_4_0_0REGR_" + time.toLowerCase() + ".net";
-			String outputFile = "uni_ring_IP_sim_results_fragmented.txt";
-			
-			policyEvaluationList.add(new String[] {
-				rootDir + "//problemsMDPIP//" + problemFile,
-				rootDir + "//reportsMDPIP//results//spudd//" + baseFolderName + "//" + addFile,
-				"1",
-				"50",
-				"160",
+				"40",
 				"MDPIP",
 				"Total",
 				rootDir + "//reportsMDPIP//results//spudd//" + outputFile,
-				"GlobalMyopicAdversarial"
+				"NonStationary"
 			});
 		}
 	}
-	
-	protected static void scenario02(ArrayList<String[]> policyEvaluationList) {
-		//RTDP - simulation reward
 		
+	protected static void scenarioRTDP(ArrayList<String[]> policyEvaluationList, String baseFolderName, String instanceName, int startInstance, int endInstance, String rtdpType) {
 		String[] times = { "Full", "OneHalf", "OneQuarter", "TenPercent", "FivePercent" };
 		String rootDir = "//home//daniel//workspaces//java//mdpip//ADD";
-		String baseFolderName = "SysAdmin_UniRing_";
-		
-		int startInstance = 1;
-		int endInstance = 8;
 		
 		for (String time : times) {
 			for (int i = startInstance; i <= endInstance; i++) {
-				String problemFile = "uni_ring_IP_" + i + ".net";
-				String addFile = "valueuni_ring_IP_" + i + "_RTDPIP_" + time.toLowerCase() + ".net";
-				String outputFile = "uni_ring_IP_sim_results_" + time.toLowerCase() + ".txt";
+				String problemFile = instanceName + "_" + i + ".net";
+				String addFile = "value" + instanceName + "_" + i + "_RTDPIP_" + time.toLowerCase() + ".net";
+				String outputFile = instanceName + "_sim_results_" + time.toLowerCase() + ".txt";
 				
 				policyEvaluationList.add(new String[] {
 					rootDir + "//problemsMDPIP//" + problemFile,
-					rootDir + "//reportsMDPIP//results//rtdp//Random//" + baseFolderName + time  + "//" + addFile,
+					rootDir + "//reportsMDPIP//results//rtdp//" + rtdpType + "//" + baseFolderName  + "//" + addFile,
 					"1",
 					"50",
-					"160",
+					"40",
 					"MDPIP",
 					"Total",
-					rootDir + "//reportsMDPIP//results//rtdp//Random//" + outputFile,
-					"GlobalMyopicAdversarial"
-				});
-			}
-		}
-	}
-	
-	protected static void scenario01(ArrayList<String[]> policyEvaluationList) {
-		//SPUDD - simulation reward
-		
-		String[] times = { "Full", "OneHalf", "OneQuarter", "TenPercent", "FivePercent" };
-		String rootDir = "//home//daniel//workspaces//java//mdpip//ADD";
-		String baseFolderName = "SysAdmin_UniRing_";
-		
-		int startInstance = 1;
-		int endInstance = 8;
-		
-		for (String time : times) {
-			for (int i = startInstance; i <= endInstance; i++) {
-				String problemFile = "uni_ring_IP_" + i + ".net";
-				String addFile = "valueuni_ring_IP_" + i + "_0_0REGR_" + time.toLowerCase() + ".net";
-				String outputFile = "uni_ring_IP_sim_results_" + time.toLowerCase() + ".txt";
-				
-				policyEvaluationList.add(new String[] {
-					rootDir + "//problemsMDPIP//" + problemFile,
-					rootDir + "//reportsMDPIP//results//spudd//" + baseFolderName + time  + "//" + addFile,
-					"1",
-					"50",
-					"160",
-					"MDPIP",
-					"Total",
-					rootDir + "//reportsMDPIP//results//spudd//" + outputFile,
-					"GlobalMyopicAdversarial"
+					rootDir + "//reportsMDPIP//results//rtdp//" + rtdpType + "//" + outputFile,
+					"NonStationary"
 				});
 			}
 		}

@@ -10,7 +10,7 @@ import add.*;
 
 public abstract class MDP {
 	public boolean pruneAfterEachIt;//=true;
-	boolean forceNumberIt = true;
+	boolean forceNumberIt = false;//=true;
 	boolean printFinalADD = false;
 	boolean dumpValue = true;
 	boolean printTrafficFormat = false;
@@ -585,8 +585,9 @@ public abstract class MDP {
     	context.createBoundsProb(NAME_FILE_CONTRAINTS);
     	
     	long initialTime = System.currentTimeMillis();
+    	boolean keepIterating = true;
     	
-    	while (numIterations < maxNumberIterations) {
+    	while (keepIterating && numIterations < maxNumberIterations) {
     		valueiPlus1DD = context.getTerminalNode(Double.NEGATIVE_INFINITY);
    		
     		for (String actionName : actionsToUse) {
@@ -613,9 +614,8 @@ public abstract class MDP {
     		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
  
     		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
-    			 int contNumNodes = this.context.contNumberNodes(valueiPlus1DD);
     			 System.out.println("Terminate after " + numIterations + " iterations");
-    			 return contNumNodes;
+    			 keepIterating = false;
     		}
     		
     		valueiDD = valueiPlus1DD;
@@ -1729,7 +1729,7 @@ public abstract class MDP {
 			TreeMap<Integer,Boolean> state = sampleInitialStateFromList(randomGenInitial); 
 
 			//do trial //////////////////////////////////
-			while (!inGoalSet(state) && (state !=null)) {// && depth < maxDepth) {
+			while (!inGoalSet(state) && (state !=null) && depth < maxDepth) {
 				if (totalTrialTimeSec > timeOut) break;
 				
 				depth++;

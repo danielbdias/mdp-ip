@@ -52,6 +52,11 @@ execute_problem(){
 
 	mv $current_value_function $new_value_function
 
+	current_initial_state_value=$REPORTS_DIR/"initial_value"$PROBLEM_TYPE"_"$current_problem_index"_0_0REGR.txt"
+	new_initial_state_value=$RESULTS_DIR/"initial_value"$PROBLEM_TYPE"_"$current_problem_index"_0_0REGR_"$test_type".txt"
+
+	mv $current_initial_state_value $new_initial_state_value
+
 	echo Problem $PROBLEM_TYPE"_"$current_problem_index executed
 	echo 
 }
@@ -59,80 +64,20 @@ execute_problem(){
 echo Starting tests...
 echo 
 
-#echo Tests with 100% of time...
+MAX_ITER=500
 
-#TEST_TYPE="full"
+echo Tests with 100% of time...
 
-#execute_problem $TEST_TYPE 1 75
-#execute_problem $TEST_TYPE 2 75
-#execute_problem $TEST_TYPE 3 75
-#execute_problem $TEST_TYPE 4 75
-#execute_problem $TEST_TYPE 5 75
-#execute_problem $TEST_TYPE 6 75
-#execute_problem $TEST_TYPE 7 75
-#execute_problem $TEST_TYPE 8 75
+TEST_TYPE="full"
 
-#echo Tests with 50% of time...
-
-#TEST_TYPE="onehalf"
-
-#execute_problem $TEST_TYPE 1 41
-#execute_problem $TEST_TYPE 2 41
-#execute_problem $TEST_TYPE 3 41
-#execute_problem $TEST_TYPE 4 41
-#execute_problem $TEST_TYPE 5 41
-#execute_problem $TEST_TYPE 6 41
-#execute_problem $TEST_TYPE 7 41
-#execute_problem $TEST_TYPE 8 41
-
-#echo Tests with 25% of time...
-
-#TEST_TYPE="onequarter"
-
-#execute_problem $TEST_TYPE 1 23
-#execute_problem $TEST_TYPE 2 23
-#execute_problem $TEST_TYPE 3 23
-#execute_problem $TEST_TYPE 4 23
-#execute_problem $TEST_TYPE 5 23
-#execute_problem $TEST_TYPE 6 23
-#execute_problem $TEST_TYPE 7 23
-#execute_problem $TEST_TYPE 8 23
-
-#echo Tests with 10% of time...
-
-#TEST_TYPE="tenpercent"
-
-#execute_problem $TEST_TYPE 1 11
-#execute_problem $TEST_TYPE 2 11
-#execute_problem $TEST_TYPE 3 11
-#execute_problem $TEST_TYPE 4 11
-#execute_problem $TEST_TYPE 5 11
-#execute_problem $TEST_TYPE 6 11
-#execute_problem $TEST_TYPE 7 11
-#execute_problem $TEST_TYPE 8 11
-
-#echo Tests with 5% of time...
-
-#TEST_TYPE="fivepercent"
-
-#execute_problem $TEST_TYPE 1 7
-#execute_problem $TEST_TYPE 2 7
-#execute_problem $TEST_TYPE 3 7
-#execute_problem $TEST_TYPE 4 7
-#execute_problem $TEST_TYPE 5 7
-#execute_problem $TEST_TYPE 6 7
-#execute_problem $TEST_TYPE 7 7
-#execute_problem $TEST_TYPE 8 7
-
-echo Custom tests...
-
-execute_problem "5hundred" 4 8
-execute_problem "10hundred" 4 13
-execute_problem "15hundred" 4 19
-execute_problem "20hundred" 4 24
-execute_problem "30hundred" 4 35
-execute_problem "40hundred" 4 44
-execute_problem "50hundred" 4 54
+#execute_problem $TEST_TYPE 1 $MAX_ITER
+#execute_problem $TEST_TYPE 2 $MAX_ITER
+#execute_problem $TEST_TYPE 3 $MAX_ITER
+#execute_problem $TEST_TYPE 4 $MAX_ITER
+#execute_problem $TEST_TYPE 5 $MAX_ITER
+#execute_problem $TEST_TYPE 6 $MAX_ITER
+execute_problem $TEST_TYPE 7 $MAX_ITER
+execute_problem $TEST_TYPE 8 $MAX_ITER
 
 echo End of tests
 

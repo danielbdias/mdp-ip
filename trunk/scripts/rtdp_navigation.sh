@@ -17,7 +17,7 @@ ALGORITHM=rtdp
 PROBLEM_DIR=$ROOT_DIR/problemsMDPIP
 
 #Indicate which problem will be used in tests
-PROBLEM_TYPE=traffic
+PROBLEM_TYPE=navigation
 
 #Indicate the directory where the results will be saved
 REPORTS_DIR=$ROOT_DIR/reportsMDPIP
@@ -27,7 +27,7 @@ RESULTS_DIR=$REPORTS_DIR/results/$ALGORITHM
 NUMBER_OF_RUNS_PER_TEST=50
 
 #Max depth to explore with RTDP
-MAX_DEPTH=40 
+MAX_DEPTH=1000 
 
 #Number of trials to execute in RTDP
 MAX_TRIALS=300
@@ -53,7 +53,6 @@ execute_problem(){
 	current_problem=$PROBLEM_DIR/$PROBLEM_TYPE"_"$current_problem_index".net"
 	current_report=$RESULTS_DIR/$PROBLEM_TYPE"_test_"$test_type".txt"
 	current_log=$RESULTS_DIR/$PROBLEM_TYPE"_"$current_problem_index".log"
-	
 
 	java -Xms200m -Xmx2048m -classpath $CLASSPATH -cp $BINARIES_DIR $MAIN_CLASS $current_problem $NUMBER_OF_RUNS_PER_TEST 0 1 $current_report 0 Fact NOT TRUE RTDPIP $MAX_DEPTH $timeout 1000 0.0 $MAX_TRIALS 60 60 1 1 > $current_log
 
@@ -61,6 +60,11 @@ execute_problem(){
 	new_value_function=$RESULTS_DIR/"value"$PROBLEM_TYPE"_"$current_problem_index"_RTDPIP_"$test_type".net"
 
 	mv $current_value_function $new_value_function
+
+	current_initial_state_value=$REPORTS_DIR/"initial_value"$PROBLEM_TYPE"_"$current_problem_index"_RTDPIP.txt"
+	new_initial_state_value=$RESULTS_DIR/"initial_value"$PROBLEM_TYPE"_"$current_problem_index"_RTDPIP_"$test_type".txt"
+
+	mv $current_initial_state_value $new_initial_state_value
 
 	echo Problem $PROBLEM_TYPE"_"$current_problem_index executed
 	echo 
@@ -71,47 +75,20 @@ echo
 
 echo Tests with 100% of time...
 
-TEST_TYPE="full"
+TEST_TYPE="convergence"
 
-execute_problem $TEST_TYPE 3 403
-execute_problem $TEST_TYPE 4 1470
-execute_problem $TEST_TYPE 5 5445
-execute_problem $TEST_TYPE 6 39128
-
-echo Tests with 50% of time...
-
-TEST_TYPE="onehalf"
-
-execute_problem $TEST_TYPE 3 201
-execute_problem $TEST_TYPE 4 735
-execute_problem $TEST_TYPE 5 2723
-execute_problem $TEST_TYPE 6 19564
-
-echo Tests with 25% of time...
-
-TEST_TYPE="onequarter"
-
-execute_problem $TEST_TYPE 3 101
-execute_problem $TEST_TYPE 4 368
-execute_problem $TEST_TYPE 5 1362
-execute_problem $TEST_TYPE 6 9782
-
-echo Tests with 10% of time...
-
-TEST_TYPE="tenpercent"
-
-execute_problem $TEST_TYPE 3 41
-execute_problem $TEST_TYPE 4 147
-execute_problem $TEST_TYPE 5 545
-execute_problem $TEST_TYPE 6 3913
-
-echo Tests with 5% of time...
-
-TEST_TYPE="fivepercent"
-
-execute_problem $TEST_TYPE 3 21
-execute_problem $TEST_TYPE 4 74
-execute_problem $TEST_TYPE 5 273
-execute_problem $TEST_TYPE 6 1957
+execute_problem $TEST_TYPE 6 120
+execute_problem $TEST_TYPE 8 120
+execute_problem $TEST_TYPE 9 120
+execute_problem $TEST_TYPE 10 120
+execute_problem $TEST_TYPE 12 120
+execute_problem $TEST_TYPE 15 120
+execute_problem $TEST_TYPE 18 600
+execute_problem $TEST_TYPE 20 600
+execute_problem $TEST_TYPE 21 600
+execute_problem $TEST_TYPE 24 600
+execute_problem $TEST_TYPE 25 600
+execute_problem $TEST_TYPE 28 600
+execute_problem $TEST_TYPE 30 600
 
 echo End of tests
