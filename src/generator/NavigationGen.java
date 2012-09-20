@@ -7,17 +7,15 @@ public class NavigationGen {
 	private static final String NUMBER_REGEX = "^[0-9]+$";
 	private static final String DOUBLE_REGEX = "^[0-9]+\\.[0-9]+$";
 	private static final String VARIABLE_MASK = "x%dy%d"; //e.g. x1y1
-	
-	private static final String UNCERTAIN_MOVEMENT_TRANSITION = "%1$s (%1$s (%2$s ([0.0]) ([0.0])) (%2$s ([%3$f*p%5$d]) ([%4$f*p%6$d])))"; //e.g. x1y1 (x1y1 (0.0) (x1y2 (p1*0.9) (p2*0.1)))
-	private static final String MOVEMENT_TRANSITION = "%1$s (%1$s (%2$s ([0.0]) ([0.0])) (%2$s ([%3$f]) ([%4$f])))"; //e.g. x1y1 (x1y1 (0.0) (x1y2 (0.9) (0.1)))
-	private static final String STATIC_TRANSITION = "%1$s ([1.00])"; //e.g. x1y1 ([1.00])
-	
-	private static final String[] CONSTRAINT_MASKS = {
-		"(p%1$d > = 0.85 + p%2$d)",
-		"(p%1$d < = 0.95)",
-		"(p%2$d < = 0.1)",
-	};
-	
+
+	private static final String UNCERTAIN_MOVEMENT_TRANSITION = "%1$s (%1$s ([%4$f]) (%2$s ([0.0]) (%3$s ([%5$f]) ([0.0]))))"; //e.g. x1y3 (x1y3 ([1.0]) (x2y3 ([0.0]) (x1y2 ([1.0]) ([0.0]))))
+	private static final String UNCERTAIN_AND_IMPRECISE_MOVEMENT_TRANSITION = "%1$s (%1$s ([%4$f]) (%2$s ([0.0]) (%3$s ([1.00*p%6$d]) ([0.0]))))"; //e.g. x1y3 (x1y3 ([1.0]) (x2y3 ([0.0]) (x1y2 ([0.9*p1]) ([0.0]))))
+	private static final String MOVEMENT_TRANSITION = "%1$s (%1$s ([%3$f]) (%2$s ([%4$f]) ([0.0]) ))"; //e.g. x2y3 (x2y3 ([1.0]) (x2y2 ([1.0]) ([0.0]) )) 
+
+	private static final String ABSORVENT_TRANSITION = "%1$s (%1$s ([%2$f]) ([0.00]))"; //e.g. x2y3 (x2y3 ([1.00]) ([0.00]))
+	private static final String UNCERTAIN_ABSORVENT_TRANSITION = "%1$s (%1$s ([1.00*p%2$d]) ([0.00]))"; //e.g. x2y3 (x2y3 ([1.00]) ([0.00]))
+	private static final String NO_TRANSITION = "%1$s ([0.00])"; //e.g. x1y3 ([0.00])
+		
 	public static void main(String[] args) {
 		if (args == null || args.length != 5) {
 			System.out.println("Invalid parameters.");
@@ -160,12 +158,12 @@ public class NavigationGen {
 	}
 
 	private static String generateGoalState(Integer numberOfLines, Integer numberOfColumns) {
-		String variable = String.format(VARIABLE_MASK, numberOfLines, numberOfColumns);
+		String variable = String.format(VARIABLE_MASK, numberOfColumns, numberOfLines);
 		return String.format("(%s)", variable);
 	}
 
-	private static String generateInitialState(Integer numberOfColumns) {
-		String variable = String.format(VARIABLE_MASK, 1, numberOfColumns);
+	private static String generateInitialState(Integer numberOfLines) {
+		String variable = String.format(VARIABLE_MASK, numberOfLines, 1);
 		return String.format("(%s)", variable);
 	}
 
@@ -173,12 +171,19 @@ public class NavigationGen {
 		
 		List<String> constraints = new ArrayList<String>();
 		
-		for (int column = 1; column <= numberOfColumns; column++) {
-			int firstConstraint = 2*column - 1;
-			int secondConstraint = 2*column;
+		int constraint = 1;
+		double probabilityConstraint = getExistenceProbability(1, numberOfColumns);
 		
-			for (String mask : CONSTRAINT_MASKS)
-				constraints.add(String.format(mask, firstConstraint, secondConstraint));
+		constraints.add(String.format("(p%1$d > = %2$f)", constraint, probabilityConstraint));
+		
+		for (int column = 2; column <= numberOfColumns; column++) {
+			int firstConstraint = column - 1;
+			int secondConstraint = column;
+			
+			double probability = getExistenceProbability(column, numberOfColumns);
+			
+			constraints.add(String.format("(p%1$d < = p%2$d - 0.05)", secondConstraint, firstConstraint));
+			constraints.add(String.format("(p%1$d > = %2$f)", secondConstraint, probability));
 		}
 		
 		return constraints;
@@ -187,9 +192,9 @@ public class NavigationGen {
 	private static String generateReward(Integer numberOfLines, Integer numberOfColumns) {
 		List<String> variables = new ArrayList<String>();
 		
-		for (int line = 1; line <= numberOfLines; line++)
-			for (int column = 1; column <= numberOfColumns; column++)
-				variables.add(String.format(VARIABLE_MASK, line, column));
+		for (int x = 1; x <= numberOfColumns; x++)
+			for (int y = 1; y <= numberOfLines; y++)
+				variables.add(String.format(VARIABLE_MASK, x, y));
 		
 		String reward = String.format("(%s (0) (-1) )", variables.get(variables.size() - 1));
 		
@@ -214,70 +219,88 @@ public class NavigationGen {
 		List<String> moveWestADDs = getMoveWestADDs(numberOfLines, numberOfColumns);
 		actions.put("movewest", moveWestADDs);
 		
+		List<String> noopADDs = getNoopADDs(numberOfLines, numberOfColumns);
+		actions.put("noop", noopADDs);
+		
 		return actions;
+	}
+
+	private static List<String> getNoopADDs(Integer numberOfLines, Integer numberOfColumns) {
+		List<String> adds = new ArrayList<String>();
+		
+		for (int x = 1; x <= numberOfColumns; x++) 
+			for (int y = 1; y <= numberOfLines; y++) {
+				
+				String transition = null;
+				
+				String currentVariable = String.format(VARIABLE_MASK, x, y);
+				String goalVariable = String.format(VARIABLE_MASK, numberOfColumns, numberOfLines);
+				
+				if (y == 1 || (y == numberOfLines && !currentVariable.equals(goalVariable))) //first or last line
+					transition = getAbsorventTransitionString(currentVariable);
+				else if (y != 1 && y != numberOfLines) //middle lines
+					transition = getAbsorventTransitionString(currentVariable, x, numberOfColumns, true);
+				else if (currentVariable.equals(goalVariable)) //goal state
+					transition = getAbsorventTransitionString(currentVariable);
+				
+				adds.add(transition);
+			}
+		
+		return adds;
 	}
 
 	private static List<String> getMoveNorthADDs(Integer numberOfLines, Integer numberOfColumns) {
 		List<String> adds = new ArrayList<String>();
 		
-		//Don't consider the first line, because in that line this action does not have an effect
-		for (int line = 2; line <= numberOfLines; line++) 
-			for (int column = 1; column <= numberOfColumns; column++) {
-				//Ignore goal state
-				if (line == numberOfLines && column == numberOfColumns) continue;
-				
-				String upperVariable = String.format(VARIABLE_MASK, line - 1, column);
-				String bottomVariable = String.format(VARIABLE_MASK, line, column);
+		for (int x = 1; x <= numberOfColumns; x++) 
+			for (int y = 1; y <= numberOfLines; y++) {
 				
 				String transition = null;
 				
-				if (line == 2) //One line after first line 
-					//Deterministic transition to next position
-					transition = getMovementTransitionString(bottomVariable, upperVariable);
-				else //Another lines
-					transition = getUncertainMovementTransitionString(bottomVariable, upperVariable, column, numberOfColumns);
+				String currentVariable = String.format(VARIABLE_MASK, x, y);
+				String previousVariable = String.format(VARIABLE_MASK, x, y - 1);
+				String goalVariable = String.format(VARIABLE_MASK, numberOfColumns, numberOfLines);
+				
+				if (y == 1) //first line
+					transition = getNoTransitionString(currentVariable);
+				else if (y == numberOfLines && !currentVariable.equals(goalVariable)) //last line
+					transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, false);
+				else if (y != 1 && y != numberOfLines) //middle lines
+					transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, true);
+				else if (currentVariable.equals(goalVariable)) //goal state
+					transition = getMovementTransitionString(currentVariable, previousVariable);
 				
 				adds.add(transition);
 			}
-		
-		//Now consider only the first line
-		for (int column = 1; column <= numberOfColumns; column++) {
-			String variable = String.format(VARIABLE_MASK, 1, column);
-			adds.add(String.format(STATIC_TRANSITION, variable));
-		}
-		
-		//Goal state
-		String goalVariable = String.format(VARIABLE_MASK, numberOfLines, numberOfColumns);
-		adds.add(String.format(STATIC_TRANSITION, goalVariable));
 		
 		return adds;
 	}
-	
+
 	private static List<String> getMoveSouthADDs(Integer numberOfLines, Integer numberOfColumns) {
 		List<String> adds = new ArrayList<String>();
 		
-		//Don't consider the last line, because in that line this action does not have an effect
-		for (int line = 1; line <= numberOfLines - 1; line++) 
-			for (int column = 1; column <= numberOfColumns; column++) {
-				String upperVariable = String.format(VARIABLE_MASK, line, column);
-				String bottomVariable = String.format(VARIABLE_MASK, line + 1, column);
+		for (int x = 1; x <= numberOfColumns; x++) 
+			for (int y = 1; y <= numberOfLines; y++) {
 				
 				String transition = null;
 				
-				if (line == numberOfLines - 1) //One line before end line 
-					//Deterministic transition to next position
-					transition = getMovementTransitionString(upperVariable, bottomVariable);
-				else //Another lines
-					transition = getUncertainMovementTransitionString(upperVariable, bottomVariable, column, numberOfColumns);
+				String currentVariable = String.format(VARIABLE_MASK, x, y);
+				String previousVariable = String.format(VARIABLE_MASK, x, y + 1);
+				String goalVariable = String.format(VARIABLE_MASK, numberOfColumns, numberOfLines);
+				
+				if (y == numberOfLines && !currentVariable.equals(goalVariable)) // last line
+					transition = getNoTransitionString(currentVariable);
+				else if (y == 1) //first line
+					transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, false);
+				else if (y == numberOfLines - 1 && x == numberOfColumns) //cell above the goal
+					transition = getNoTransitionString(currentVariable);
+				else if (y != 1 && y != numberOfLines) //middle lines
+					transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, true);
+				else if (currentVariable.equals(goalVariable)) //goal state
+					transition = getAbsorventTransitionString(currentVariable);
 				
 				adds.add(transition);
 			}
-		
-		//Now consider only the last line (also consider the goal state)
-		for (int column = 1; column <= numberOfColumns; column++) {
-			String variable = String.format(VARIABLE_MASK, numberOfLines, column);
-			adds.add(String.format(STATIC_TRANSITION, variable));
-		}
 		
 		return adds;
 	}
@@ -285,29 +308,32 @@ public class NavigationGen {
 	private static List<String> getMoveEastADDs(Integer numberOfLines, Integer numberOfColumns) {
 		List<String> adds = new ArrayList<String>();
 		
-		//Don't consider the last column, because in that column this action does not have an effect
-		for (int line = 1; line <= numberOfLines; line++) 
-			for (int column = 1; column <= numberOfColumns - 1; column++) {
-				String leftVariable = String.format(VARIABLE_MASK, line, column);
-				String rightVariable = String.format(VARIABLE_MASK, line, column + 1);
+		for (int x = 1; x <= numberOfColumns; x++) 
+			for (int y = 1; y <= numberOfLines; y++) {
 				
 				String transition = null;
 				
-				if ((line == 1 || line == numberOfLines) //First and last line
-						&& !(line == numberOfLines && column == numberOfColumns)) //Not the goal state  
-					//Deterministic transition to next position
-					transition = getMovementTransitionString(leftVariable, rightVariable);
-				else //Another lines
-					transition = getUncertainMovementTransitionString(leftVariable, rightVariable, column + 1, numberOfColumns);
+				String currentVariable = String.format(VARIABLE_MASK, x, y);
+				String previousVariable = String.format(VARIABLE_MASK, x - 1, y);
+				String goalVariable = String.format(VARIABLE_MASK, numberOfColumns, numberOfLines);
+				
+				if (x == 1) // first column
+					transition = getNoTransitionString(currentVariable);
+				else if (x == numberOfColumns && !currentVariable.equals(goalVariable)) //last column
+					if (y == 1 || y == numberOfLines)
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, false);
+					else
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, true);
+				else if (x > 1 && x < numberOfColumns) //middle coluns
+					if (y == 1 || y == numberOfLines)
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, false);
+					else
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, true);
+				else if (currentVariable.equals(goalVariable)) //goal state
+					transition = getMovementTransitionString(currentVariable, previousVariable);
 				
 				adds.add(transition);
 			}
-		
-		//Now consider only the last column (also includes the goal state)
-		for (int line = 1; line <= numberOfLines; line++) {
-			String variable = String.format(VARIABLE_MASK, line, numberOfColumns);
-			adds.add(String.format(STATIC_TRANSITION, variable));
-		}
 		
 		return adds;
 	}
@@ -315,35 +341,34 @@ public class NavigationGen {
 	private static List<String> getMoveWestADDs(Integer numberOfLines, Integer numberOfColumns) {
 		List<String> adds = new ArrayList<String>();
 		
-		//Don't consider the first column, because in that column this action does not have an effect
-		for (int line = 1; line <= numberOfLines; line++) 
-			for (int column = 2; column <= numberOfColumns; column++) {
-				//Ignore goal state
-				if (line == numberOfLines && column == numberOfColumns) continue;
-				
-				String leftVariable = String.format(VARIABLE_MASK, line, column - 1);
-				String rightVariable = String.format(VARIABLE_MASK, line, column);
+		for (int x = 1; x <= numberOfColumns; x++) 
+			for (int y = 1; y <= numberOfLines; y++) {
 				
 				String transition = null;
 				
-				if (line == 1 || line == numberOfLines) //First and last line  
-					//Deterministic transition to next position
-					transition = getMovementTransitionString(rightVariable, leftVariable);
-				else //Another lines
-					transition = getUncertainMovementTransitionString(rightVariable, leftVariable, column - 1, numberOfColumns);
+				String currentVariable = String.format(VARIABLE_MASK, x, y);
+				String previousVariable = String.format(VARIABLE_MASK, x + 1, y);
+				String goalVariable = String.format(VARIABLE_MASK, numberOfColumns, numberOfLines);
+				
+				if (x == numberOfColumns - 1 && y == numberOfLines) //cell before goal
+					transition = getMovementTransitionString(currentVariable, previousVariable);
+				else if (x == 1) // first column
+					if (y == 1 || y == numberOfLines)
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, false);
+					else
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, true);
+				else if (x == numberOfColumns && !currentVariable.equals(goalVariable)) //last column
+					transition = getNoTransitionString(currentVariable);
+				else if (x > 1 && x < numberOfColumns) //middle columns
+					if (y == 1 || y == numberOfLines)
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, false);
+					else
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, true);
+				else if (currentVariable.equals(goalVariable)) //goal state
+					transition = getAbsorventTransitionString(currentVariable);
 				
 				adds.add(transition);
 			}
-		
-		//Now consider only the first column
-		for (int line = 1; line <= numberOfLines; line++) {
-			String variable = String.format(VARIABLE_MASK, line, 1);
-			adds.add(String.format(STATIC_TRANSITION, variable));
-		}
-		
-		//Goal state
-		String goalVariable = String.format(VARIABLE_MASK, numberOfLines, numberOfColumns);
-		adds.add(String.format(STATIC_TRANSITION, goalVariable));
 		
 		return adds;
 	}
@@ -351,9 +376,9 @@ public class NavigationGen {
 	private static String generateVariables(Integer numberOfLines, Integer numberOfColumns) {
 		List<String> variables = new ArrayList<String>();
 		
-		for (int line = 1; line <= numberOfLines; line++)
-			for (int column = 1; column <= numberOfColumns; column++)
-				variables.add(String.format(VARIABLE_MASK, line, column));
+		for (int x = 1; x <= numberOfColumns; x++)
+			for (int y = 1; y <= numberOfLines; y++)
+				variables.add(String.format(VARIABLE_MASK, x, y));
 		
 		String variablesList = variables.get(0);
 		
@@ -363,18 +388,49 @@ public class NavigationGen {
 		return variablesList;
 	}
 
-	private static String getMovementTransitionString(String firstVariable, String secondVariable) {
-		return String.format(MOVEMENT_TRANSITION, firstVariable, secondVariable, 1.0, 0.0);
+	private static String getNoTransitionString(String currentVariable) {
+		return String.format(NO_TRANSITION, currentVariable);
 	}
 	
-	private static String getUncertainMovementTransitionString(String firstVariable, String secondVariable, int column, int numberOfColumns) {
-		int firstConstraint = 2*column - 1;
-		int secondConstraint = 2*column;
+	private static String getMovementTransitionString(String firstVariable, String secondVariable) {
+		return String.format(MOVEMENT_TRANSITION, firstVariable, secondVariable, 1.0, 1.0);
+	}
+	
+	private static String getAbsorventTransitionString(String currentVariable) {
+		return getAbsorventTransitionString(currentVariable, -1, -1, false);
+	}
+	
+	private static String getAbsorventTransitionString(String currentVariable, int column, int numberOfColumns, boolean computeExistenceProbability) {
+		
+		if (computeExistenceProbability) { //linear formula to compute the probability of movement fail		
+			return String.format(UNCERTAIN_ABSORVENT_TRANSITION, currentVariable, column);
+			//return String.format(ABSORVENT_TRANSITION, currentVariable, 1.0);
+		}
+		else {
+			return String.format(ABSORVENT_TRANSITION, currentVariable, 1.0);
+		}
+	}
+	
+	private static String getUncertainMovementTransitionString(String currentVariable, String previousVariable, String goalVariable, double stayInPlaceProbability, int column, int numberOfColumns, boolean computeExistenceProbability) {		
+						
+		if (computeExistenceProbability) { //linear formula to compute the probability of movement fail
+			double existenceProbability = getExistenceProbability(column, numberOfColumns);
+			
+			return String.format(UNCERTAIN_AND_IMPRECISE_MOVEMENT_TRANSITION, 
+			//return String.format(UNCERTAIN_MOVEMENT_TRANSITION,
+				currentVariable, goalVariable, previousVariable, stayInPlaceProbability, existenceProbability, column);
+		}
+		else {
+			return String.format(UNCERTAIN_MOVEMENT_TRANSITION, 
+					currentVariable, goalVariable, previousVariable, stayInPlaceProbability, 1.0);
+		}
+	} 
+
+	private static double getExistenceProbability(int column, int numberOfColumns) {
+		final double first_point = 0.9;
+		final double last_point = 0.1;
 		
 		//linear formula to compute the probability of movement fail
-		double falseProbability = 0.1 + (column - 1) * ((0.9 - 0.1) / (numberOfColumns - 1));
-		double trueProbability = 1.0 - falseProbability;
-		
-		return String.format(UNCERTAIN_MOVEMENT_TRANSITION, firstVariable, secondVariable, trueProbability, falseProbability, firstConstraint, secondConstraint);
-	} 
+		return first_point + (column - 1) * ((last_point - first_point) / (numberOfColumns - 1));
+	}
 }

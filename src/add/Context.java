@@ -466,8 +466,11 @@ public abstract class Context {
 	    		for (String line : lines) {
 					if (currentState == PARSE_START) {
 						if (line.contains("objective")) {
-							int pos = line.indexOf("objective");
-							obj = Double.valueOf(line.substring(pos + 10)); //pos + characters of objective + 1
+							if (line.endsWith(".")) 
+								line = line.substring(0, line.length() - 1);
+							
+							int pos = line.lastIndexOf(" ");
+							obj = Double.valueOf(line.substring(pos)); //pos + characters of objective + 1
 							currentState = OBJECTIVE_READ;
 						}
 					}

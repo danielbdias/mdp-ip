@@ -17,10 +17,11 @@ ALGORITHM=spudd
 PROBLEM_DIR=$ROOT_DIR/problemsMDPIP
 
 #Indicate which problem will be used in tests
-PROBLEM_TYPE=traffic
+PROBLEM_TYPE=navigation
 
 #Indicate the directory where the results will be saved
-RESULTS_DIR=$ROOT_DIR/reportsMDPIP/results/$ALGORITHM
+REPORTS_DIR=$ROOT_DIR/reportsMDPIP
+RESULTS_DIR=$REPORTS_DIR/results/$ALGORITHM
 
 #Java execution parameters
 BINARIES_DIR=$ROOT_DIR/bin
@@ -69,10 +70,18 @@ echo Tests with 100% of time...
 
 TEST_TYPE="full"
 
-execute_problem $TEST_TYPE 3 $MAX_ITER
-execute_problem $TEST_TYPE 4 $MAX_ITER
-execute_problem $TEST_TYPE 5 $MAX_ITER
-execute_problem $TEST_TYPE 6 $MAX_ITER
+#execute_problem $TEST_TYPE 6 $MAX_ITER
+#execute_problem $TEST_TYPE 8 $MAX_ITER
+#execute_problem $TEST_TYPE 9 $MAX_ITER
+#execute_problem $TEST_TYPE 10 $MAX_ITER
+#execute_problem $TEST_TYPE 12 $MAX_ITER
+#execute_problem $TEST_TYPE 15 $MAX_ITER
+execute_problem $TEST_TYPE 18 $MAX_ITER
+execute_problem $TEST_TYPE 20 $MAX_ITER
+execute_problem $TEST_TYPE 21 $MAX_ITER
+execute_problem $TEST_TYPE 24 $MAX_ITER
+#execute_problem $TEST_TYPE 25 $MAX_ITER
+#execute_problem $TEST_TYPE 30 $MAX_ITER
 
 echo End of tests
 
