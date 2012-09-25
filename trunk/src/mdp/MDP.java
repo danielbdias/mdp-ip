@@ -779,10 +779,12 @@ public abstract class MDP {
 				System.exit(0);
 			}
 			
-			//System.out.println("Horizon " + t + ": " + aBest.getName());
-			
 			//this is the work of the simulator true for using tmID2ADDNewSample
 			TreeMap<Integer, Integer> nextState = chooseNextStateForMDPIPSimulation(state, policeValueADD, aBest, randomGenNextState, simulationType);
+			
+			System.out.println("Horizon " + t + ": " + aBest.getName());
+			System.out.println("Previous state:" + new TreeMap<Integer, Integer>(state));
+			System.out.println("Next state:" + nextState);
 			
 			state = new HashMap(nextState);
 			    			
@@ -1749,7 +1751,7 @@ public abstract class MDP {
 				flushCachesRTDP(false);
 				
 				totalTrialTime = GetElapsedTime();
-	            totalTrialTimeSec = totalTrialTime / 1000;
+	            totalTrialTimeSec = totalTrialTime / 1000;	            
 			}
 			
 			//adiciona o goal na lista de estados visitados para ele ser

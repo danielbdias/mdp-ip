@@ -77,12 +77,12 @@ echo Tests with 200% of time...
 
 TEST_TYPE="quadruple"
 
-execute_problem $TEST_TYPE 1 4
-execute_problem $TEST_TYPE 2 12
-execute_problem $TEST_TYPE 3 48
-execute_problem $TEST_TYPE 4 164
-execute_problem $TEST_TYPE 5 544
-execute_problem $TEST_TYPE 6 1636
+#execute_problem $TEST_TYPE 1 4
+#execute_problem $TEST_TYPE 2 12
+#execute_problem $TEST_TYPE 3 48
+#execute_problem $TEST_TYPE 4 164
+#execute_problem $TEST_TYPE 5 544
+#execute_problem $TEST_TYPE 6 1636
 execute_problem $TEST_TYPE 7 4320
 execute_problem $TEST_TYPE 8 14792
 
