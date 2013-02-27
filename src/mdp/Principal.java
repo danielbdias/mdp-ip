@@ -141,44 +141,44 @@ public class Principal {
 		   //====================================================================================
 		   else if(typeSolution.compareTo("RTDPIP")==0){
 			   //myMDP.pruneAfterEachIt = pruneEachIt;
-			   myMDP.pruneAfterEachIt = false;
-			   			   
-			   Random randomGenInitial = new Random(19580434);
-			   Random randomGenNextState = new Random(19580807);
-			   
-			   ResetTimer();
-			   
-			   ArrayList<Object[]> result = myMDP.solveRTDPIPFac(maxDepth, timeOut, typeSolution, numTrialsSimulation, 
-							   					interval, numberInitialStates, randomGenInitial, randomGenNextState);
-			   
-			   long timeSeg = GetElapsedTime() / 1000;
-			   
-			   double maxError = Double.NEGATIVE_INFINITY;
-			   
-			   if (NAME_FILE_VALUE_STAR.compareTo("NOT")!=0){
-				   myMDP.context.workingWithParameterized = false;
-
-				   Object valueStar = myMDP.context.readValueFunction(NAME_FILE_VALUE_STAR);
-				   
-				   for (Object[] item : result) {
-					   TreeMap<Integer, Boolean> state = (TreeMap<Integer, Boolean>) item[0];
-					   double approximatedValue = (Double) item[1];
-					   
-					   double optimumValue = myMDP.context.getValueForStateInContext((Integer)valueStar, state, null, null);
-	
-					   double error = Math.abs(optimumValue - approximatedValue);
-					   maxError = Math.max(maxError, error);
-				   }
-			   }   
-			   
-			   int contNumNodes = myMDP.context.contNumberNodes(myMDP.VUpper);
-			   
-			   printReport(filename, maxIter, mergeError, typeContext, contNumNodes, timeSeg, fileNameReport, 
-					   myMDP.context.contReuse, myMDP.context.contNoReuse, myMDP.context.numberReducedToValue, 
-					   myMDP.context.numCallSolver, myMDP.context.reuseCacheIntNode,
-					   maxError, myMDP.pruneAfterEachIt, typeSolution);
-			   
-			   myMDP.flushCachesRTDP(true); //true because we dont want to save Vupper
+//			   myMDP.pruneAfterEachIt = false;
+//			   			   
+//			   Random randomGenInitial = new Random(19580434);
+//			   Random randomGenNextState = new Random(19580807);
+//			   
+//			   ResetTimer();
+//			   
+//			   ArrayList<Object[]> result = myMDP.solveRTDPIPFac(maxDepth, timeOut, typeSolution, numTrialsSimulation, 
+//							   					interval, numberInitialStates, randomGenInitial, randomGenNextState);
+//			   
+//			   long timeSeg = GetElapsedTime() / 1000;
+//			   
+//			   double maxError = Double.NEGATIVE_INFINITY;
+//			   
+//			   if (NAME_FILE_VALUE_STAR.compareTo("NOT")!=0){
+//				   myMDP.context.workingWithParameterized = false;
+//
+//				   Object valueStar = myMDP.context.readValueFunction(NAME_FILE_VALUE_STAR);
+//				   
+//				   for (Object[] item : result) {
+//					   TreeMap<Integer, Boolean> state = (TreeMap<Integer, Boolean>) item[0];
+//					   double approximatedValue = (Double) item[1];
+//					   
+//					   double optimumValue = myMDP.context.getValueForStateInContext((Integer)valueStar, state, null, null);
+//	
+//					   double error = Math.abs(optimumValue - approximatedValue);
+//					   maxError = Math.max(maxError, error);
+//				   }
+//			   }   
+//			   
+//			   int contNumNodes = myMDP.context.contNumberNodes(myMDP.VUpper);
+//			   
+//			   printReport(filename, maxIter, mergeError, typeContext, contNumNodes, timeSeg, fileNameReport, 
+//					   myMDP.context.contReuse, myMDP.context.contNoReuse, myMDP.context.numberReducedToValue, 
+//					   myMDP.context.numCallSolver, myMDP.context.reuseCacheIntNode,
+//					   maxError, myMDP.pruneAfterEachIt, typeSolution);
+//			   
+//			   myMDP.flushCachesRTDP(true); //true because we dont want to save Vupper
 		   }
 		   else if (typeSolution.compareTo("BoundedSPUDD") == 0){
 			   myMDP.pruneAfterEachIt = pruneEachIt;

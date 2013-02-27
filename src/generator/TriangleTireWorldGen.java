@@ -175,18 +175,15 @@ public class TriangleTireWorldGen {
 		List<String> constraints = new ArrayList<String>();
 		
 		int constraint = 1;
-		double probabilityConstraint = getExistenceProbability(1, numberOfLines);
 		
-		constraints.add(String.format("(p%1$d > = %2$f)", constraint, probabilityConstraint));
+		constraints.add(String.format("(p%1$d > = %2$f)", constraint, getExistenceProbability(1, numberOfLines)));
+		constraints.add(String.format("(p%1$d < = %2$f)", constraint, getExistenceProbability(2, numberOfLines)));
 		
-		for (int line = 2; line <= numberOfLines; line++) {
-			int firstConstraint = line - 1;
-			int secondConstraint = line;
+		for (int line = 2; line <= numberOfLines-1; line++) {
+			constraint = line;
 			
-			double probability = getExistenceProbability(line, numberOfLines);
-			
-			constraints.add(String.format("(p%1$d > = p%2$d - 0.05)", secondConstraint, firstConstraint));
-			constraints.add(String.format("(p%1$d < = %2$f)", secondConstraint, probability));
+			constraints.add(String.format("(p%1$d > = %2$f)", constraint, getExistenceProbability(line - 1, numberOfLines)));
+			constraints.add(String.format("(p%1$d < = %2$f)", constraint, getExistenceProbability(line, numberOfLines)));
 		}
 		
 		return constraints;
@@ -387,14 +384,15 @@ public class TriangleTireWorldGen {
 		String flattiredMaskMiddle = "([0.00])";
 		String flattiredMaskEnd = " )";
 		
-		for (y = 1; y <= numberOfLines; y+=2) {
-			String cell = String.format(VARIABLE_MASK, 1, y);
+		for (x = 1; x <= numberOfColumns; x+=2)
+		for (y = x; y <= numberOfLines - x - 1; y+=2) {
+			String cell = String.format(VARIABLE_MASK, x, y);
 			flattiredMaskStart += String.format(" (%1$s ([1.00*p%2$d])", cell, y);
 			flattiredMaskEnd += " )";
 		}
 		
 		adds.add(flattiredMaskStart + flattiredMaskMiddle + flattiredMaskEnd);
-		
+				
 		List<Pair> cells = getCellPositions(numberOfLines, numberOfColumns);
 		
 		for (Pair cell : cells) {
@@ -402,10 +400,16 @@ public class TriangleTireWorldGen {
 			y = (Integer) cell.get_o2();
 			
 			String currentCell = String.format(VARIABLE_MASK, x, y);
-			
+						
 			if (x % 2 == 1 && x == y && x != numberOfColumns) {
 				String mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) ([0.00]))";
 				adds.add(String.format(mask, currentCell));
+			}
+			else if (x % 2 == 1 && y == numberOfLines - x + 1 && x != numberOfColumns) {
+				String previousCell = String.format(VARIABLE_MASK, x, y - 2);
+				
+				String mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
+				adds.add(String.format(mask, currentCell, previousCell));
 			}
 			else if (x % 2 == 1 && x != numberOfColumns) {			
 				String previousCell = String.format(VARIABLE_MASK, x, y - 2);
