@@ -955,4 +955,49 @@ public abstract class Context {
          	System.exit(0);
          }
  	}
+	 
+	 public void enumeratePaths(int id, ADDLeafOperation leaf_op) {
+		 enumeratePaths(id, leaf_op, new TreeMap<Integer, Boolean>());
+	 }
+	 
+	 private void enumeratePaths(int id, ADDLeafOperation leaf_op, TreeMap<Integer, Boolean> assign) {
+
+		Boolean b;
+		 
+		NodeKey cur = this.getNodeInverseCache(id);
+
+	    if (cur instanceof InternalNodeKey) {    	
+	    	/*
+	    	 * int level = ((Integer) _hmGVarToLevel.get(new Integer(
+                                        ((ADDINode) cur)._nTestVarID))).intValue();
+                        Integer var_id = (Integer)_alOrder.get(level);
+                        String var = (String)_hmID2VarName.get(var_id);
+
+                        ADDINode ni = (ADDINode) cur;
+	    	 * */
+	    	
+	    	InternalNodeKey ni = (InternalNodeKey) cur;    
+	    	 
+            Integer var_id = ni.var;
+
+            assign.put(var_id, false);
+            enumeratePaths((Integer) ni.getLower(), leaf_op, assign);
+             
+            assign.put(var_id, true);
+            enumeratePaths((Integer) ni.getHigh(), leaf_op, assign);
+             
+            assign.remove(var_id);
+            return;
+	    }
+         
+		// If get here, cur will be an ADDDNode, ADDBNode
+	    Object leaf_val = null;
+	     
+		if (cur instanceof TerminalNodeKeyADD)
+			leaf_val = ((TerminalNodeKeyADD) cur).getValue(); //the result is a Double
+		else if (cur instanceof TerminalNodeKeyPar)
+			leaf_val = ((TerminalNodeKeyPar) cur).getPolynomial();  // the result is a poly
+	     
+		leaf_op.processADDLeaf(assign, leaf_val);
+	}
 }

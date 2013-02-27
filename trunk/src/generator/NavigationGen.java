@@ -172,18 +172,14 @@ public class NavigationGen {
 		List<String> constraints = new ArrayList<String>();
 		
 		int constraint = 1;
-		double probabilityConstraint = getExistenceProbability(1, numberOfColumns);
 		
-		constraints.add(String.format("(p%1$d > = %2$f)", constraint, probabilityConstraint));
+		constraints.add(String.format("(p%1$d > = %2$f)", constraint, getExistenceProbability(1, numberOfColumns)));
 		
 		for (int column = 2; column <= numberOfColumns; column++) {
-			int firstConstraint = column - 1;
-			int secondConstraint = column;
+			constraint = column;
 			
-			double probability = getExistenceProbability(column, numberOfColumns);
-			
-			constraints.add(String.format("(p%1$d < = p%2$d - 0.05)", secondConstraint, firstConstraint));
-			constraints.add(String.format("(p%1$d > = %2$f)", secondConstraint, probability));
+			constraints.add(String.format("(p%1$d < = %2$f)", constraint, getExistenceProbability(column - 1, numberOfColumns) + 0.1));
+			constraints.add(String.format("(p%1$d > = %2$f)", constraint, getExistenceProbability(column, numberOfColumns)));
 		}
 		
 		return constraints;
