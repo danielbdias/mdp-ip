@@ -63,6 +63,7 @@ public abstract class Context {
     
     HashMap probBound=new HashMap();  // String prob -> array[lower,upper]
     
+    public long linearSolverElapsedTime = 0;
     public int reuseCacheIntNode=0,clash=0, noclash=0,contReuse=0,contNoReuse=0,numberReducedToValue=0,contReuseUsingLattice=0;
     public Hashtable<String, Double> currentValuesProb=new Hashtable<String, Double>();     //  idProb--> valProb
     public Hashtable<String, Double> probSample;     //  idProb--> valProb
@@ -680,6 +681,8 @@ public abstract class Context {
 	public Hashtable<String, Double> sampleProbabilitiesSubjectTo(String NAME_FILE_CONTRAINTS) {
 		String objective = generateRandomObjective();
   		  
+		long initialTime = System.currentTimeMillis();
+		
   		createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min");
   		callNonLinearSolver();
   		
@@ -704,6 +707,9 @@ public abstract class Context {
 		}
   		
   		this.probSample = randomProbabilities;
+  		
+  		long elapsedTime = System.currentTimeMillis() - initialTime;
+  		this.linearSolverElapsedTime += elapsedTime;
   		
   		return randomProbabilities;
 	}
