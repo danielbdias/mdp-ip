@@ -1784,7 +1784,6 @@ public abstract class MDP {
 		contUpperUpdates=0;
 
 		context.workingWithParameterizedBef = context.workingWithParameterized;
-		
 		for (int trial = 1; trial <= numTrials; trial++){
 		
 			int depth = 0;
@@ -2078,8 +2077,9 @@ public abstract class MDP {
             
             if (initialStateLogPath != null) {
 	            //medição para o estado inicial
-	            long elapsedTime = (System.currentTimeMillis() - initialTime);
-	            
+	            //long elapsedTime = (System.currentTimeMillis() - initialTime);
+            	long elapsedTime = (System.currentTimeMillis() - initialTime) - context.linearSolverElapsedTime;
+            	
 	            TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
 		    	
 		    	TreeMap<Integer, Boolean> remappedInitialState = new TreeMap<Integer, Boolean>();
@@ -2133,7 +2133,8 @@ public abstract class MDP {
 			double valueState = (Double) context.getValueForStateInContext((Integer) VUpper, state_prime, null, null);
 		      
 			Action greedyAction = updateVUpper(state.getValues()); // here it is computed maxUpperUpdated
-			  
+			contUpperUpdates++;
+			
 			Double residual = Math.abs(valueState - maxUpperUpdated);
 			if (residual == null || residual > epsilon){
 				rv = false;
