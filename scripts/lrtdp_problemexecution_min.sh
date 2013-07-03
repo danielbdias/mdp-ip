@@ -9,7 +9,7 @@
 ###########################################################################
 
 #Commom parameter definition
-sh setup_vars.sh
+. ./setup_vars.sh
 
 #Algorithm name
 ALGORITHM=lrtdp
