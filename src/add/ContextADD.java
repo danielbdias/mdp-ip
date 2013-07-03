@@ -49,7 +49,7 @@ public class ContextADD extends Context {
 		this.cacheResultsSolver=new Hashtable();
 		//for MDP
 		this.cacheCont=new Hashtable();
-		this.numCallSolver=0;
+		this.numCallNonLinearSolver=0;
 		//for evaluator
 		printCache=new Hashtable();
 		reduceConvert=new Hashtable();

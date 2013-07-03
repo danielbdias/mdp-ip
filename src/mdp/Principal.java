@@ -98,9 +98,9 @@ public class Principal {
 				   Error=0d;
 			   }
                ///////////////////////////////////////////////////////////////////////////
-			   System.out.println("Name: "+filename+"  maxIter: " +maxIter+"  mergeError: "+mergeError+"  typeContext: "+typeContext+"  ContNumNodes: "+contNumNodes+" Time: "+timeSeg+" Reuse: "+myMDP.context.contReuse+" No reuse:  "+myMDP.context.contNoReuse+" Reduced to value: "+myMDP.context.numberReducedToValue+" NumCallSolver:  "+myMDP.context.numCallSolver+" Reuse Cache Internal Node instead of  Call Solver: "+myMDP.context.reuseCacheIntNode);
+			   System.out.println("Name: "+filename+"  maxIter: " +maxIter+"  mergeError: "+mergeError+"  typeContext: "+typeContext+"  ContNumNodes: "+contNumNodes+" Time: "+timeSeg+" Reuse: "+myMDP.context.contReuse+" No reuse:  "+myMDP.context.contNoReuse+" Reduced to value: "+myMDP.context.numberReducedToValue+" NumCallSolver:  "+myMDP.context.numCallNonLinearSolver+" Reuse Cache Internal Node instead of  Call Solver: "+myMDP.context.reuseCacheIntNode);
 			   System.out.println("Error: "+Error);
-			   printReport(filename,maxIter,mergeError, typeContext,contNumNodes,timeSeg,fileNameReport,myMDP.context.contReuse,myMDP.context.contNoReuse,myMDP.context.numberReducedToValue,myMDP.context.numCallSolver,myMDP.context.reuseCacheIntNode,Error,myMDP.pruneAfterEachIt,typeSolution);
+			   printReport(filename,maxIter,mergeError, typeContext,contNumNodes,timeSeg,fileNameReport,myMDP.context.contReuse,myMDP.context.contNoReuse,myMDP.context.numberReducedToValue,myMDP.context.numCallNonLinearSolver,myMDP.context.reuseCacheIntNode,Error,myMDP.pruneAfterEachIt,typeSolution);
 		   }
 		   //=================RTDP AND BRTDP================================================================
 		   else if (typeSolution.compareTo("BRTDP")==0 ||typeSolution.compareTo("RTDP")==0 || typeSolution.compareTo("RTDPEnum")==0||typeSolution.compareTo("BRTDPEnum")==0){
@@ -192,14 +192,14 @@ public class Principal {
 			   System.out.println("Name: " + filename + "  maxIter: " + maxIter + "  mergeError: " + mergeError 
 					   + "  typeContext: " + typeContext + "  ContNumNodes: " + contNumNodes + " Time: " + timeSeg
 					   + " Reuse: " + myMDP.context.contReuse + " No reuse:  " + myMDP.context.contNoReuse 
-					   + " Reduced to value: " + myMDP.context.numberReducedToValue + " NumCallSolver:  " + myMDP.context.numCallSolver 
+					   + " Reduced to value: " + myMDP.context.numberReducedToValue + " NumCallSolver:  " + myMDP.context.numCallNonLinearSolver 
 					   + " Reuse Cache Internal Node instead of  Call Solver: " + myMDP.context.reuseCacheIntNode);
 			   
 			   System.out.println("Error: " + Error);
 			   
 			   printReport(filename, maxIter, mergeError, typeContext, contNumNodes, timeSeg, 
 					   fileNameReport, myMDP.context.contReuse, myMDP.context.contNoReuse, myMDP.context.numberReducedToValue, 
-					   myMDP.context.numCallSolver, myMDP.context.reuseCacheIntNode, Error, myMDP.pruneAfterEachIt, typeSolution);
+					   myMDP.context.numCallNonLinearSolver, myMDP.context.reuseCacheIntNode, Error, myMDP.pruneAfterEachIt, typeSolution);
 		   }
 		   else if (typeSolution.compareTo("MP")==0){
 			   ResetTimer();

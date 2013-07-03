@@ -109,7 +109,8 @@ public abstract class Context {
 	public abstract Object remapIdWithPrime(Object id, HashMap hmPrimeRemap);
 	public abstract Object remapIdWithOutPrime(Object F, HashMap hmPrime2IdRemap);
 	protected Hashtable cacheCont;
-	public int numCallSolver=0;
+	public int numCallNonLinearSolver=0;
+	public int numCallLinearSolver=0;
 	 
 	//for APRICODD
 	public abstract Object pruneNodesValue(Object valueiDD, double mergeError);
@@ -424,13 +425,14 @@ public abstract class Context {
 			
 		}
 			    
-	    //for Paramereterized   
-	    /**
-	     * call the non linear solver and fill currentValuesProb with the probabilities  
-	     */
-	    public Double callNonLinearSolver() {
-	    	this.numCallSolver++;
- 
+	    //for Paramereterized
+	    
+	    private Double callSolver(boolean nonLinearSolverCall) {
+	    	if (nonLinearSolverCall)
+	    		this.numCallNonLinearSolver++;
+	    	else
+	    		this.numCallLinearSolver++;
+	    	 
 	    	Double obj = null;
  
 	    	try {
@@ -509,6 +511,17 @@ public abstract class Context {
 	    		 ioe.printStackTrace(System.err);
 	    		 return null;
 	    	 }
+	    }
+	    
+	    /**
+	     * call the non linear solver and fill currentValuesProb with the probabilities  
+	     */
+	    public Double callNonLinearSolver() {
+	    	return callSolver(true);
+		}
+	    
+	    public Double callLinearSolver() {
+	    	return callSolver(false);
 		}
 	    
 	    //the parameter is ParADD and the result is an ADD
@@ -684,12 +697,12 @@ public abstract class Context {
 		long initialTime = System.currentTimeMillis();
 		
   		createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min");
-  		callNonLinearSolver();
+  		callLinearSolver();
   		
   		Hashtable<String, Double> firstPoint = currentValuesProb;
   		
   		createFileAMPL(objective, NAME_FILE_CONTRAINTS, "max");
-  		callNonLinearSolver();
+  		callLinearSolver();
   		
   		Hashtable<String, Double> secondPoint = currentValuesProb;
   		
