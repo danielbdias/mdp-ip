@@ -58,20 +58,19 @@ public class LRTDPIP {
 		long startTime = System.currentTimeMillis();
 		
 		myMDP.solveLRTDPIPFac(maxTrialDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, finalVUpperPath, initialStateLogPath, initVUpperPath);
-		
-		int contNumNodes = myMDP.context.contNumberNodes(myMDP.VUpper);
-		   
+				   
 		long timeSeg = (System.currentTimeMillis() - startTime) / 1000;
 		
-		printReport(problemFilename, typeContext, contNumNodes, timeSeg, outputFilename, 
-				   myMDP.context.contReuse, myMDP.context.contNoReuse, myMDP.context.numberReducedToValue, 
-				   myMDP.context.numCallSolver, myMDP.context.reuseCacheIntNode,
-				   myMDP.pruneAfterEachIt, typeSolution);
+		int numVariables = myMDP.hmPrime2IdRemap.keySet().size();
+		
+		printReport(problemFilename, typeContext, timeSeg, outputFilename, 
+				   myMDP.context.numCallNonLinearSolver, myMDP.contUpperUpdates, 
+				   typeSolution, numVariables);
 	}
 	
-	private static void printReport(String filename, int typeContext, int contNumNodes, long timeSeg, 
-									String fileNameReport, int contReuse, int contNoReuse, int numberReducedToValue, 
-									int numCallSolver, int reuseCacheIntNode, boolean pruneAfterEachIt, String typeSolution) {
+	private static void printReport(String filename, int typeContext, long timeSeg, 
+									String fileNameReport, int numCallSolver, int numBackups, 
+									String typeSolution, int numVariables) {
 		
 		String typeCon = "ADD";
 		String typeAprox = "REGR";
@@ -87,28 +86,22 @@ public class LRTDPIP {
 				out.write("Problema\t");
 				out.write("Contexto\t");
 				out.write("Aproximação\t");
-				out.write("contNumNodes\t");
 				out.write("Tempo de execução\t");
-				out.write("contReuse\t");
-				out.write("contNoReuse\t");
-				out.write("numberReducedToValue\t");
 				out.write("Chamadas ao Solver\t");
-				out.write("reuseCacheIntNode\t");
+				out.write("Número de Backups\t");
 				out.write("Algoritmo\t");
+				out.write("Número de variáveis\t");
 				out.write(System.getProperty("line.separator"));
 			}
 
 			out.write(filename + "\t");
 			out.write(typeCon + "\t");
 			out.write(typeAprox + "\t");
-			out.write(contNumNodes + "\t");
 			out.write(timeSeg + "\t");
-			out.write(contReuse + "\t");
-			out.write(contNoReuse + "\t");
-			out.write(numberReducedToValue + "\t");
 			out.write(numCallSolver + "\t");
-			out.write(reuseCacheIntNode + "\t");
+			out.write(numBackups + "\t");
 			out.write(typeSolution + "\t");
+			out.write(numVariables + "\t");
 			out.write(System.getProperty("line.separator"));
 			
 			out.close();

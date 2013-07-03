@@ -53,7 +53,7 @@ public class ObjectiveIP {
 				
 		printReport(problemFilename, typeContext, contNumNodes, timeSeg, outputFilename, 
 				   myMDP.context.contReuse, myMDP.context.contNoReuse, myMDP.context.numberReducedToValue, 
-				   myMDP.context.numCallSolver, myMDP.context.reuseCacheIntNode,
+				   myMDP.context.numCallNonLinearSolver, myMDP.context.reuseCacheIntNode,
 				   myMDP.pruneAfterEachIt, typeSolution);
 	}
 	

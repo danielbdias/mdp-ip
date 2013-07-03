@@ -713,6 +713,10 @@ public abstract class MDP {
 	    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
     	}
     	
+    	//SPUDD-IP execute one mass update in all states per iteration
+    	//so, the number of updates is the number of iterations
+    	contUpperUpdates = numIterations;
+    	
     	if (printFinalADD)
     		context.view(valueiDD);
     	    	
@@ -2007,6 +2011,9 @@ public abstract class MDP {
 			trialCounter++;
    	    	
    	    	s = new State(sampleInitialStateFromList(randomGenInitial));
+   	    	
+   	    	System.out.println("Chamadas ao solver: " + context.numCallNonLinearSolver);
+   	    	System.out.println("Número de Backups: " + contUpperUpdates);
 		}
 			
 		ArrayList<Object[]> result = new ArrayList<Object[]>();
@@ -2077,8 +2084,8 @@ public abstract class MDP {
             
             if (initialStateLogPath != null) {
 	            //medição para o estado inicial
-	            //long elapsedTime = (System.currentTimeMillis() - initialTime);
-            	long elapsedTime = (System.currentTimeMillis() - initialTime) - context.linearSolverElapsedTime;
+	            long elapsedTime = (System.currentTimeMillis() - initialTime);
+            	//long elapsedTime = (System.currentTimeMillis() - initialTime) - context.linearSolverElapsedTime;
             	
 	            TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
 		    	
