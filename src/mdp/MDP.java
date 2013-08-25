@@ -217,8 +217,12 @@ public abstract class MDP {
 
 	  //For RTDP and BRTDP Read initial and goal states/////////////////////////////
 	  if (typeSolution.equals("RTDP") || typeSolution.equals("RTDPIP") || typeSolution.equals("Total") 
-			  || typeSolution.equals("BRTDP") || simulationMode ){
-		  listInitialStates = new ArrayList();
+			  || typeSolution.equals("BRTDP") || typeSolution.equals("RTDPEnum") || typeSolution.equals("BRTDPEnum") 
+			  || simulationMode ){
+		  if (typeContext == 1 || typeContext == 2)
+			  listInitialStates = new ArrayList<TreeMap>();
+		  else
+			  listInitialStatesEnum = new ArrayList<State>();
 		  
 		  o = i.next();
 		  
@@ -230,14 +234,22 @@ public abstract class MDP {
 		  o = i.next();
 		  
 		  while (  !(o instanceof String)  ) {
-			  TreeMap<Integer,Boolean> initialState=createState(o);
-			  listInitialStates.add(initialState);
+			  
+			  if (typeContext == 1 || typeContext == 2)
+				  listInitialStates.add(createState(o));
+			  else
+				  listInitialStatesEnum.add(createStateEnum(o));  
+			  
 			  o = i.next();
 		  }
 	  }
 	  
-	  if (typeSolution.equals("RTDP") || typeSolution.equals("RTDPIP") || typeSolution.equals("BRTDP") ){
-		  listGoalStates = new ArrayList();
+	  if (typeSolution.equals("RTDP") || typeSolution.equals("RTDPIP") || typeSolution.equals("BRTDP") 
+			  || typeSolution.equals("RTDPEnum") || typeSolution.equals("BRTDPEnum")){
+		  if (typeContext == 1 || typeContext == 2)
+			  listGoalStates = new ArrayList<TreeMap>();
+		  else
+			  listGoalStatesEnum = new ArrayList<State>();
 		  
 		  o = i.next();
 		  if ( !(o instanceof String) || !((String)o).equalsIgnoreCase("goal")) {
@@ -247,47 +259,14 @@ public abstract class MDP {
 
 		  o = i.next();
 		  while ( !(o instanceof String) ) {
+			  if (typeContext == 1 || typeContext == 2)
+				  listGoalStates.add(createState(o));
+			  else
+				  listGoalStatesEnum.add(createStateEnum(o));
 			  
-			  TreeMap<Integer,Boolean> goalState=createState(o);
-			  listGoalStates.add(goalState);
 			  o = i.next();
 		  }
-	  }
-	  
-	  if (typeSolution.equals("RTDPEnum") || typeSolution.equals("BRTDPEnum")) {
-		  listInitialStatesEnum = new ArrayList<State>();
-		  
-		  o = i.next();
-		  if ( !(o instanceof String) || !((String)o).equalsIgnoreCase("initial")) {
-			  System.out.println("Missing initial state declaration: " + o);
-			  System.exit(1);
-		  }
-		  
-		  o = i.next();
-		  
-		  while (  !(o instanceof String)  ) { 
-			  State initialState=createStateEnum(o);
-			  listInitialStatesEnum.add(initialState);
-			  o = i.next();
-		  }
-		  
-		  listGoalStatesEnum = new ArrayList<State>();
-	  
-		  o = i.next();
-		  
-		  if ( !(o instanceof String) || !((String)o).equalsIgnoreCase("goal"))
-			  System.out.println("Missing goal state declaration: " + o);
-
-		  o = i.next();
-		  while ( !(o instanceof String) ) {			  
-			  State goalState=createStateEnum(o);
-			  listGoalStatesEnum.add(goalState);
-			  o = i.next();
-		  }
-
-	  }
-	  
-	  
+	  }	  
 	  
 	  ///////Read basis function and factored reward for MP////////////////////////////////////////
 	  
@@ -401,7 +380,6 @@ public abstract class MDP {
         }		
 	}
 
-
 	private void createFileConstraintsGreaterZero(ArrayList constraints, String nameFileConstraint) {
 		
     	try {
@@ -424,9 +402,7 @@ public abstract class MDP {
         }
 
 	}
-
-    
-    
+     
 	private String createLineFileConst(ArrayList list) {
 		numConstraints++;
 		String line=new String("subject to r"+numConstraints+":  ");
@@ -638,188 +614,7 @@ public abstract class MDP {
         return contNumNodes;    	
 	}
 
-	public int solveSPUDDIP(int maxNumberIterations, String finalVUpperPath, String initialStateLogPath, String initVUpperPath) {
-				
-		int numIterations = 0;   
-        Object QiPlus1DD, DiffDD;
-        
-        double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
-        
-        if (initVUpperPath == null) {
-			//Initialize Vu with admissible value function //////////////////////////////////
-			//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
-			maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
-			
-			valueiDD = context.getTerminalNode(maxUpper);
-		}
-		else {
-			context.workingWithParameterized = false;
-			valueiDD = context.readValueFunction(initVUpperPath);
-			valueiDD = context.remapIdWithPrime(this.valueiDD, hmPrimeRemap);
-			context.workingWithParameterized = true;			
-		}
 		
-    	double Vmax = Rmax; 
-    	context.workingWithParameterizedBef = context.workingWithParameterized;
-    	context.createBoundsProb(NAME_FILE_CONTRAINTS);
-    	
-    	long initialTime = System.currentTimeMillis();
-    	boolean keepIterating = true;
-    	
-    	while (keepIterating && numIterations < maxNumberIterations) {
-    		valueiPlus1DD = context.getTerminalNode(Double.NEGATIVE_INFINITY);
-   		
-    		for (Object actionAsObject : mName2Action.values()) {
-    			Action action = (Action) actionAsObject;
-    			//System.out.println("  - Regress action " + action.getName());
-
-      			context.workingWithParameterized = context.workingWithParameterizedBef;
-    			QiPlus1DD = this.regress(valueiDD, action, 0.0, action.tmID2ADD, OptimizationType.Minimization, false, false);
-    			    			
-   				valueiPlus1DD = context.apply(valueiPlus1DD, QiPlus1DD, Context.MAX);
-     			
-        	    flushCaches(null);		
-    		}   	
-
-    		valueiPlus1DD = context.apply(valueiPlus1DD, context.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
-    		valueiPlus1DD = context.apply(valueiPlus1DD, this.rewardDD, Context.SUM);
-    				
-    		DiffDD = context.apply(valueiPlus1DD, valueiDD, Context.SUB);
-    		Double maxDiff = (Double) context.apply(DiffDD, Context.MAXVALUE);
-    		Double minDiff = (Double) context.apply(DiffDD, Context.MINVALUE);
-    		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
- 
-    		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
-    			 System.out.println("Terminate after " + numIterations + " iterations");
-    			 keepIterating = false;
-    		}
-    		
-    		valueiDD = valueiPlus1DD;
-    		
-//    		System.out.println("Iteration: " + numIterations + " NumCallSolver:  " + context.numCallSolver 
-//    				+ " Reuse Cache Internal Node instead of  Call Solver: " + context.reuseCacheIntNode 
-//    				+ " reuse: " + context.contReuse + " no reuse: " + context.contNoReuse + " reduced to value:  " + context.numberReducedToValue 
-//    				+ " reuse using lattice " + context.contReuseUsingLattice);    		
-    		
-    		numIterations = numIterations + 1;
-
-    		Vmax = Rmax + this.bdDiscount.doubleValue() * Vmax;
-    		
-    		long elapsedTime = (System.currentTimeMillis() - initialTime);
-    	    
-	    	TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
-	    	Double value = context.getValueForStateInContext((Integer) valueiPlus1DD, initialState, null, null);
-	    	
-	    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
-    	}
-    	
-    	//SPUDD-IP execute one mass update in all states per iteration
-    	//so, the number of updates is the number of iterations
-    	contUpperUpdates = numIterations;
-    	
-    	if (printFinalADD)
-    		context.view(valueiDD);
-    	    	
-// 		System.out.println("dumping VUpper in" + finalVUpperPath);
-   		context.dump(valueiDD, finalVUpperPath);
-    	
-        int contNumNodes = this.context.contNumberNodes(valueiDD);
-    	flushCaches(null);
-    	
-        return contNumNodes;
-	}
-	
-	public int solveObjectiveIP(int maxNumberIterations, double mergeError, String finalVUpperPath, String initialStateLogPath, String initVUpperPath) {
-		
-		this.pruneAfterEachIt = true;
-		
-		int numIterations = 0;   
-        Object QiPlus1DD, DiffDD;
-        
-        double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
-        
-        if (initVUpperPath == null) {
-			//Initialize Vu with admissible value function //////////////////////////////////
-			//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
-			maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
-			
-			valueiDD = context.getTerminalNode(maxUpper);
-		}
-		else {
-			context.workingWithParameterized = false;
-			valueiDD = context.readValueFunction(initVUpperPath);
-			valueiDD = context.remapIdWithPrime(this.valueiDD, hmPrimeRemap);
-			context.workingWithParameterized = true;			
-		}
-		
-    	double Vmax = Rmax; 
-    	context.workingWithParameterizedBef = context.workingWithParameterized;
-    	context.createBoundsProb(NAME_FILE_CONTRAINTS);
-    	
-    	long initialTime = System.currentTimeMillis();
-    	boolean keepIterating = true;
-    	
-    	while (keepIterating && numIterations < maxNumberIterations) {
-    		valueiPlus1DD = context.getTerminalNode(Double.NEGATIVE_INFINITY);
-   		
-    		for (Object actionAsObject : mName2Action.values()) {
-    			Action action = (Action) actionAsObject;
-    			//System.out.println("  - Regress action " + action.getName());
-
-      			context.workingWithParameterized = context.workingWithParameterizedBef;
-    			QiPlus1DD = this.regress(valueiDD, action, mergeError * Vmax, action.tmID2ADD, OptimizationType.Minimization, false, false);
-    			    			
-   				valueiPlus1DD = context.apply(valueiPlus1DD, QiPlus1DD, Context.MAX);
-     			
-        	    flushCaches(null);		
-    		}   	
-
-    		valueiPlus1DD = context.apply(valueiPlus1DD, context.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
-    		valueiPlus1DD = context.apply(valueiPlus1DD, this.rewardDD, Context.SUM);
-    				
-    		DiffDD = context.apply(valueiPlus1DD, valueiDD, Context.SUB);
-    		Double maxDiff = (Double) context.apply(DiffDD, Context.MAXVALUE);
-    		Double minDiff = (Double) context.apply(DiffDD, Context.MINVALUE);
-    		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
- 
-    		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
-    			 System.out.println("Terminate after " + numIterations + " iterations");
-    			 keepIterating = false;
-    		}
-    		
-    		valueiDD = valueiPlus1DD;
-    		
-//    		System.out.println("Iteration: " + numIterations + " NumCallSolver:  " + context.numCallSolver 
-//    				+ " Reuse Cache Internal Node instead of  Call Solver: " + context.reuseCacheIntNode 
-//    				+ " reuse: " + context.contReuse + " no reuse: " + context.contNoReuse + " reduced to value:  " + context.numberReducedToValue 
-//    				+ " reuse using lattice " + context.contReuseUsingLattice);    		
-    		
-    		numIterations = numIterations + 1;
-
-    		Vmax = Rmax + this.bdDiscount.doubleValue() * Vmax;
-    		
-    		long elapsedTime = (System.currentTimeMillis() - initialTime);
-    	    
-	    	TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
-	    	Double value = context.getValueForStateInContext((Integer) valueiPlus1DD, initialState, null, null);
-	    	
-	    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
-    	}
-    	
-    	if (printFinalADD)
-    		context.view(valueiDD);
-    	    	
-// 		System.out.println("dumping VUpper in" + finalVUpperPath);
-   		context.dump(valueiDD, finalVUpperPath);
-    	
-        int contNumNodes = this.context.contNumberNodes(valueiDD);
-    	flushCaches(null);
-    	
-        return contNumNodes;
-	}
-
-	
-	
 	public void flushCaches(Object VDD) {
 		if (((double)RUNTIME.freeMemory() / 
 		     (double)RUNTIME.totalMemory()) > FLUSH_PERCENT_MINIMUM) {
@@ -860,6 +655,7 @@ public abstract class MDP {
 		context.flushCaches();
 		System.out.println("After flush,freeMemory: "+RUNTIME.freeMemory());
    }
+
 	public abstract Object regress(Object VDD, Action action, double mergeError, TreeMap iD2ADD, OptimizationType optimization, boolean simulating, boolean firsTimeSimulating);
 	
 	//////////////////////////////////////////////////////////////FOR SIMULATION MDPIP ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1068,7 +864,8 @@ public abstract class MDP {
 
         return sb.toString() + "\n" + sb2.toString() + "\n";
 }
-	/**
+
+    /**
 	 * A string representation of the traffic state 2-way intersection
 	 * @param state
 	 * @return
@@ -1098,7 +895,8 @@ public abstract class MDP {
 		
 		return sb.toString();
 	}
-	private HashMap<String, Boolean> remapVariablesWithNames(HashMap state) {
+	
+    private HashMap<String, Boolean> remapVariablesWithNames(HashMap state) {
 	    HashMap <String, Boolean> State=new HashMap();
 		Iterator it=state.keySet().iterator();
 		while (it.hasNext()){
@@ -1115,7 +913,8 @@ public abstract class MDP {
 		}
 		return State;
 }
-	public void flushCachesSimulator(TreeMap action2QDD, boolean copyVUpperAndLower, Object valueRes, Object otherValueRes, Object valueGap) {
+	
+    public void flushCachesSimulator(TreeMap action2QDD, boolean copyVUpperAndLower, Object valueRes, Object otherValueRes, Object valueGap) {
 		if (((double)RUNTIME.freeMemory() / 
 		     (double)RUNTIME.totalMemory()) > FLUSH_PERCENT_MINIMUM) {
 		    return; // Still enough free mem to exceed minimum requirements
@@ -1162,6 +961,7 @@ public abstract class MDP {
 		}
 		return Math.sqrt(sum/n); 
 	}
+	
 	private HashMap remapWithOutPrimes(HashMap nextState) {
 		HashMap state=new HashMap();
 		Iterator it=nextState.keySet().iterator();
@@ -1171,6 +971,7 @@ public abstract class MDP {
 		}
 		return state;
 	}
+	
 	private TreeMap<Integer, Boolean> remapWithPrimes(TreeMap<Integer, Boolean> nextState) {
 		TreeMap<Integer, Boolean> state=new TreeMap <Integer, Boolean>();
 		Iterator it=nextState.keySet().iterator();
@@ -1186,7 +987,6 @@ public abstract class MDP {
 	 * it fills tmID2ADDNewSample for all actions using the sampleProbabilities
 	 * @param sampleProbabilities
 	 */
-	
 	private void convertParADD2ADDCPTs(Hashtable sampleProbabilities) {
 		// go through all actions and cpts in each action and replace the sampleProbabilities in the leaves
 		System.out.println("  evaluating actions with probabilities ");
@@ -1274,6 +1074,7 @@ public abstract class MDP {
   		
   		return nextState;	
   	}
+	
 	private Graph createGraphFor(HashMap varId2DependPrimeList) {
 		 Graph g = new Graph();
          
@@ -1293,6 +1094,7 @@ public abstract class MDP {
 
          return g;       
 	}
+	
 	private Action findBestA(HashMap state, TreeMap action2QDD) {
 		double bestQ = Double.NEGATIVE_INFINITY;
 	    Action bestAction = null;
@@ -1313,6 +1115,7 @@ public abstract class MDP {
 		
 		return bestAction;
 	}
+	
 	private Action findBestANew(TreeMap<Integer, Boolean>  state, TreeMap action2QDD) {
 		double bestQ=Double.NEGATIVE_INFINITY;
 	    Action bestAction=null;
@@ -1331,6 +1134,7 @@ public abstract class MDP {
 		}
 		return bestAction;
 	}
+	
 	private double getReward(HashMap state) {
 		//context.view(rewardDD);
 		return context.getValueForStateInADD((Integer)rewardDD,state,null,null,null);
@@ -1350,6 +1154,7 @@ public abstract class MDP {
 		}
        return state;		
 	}
+	
 	private HashMap sampleInitialStateFromListIntVal(Random randomGenerator) {
 		TreeMap<Integer, Boolean> ini=this.sampleInitialStateFromList(randomGenerator);
 		HashMap initial=new HashMap();
@@ -1510,7 +1315,6 @@ public abstract class MDP {
 	    	return Fr;
 	 }
 
-
 	public void flushCachesBRTDP(boolean workWithEnum) {
 		if (((double)RUNTIME.freeMemory() / 
 		     (double)RUNTIME.totalMemory()) > FLUSH_PERCENT_MINIMUM) {
@@ -1536,7 +1340,6 @@ public abstract class MDP {
 		context.flushCaches();
 		System.out.println("After flush,freeMemory: "+RUNTIME.freeMemory());
    }
-	
 	
 	private TreeMap<Integer, Boolean> chooseNextStateBRTDP(TreeMap<Integer, Boolean> state, Action actionGreedy,Random randomGenerator,double tau,TreeMap<Integer, Boolean> stateInitial,boolean firstTime) {
 		
@@ -1610,6 +1413,7 @@ public abstract class MDP {
 		}
 		return nextState;
 	}
+
 	private void updateVLower(TreeMap<Integer, Boolean> state) {
 		double max=Double.NEGATIVE_INFINITY;
 		Iterator actions=mName2Action.entrySet().iterator();
@@ -1627,6 +1431,7 @@ public abstract class MDP {
 		updateValueBranch(state,'l',maxTotal);
 		maxLowerUpdated=maxTotal;
 	}
+
 	private void updateVLower(State state) {
 		double max=Double.NEGATIVE_INFINITY;
 		Iterator actions=mName2Action.entrySet().iterator();
@@ -1749,6 +1554,10 @@ public abstract class MDP {
 		return listGoalStates.contains(state); 
 	}
 
+	private boolean inGoalSetEnum(State state) {
+		return listGoalStatesEnum.contains(state); 
+	}
+	
 	public static void ResetTimer() {
 		timeTrials = System.currentTimeMillis();
 	}
@@ -1758,7 +1567,7 @@ public abstract class MDP {
 		return System.currentTimeMillis() - timeTrials;
 	}
 	
-/////////////////////////////////////////RTDP///////////////////////////////////////////////////////
+	/////////////////////////////////////////RTDP///////////////////////////////////////////////////////
 	public  ArrayList<ArrayList> solveRTDPFac(int maxDepth, long timeOut, long maxUpdates,String typeMDP,String typeSolution, int numTrials, int interval,int numTrialsSimulation, int numberInitialStates,Random randomGenInitial, Random randomGenNextState,MDP myMDPSimulator) {
 		NAME_FILE_VALUE=NAME_FILE_VALUE+"_"+typeSolution+".net";//NAME_FILE_VALUE is inicializated in MDP_Fac(...)
 		
@@ -1853,181 +1662,7 @@ public abstract class MDP {
 
 		return perf;
 	}
-	
-	public void solveRTDPIPFac(int maxDepth, long timeOut, int stateSamplingType, Random randomGenInitial, Random randomGenNextState, 
-			String finalVUpperPath, String initialStateLogPath, String initVUpperPath) {
-				
-		typeSampledRTDPMDPIP = stateSamplingType;
 		
-		Stack<TreeMap<Integer,Boolean>> visited = new Stack<TreeMap<Integer,Boolean>>();
-		
-		long totalTrialTime=0;
-		long totalTrialTimeSec=0;
-		ResetTimer();
-		
-		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
-			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
-
-		if (initVUpperPath == null) {
-			//Initialize Vu with admissible value function //////////////////////////////////
-			//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
-			double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
-			
-			if (this.bdDiscount.doubleValue() == 1)
-				maxUpper = Rmax * maxDepth;
-			else
-				maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
-			
-			VUpper = context.getTerminalNode(maxUpper);
-		}
-		else {
-			context.workingWithParameterized = false;
-			VUpper = context.readValueFunction(initVUpperPath);
-			VUpper = context.remapIdWithPrime(this.VUpper, hmPrimeRemap);
-			context.workingWithParameterized = true;			
-		}
-		
-		contUpperUpdates = 0;
-
-		context.workingWithParameterizedBef = context.workingWithParameterized;
-		
-		long initialTime = System.currentTimeMillis();
-		
-		while (totalTrialTimeSec <= timeOut){	
-			int depth = 0;
-			visited.clear();// clear visited states stack
-			
-			TreeMap<Integer,Boolean> state = sampleInitialStateFromList(randomGenInitial); 
-
-			//do trial //////////////////////////////////
-			while (!inGoalSet(state) && (state !=null) && depth < maxDepth) {
-				if (totalTrialTimeSec > timeOut) break;
-				
-				depth++;
-				visited.push(state);
-				
-				//this compute maxUpperUpdated and actionGreedy
-				Action greedyAction = updateVUpper(state); // Here we fill probNature
-				
-				contUpperUpdates++;
-				
-				//System.out.println("action greedy: " + greedyAction.getName());
-				
-				context.workingWithParameterized = context.workingWithParameterizedBef;
-				state = chooseNextStateRTDP(state, greedyAction, randomGenNextState);
-				
-				//System.out.println("next state: " + state);
-				flushCachesRTDP(false);
-				
-				totalTrialTime = GetElapsedTime();
-	            totalTrialTimeSec = totalTrialTime / 1000;	            
-			}
-			
-			//adiciona o goal na lista de estados visitados para ele ser
-			//considerado nos backups
-			visited.add(state);
-			
-			//do optimization
-			while (!visited.empty()) {
-				state = visited.pop();
-				updateVUpper(state);
-				contUpperUpdates++;
-			}
-			
-			totalTrialTime = GetElapsedTime();
-            totalTrialTimeSec = totalTrialTime / 1000;
-            
-            if (initialStateLogPath != null) {
-	            //medição para o estado inicial
-	            long elapsedTime = (System.currentTimeMillis() - initialTime);
-	            
-	            TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
-		    	
-		    	TreeMap<Integer, Boolean> remappedInitialState = new TreeMap<Integer, Boolean>();
-		    	for (Object key : hmPrimeRemap.keySet())
-		    		remappedInitialState.put((Integer) hmPrimeRemap.get(key), initialState.get(key));
-		    	
-		    	Double value = context.getValueForStateInContext((Integer) this.VUpper, remappedInitialState, null, null);
-		    	        	    	
-		    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
-            }
-		}
-					
-		context.workingWithParameterized = false;
-			
-		Object remappedVUpper = context.remapIdWithOutPrime(this.VUpper, hmPrime2IdRemap);
-		
-    	if (finalVUpperPath != null){
-    		System.out.println("dumping VUpper in" + finalVUpperPath);	
-    		context.dump(remappedVUpper, finalVUpperPath);
-    	}
-	}
-	
-	public void solveLRTDPIPFac(int maxDepth, long timeOut, int stateSamplingType, Random randomGenInitial, Random randomGenNextState, 
-			String finalVUpperPath, String initialStateLogPath, String initVUpperPath) {
-		//Define o tipo de amostragem de estados
-		typeSampledRTDPMDPIP = stateSamplingType;
-		
-		long totalTrialTime = 0;
-		long totalTrialTimeSec = 0;
-		
-		ResetTimer();
-		
-		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
-			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
-
-		if (initVUpperPath == null) {
-			//Initialize Vu with admissible value function //////////////////////////////////
-			//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
-			double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
-			
-			if (this.bdDiscount.doubleValue() == 1)
-				maxUpper = Rmax * maxDepth;
-			else
-				maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
-			
-			VUpper = context.getTerminalNode(maxUpper);
-		}
-		else {
-			context.workingWithParameterized = false;
-			VUpper = context.readValueFunction(initVUpperPath);
-			VUpper = context.remapIdWithPrime(this.VUpper, hmPrimeRemap);
-			context.workingWithParameterized = true;			
-		}
-		
-		contUpperUpdates = 0;
-
-		context.workingWithParameterizedBef = context.workingWithParameterized;
-		
-		HashSet<State> solvedStates = new HashSet<State>();
-		
-		State s = new State(sampleInitialStateFromList(randomGenInitial));
-		
-		int trialCounter = 0;		
-		long initialTime = System.currentTimeMillis();
-		
-		while (totalTrialTimeSec <= timeOut && !solvedStates.contains(s)){
-			totalTrialTimeSec = lrtdpTrial(maxDepth, timeOut, randomGenNextState, s, solvedStates, initialStateLogPath, initialTime);
-			trialCounter++;
-   	    	
-   	    	s = new State(sampleInitialStateFromList(randomGenInitial));
-   	    	
-   	    	System.out.println("Chamadas ao solver: " + context.numCallNonLinearSolver);
-   	    	System.out.println("Número de Backups: " + contUpperUpdates);
-		}
-			
-		ArrayList<Object[]> result = new ArrayList<Object[]>();
-		
-		context.workingWithParameterized = false;
-		
-		Object remappedVUpper = context.remapIdWithOutPrime(this.VUpper, hmPrime2IdRemap);
-		
-    	if (finalVUpperPath != null){
-    		System.out.println("dumping VUpper in" + finalVUpperPath);	
-    		context.dump(remappedVUpper, finalVUpperPath);
-    	}
-	}
-	
 	 /* 
 	   * Perform one Trial of the LRTDP in the given Factored MDP-IP.
 	   * If maxDepth > 0, then the stop condition (depth < maxDepth) is also
@@ -2253,7 +1888,6 @@ public abstract class MDP {
 		context.dump(context.remapIdWithOutPrime(V, hmPrime2IdRemap),NAME_FILE_VALUE);		
 	}
 
-
 	public void flushCachesRTDP(boolean workWithEnum) {
 		if (((double)RUNTIME.freeMemory() / 
 				(double)RUNTIME.totalMemory()) > FLUSH_PERCENT_MINIMUM) {
@@ -2278,11 +1912,9 @@ public abstract class MDP {
 		System.out.println("After flush,freeMemory: "+RUNTIME.freeMemory());
 	}
 
-
 	private TreeMap<Integer, Boolean> chooseNextStateRTDP(TreeMap<Integer, Boolean> state, Action actionGreedy, Random randomGenerator) {
 		return sampling(state, actionGreedy.tmID2ADD, randomGenerator);
 	}
-	
 
 	private TreeMap<Integer, Boolean> sampling(TreeMap<Integer, Boolean> state, TreeMap iD2ADD, Random randomGenerator) {
 		TreeMap<Integer, Boolean> nextState = new TreeMap<Integer, Boolean>();
@@ -2319,7 +1951,6 @@ public abstract class MDP {
 		
 		return nextState;
 	}
-	
 	
 	private double samplingOneVariableIP(Polynomial probFalsePol) {
 		// typeSampledRTDPMDPIP   
@@ -2389,14 +2020,12 @@ public abstract class MDP {
 		
 		return res;
 	}
-	
 
 	public ArrayList simulateMDPFromADD(int numberInitialStates,int numberSamples,int tMax, Object valueRes, String typeSolution, Random randomGenInitial, Random randomGenNextState,Object otherValueRes, Object valueGap) {
 		TreeMap action2QDD=calculateQHash(valueRes,false); //here we dont call the solver because we are working with an MDP
 		//TODO:
 		return getPerformanceOneLearnRun(randomGenInitial, randomGenNextState,numberInitialStates,numberSamples,tMax, action2QDD, valueRes,otherValueRes,valueGap);
 	}
-	
 		
 	private ArrayList getPerformanceOneLearnRun(Random randomGenInitial, Random randomGenNextState, int numberInitialStates, int numberSamples,int tMax, TreeMap action2QDD, Object valueRes, Object otherValueRes, Object valueGap) {
 		ArrayList listReward=new ArrayList();
@@ -2461,6 +2090,7 @@ public abstract class MDP {
 		//System.out.println("Performance: :"+performance);		
 		return performance;
 	}
+
 	private double getRewardTrial(HashMap state, int tMax, TreeMap action2QDD, Random randomGenNextState) {
 		double RewardInitialState=getReward(state);
 		double cur_discount = 1d;
@@ -2484,6 +2114,7 @@ public abstract class MDP {
 		return RewardInitialState;
 		
 	}
+	
 	private double getRewardTrialNew(TreeMap<Integer, Boolean> state, int tMax, TreeMap action2QDD, Random randomGenNextState) {
 		double RewardInitialState=context.getValueForStateInContext((Integer)this.rewardDD, state, null, null);
 		double cur_discount = 1d;
@@ -2504,6 +2135,7 @@ public abstract class MDP {
 		}
 		return RewardInitialState;
 	}
+
 	////////////////////////////FOR MULTILINEAR PROGRAMMING MP /////////////////////////////////////////////////
 	public void solveMP() {
 		//NAME_FILE_MP_AMPL=NAME_FILE_MP_AMPL+".mod";//NAME_FILE_MP_AMPL is inicializated in MDP_Fac(...
@@ -2601,6 +2233,7 @@ public abstract class MDP {
 			action.var2ListVar=new Hashtable(var2ListVar);
 		}
 	}
+	
 	private void createEqualConsRewardC0(Hashtable<String, HashSet>var2ListVar) {
 	   	try {
             BufferedWriter out = new BufferedWriter(new FileWriter(NAME_FILE_CONTRAINTS_MP));
@@ -2624,8 +2257,7 @@ public abstract class MDP {
         
 		
 	}
-	
-		
+			
     public void createLinesFileConstRewC0MP(Integer F, BufferedWriter out, String path,int i,HashSet<Integer> listVarPath,Hashtable<String, HashSet>var2ListVar,String type){
     	  
     	if(context.isTerminalNode(F)){
@@ -2672,6 +2304,7 @@ public abstract class MDP {
         createInequalityCons(action,contAction);
         
 	}
+	
 	private void createInequalityCons(Action action, int contAction) {
 	  //TODO: working on it	
 	  //iterate over each variable x_i (we are eliminating x_i)
@@ -2700,7 +2333,6 @@ public abstract class MDP {
 
 	}
 
-
 	private String computeRightSideEmpty(Set<String> listVarNewDep) {
       String right="";
       Iterator it=listVarNewDep.iterator();
@@ -2710,6 +2342,7 @@ public abstract class MDP {
 	  
 	  return right.substring(0, right.length()-1);
 	}
+
 	private void createInequalConst(String newVarUe, String rightSide) {
 		try {
             BufferedWriter out = new BufferedWriter(new FileWriter(NAME_FILE_CONTRAINTS_MP,true));
@@ -2723,6 +2356,7 @@ public abstract class MDP {
         	System.exit(0);
         }
 	}
+
 	private String computeRightSideConst(ArrayList<String> listVarNewDep, TreeMap conf,int contAction) {
 		String rightSide="";
 		Iterator it=listVarNewDep.iterator();
@@ -2750,6 +2384,7 @@ public abstract class MDP {
 		}
 		return rightSide.substring(0, rightSide.length()-1);
 	}
+
 	private String computeNewVarUe(TreeMap conf,int i,int contAction) {
 		String newVarUe="ue"+i;
 		Iterator it=conf.keySet().iterator();
@@ -2759,6 +2394,7 @@ public abstract class MDP {
 		}
 		return newVarUe+"a"+contAction;
 	}
+
 	private TreeMap getConfiguration(int pos, HashSet listVarZ) {
 		TreeMap conf= new TreeMap();
 		Iterator it=listVarZ.iterator();
@@ -2768,6 +2404,7 @@ public abstract class MDP {
 		}
 		return conf;
 	}
+
 	public int[] getAssigment(int pos, int numberVariables) {
 		int  assigment[]= new int[numberVariables];
 		for(int j=numberVariables-1;j>=0;j--){
@@ -2776,7 +2413,6 @@ public abstract class MDP {
 		}
 		return assigment;
 	}
-	
 	
 	private ArrayList<String> getListVarDepXiAndErase(int i, HashSet listVarZ,Action action) {
 		//TODO: working on it, revisar con un ejemplo si esto esta funcionando bien porque estoy eliminando elementos enquanto recorro var2ListVar
@@ -2799,6 +2435,7 @@ public abstract class MDP {
 		listVarZ.remove(i);
 		return listVarNewDep;
 	}
+
 	private void createEqualConsCi(Action action, int contAction) {
 	   	try {
             BufferedWriter out = new BufferedWriter(new FileWriter(NAME_FILE_CONTRAINTS_MP,true));
@@ -2847,7 +2484,6 @@ public abstract class MDP {
 	   		
 	    	
 	    }
-	
 
 	private Polynomial computeObjective() {
 		String varWeight="w";
@@ -2871,6 +2507,7 @@ public abstract class MDP {
 		return polObj;
 		
 	}
+
 	public void flushCachesMP() {
 		//save CPTs, reward basis function and ciList for each action
 		if (((double)RUNTIME.freeMemory() / 
@@ -2920,7 +2557,7 @@ public abstract class MDP {
 		return ciDD;
 	}	
 	
-/////////////////////////////////////////Enumerative RTDP ///////////////////////////////////////////////////////
+	/////////////////////////////////////////Enumerative RTDP ///////////////////////////////////////////////////////
 	public  ArrayList<ArrayList> solveRTDPEnum(int maxDepth, long timeOut, long maxUpdates,String typeMDP,String typeSolution, int numTrials, int interval,int numTrialsSimulation, int numberInitialStates,Random randomGenInitial, Random randomGenNextState,MDP myMDPSimulator) {	
 	    System.out.println("In solveRTDPEnum ");
 		NAME_FILE_VALUE=NAME_FILE_VALUE+"_"+typeSolution+".net";//NAME_FILE_VALUE is inicializated in MDP_Fac(...)
@@ -3018,8 +2655,6 @@ public abstract class MDP {
 	return VADD;
 }
 
-
-
 	private TreeMap <Integer,Boolean>getConfigurationTable(int pos, TreeSet listVar) {
 	TreeMap <Integer,Boolean>conf= new TreeMap<Integer,Boolean>();
 	Iterator it=listVar.iterator();
@@ -3036,40 +2671,43 @@ public abstract class MDP {
 	}
 	return conf;
 }
-/* updateVUpper and put the max in maxUpperUpdated 
- * return the actionGreedy
- */
-	private Action updateVUpper(State state) {
-	double max=Double.NEGATIVE_INFINITY;
-	Action actionGreedy=null;
-	Iterator actions=mName2Action.entrySet().iterator();
-	int posAction=0;
-	posActionGreedy=-1;
-	while (actions.hasNext()){
-		Map.Entry meaction=(Map.Entry) actions.next();
-		Action action=(Action) meaction.getValue();
-		//context.view(VUpper); 
-		//System.out.println("  Computing Q Upper action " + action.getName());
-		double Qt;
-		Qt=this.computeQEnum((HashMap)VUpper, state,action,action.tmID2ADD,'u',posAction);
-		//System.out.println(" Qt:" + Qt);
-		
-		max=Math.max(max,Qt);
-		if(Math.abs(max - Qt) <= 1e-10d){//max==Qt){
-			actionGreedy=action;
-			posActionGreedy=posAction;
-		}
-		posAction++;
-	}
-	//context.view(rewardDD);
-	double rew=context.getRewardForStateInContextEnum((Integer)this.rewardDD, state,this.numVars);
-	double maxTotal=rew+this.bdDiscount.doubleValue()*max;
-    //update hash VUpper
-	((HashMap)VUpper).put(state,maxTotal);
 
-	maxUpperUpdated=maxTotal;
-	return actionGreedy;
-}
+	/* updateVUpper and put the max in maxUpperUpdated 
+	 * return the actionGreedy
+	 */
+	private Action updateVUpper(State state) {
+		double max = Double.NEGATIVE_INFINITY;
+		Action actionGreedy = null;
+		
+		Iterator actions = mName2Action.entrySet().iterator();
+		
+		int posAction = 0;
+		posActionGreedy = -1;
+		
+		while (actions.hasNext()){
+			Map.Entry meaction=(Map.Entry) actions.next();
+			Action action=(Action) meaction.getValue();
+
+			double Qt = this.computeQEnum((HashMap)VUpper, state, action, action.tmID2ADD, 'u', posAction);
+		
+			max = Math.max(max,Qt);
+		
+			if (Math.abs(max - Qt) <= 1e-10d){
+				actionGreedy = action;
+				posActionGreedy = posAction;
+			}
+			
+			posAction++;
+		}
+
+		double rew = context.getRewardForStateInContextEnum((Integer)this.rewardDD, state,this.numVars);
+		double maxTotal = rew + this.bdDiscount.doubleValue() * max;
+
+		((HashMap)VUpper).put(state, maxTotal);
+	
+		maxUpperUpdated = maxTotal;
+		return actionGreedy;
+	}
 
     private State sampleInitialStateFromListEnum(Random randomGenerator) {
     	int ranIndex=randomGenerator.nextInt(listInitialStatesEnum.size());
@@ -3101,64 +2739,90 @@ public abstract class MDP {
 		return false;
 	}
 
-	private State chooseNextStateRTDPEnum(State state, Action actionGreedy, Random randomGenerator,int posActionGreedy) {
-		SuccProbabilitiesM succState=state.getActionSuccProbab()[posActionGreedy];
-		State nextState=null;
-		Double value,sum=0d;
-		double ran=randomGenerator.nextDouble();
-		Iterator it=succState.getNextStatesProbs().keySet().iterator();
-		while(it.hasNext()){
-		//for(int i=0;i<succState.getNextStates().size();i++){
-			  nextState=(State)it.next();
-              value=succState.getNextStatesProbs().get(nextState);
-              sum=sum+value;
-              if(ran<=sum){
-            	  return nextState;
-              }
+	private State chooseNextStateRTDPEnum(State state, Action actionGreedy, Random randomGenerator, int posActionGreedy) {
+		SuccProbabilitiesM succState = null;
+		
+		if (context.workingWithParameterized && typeSampledRTDPMDPIP == 4)
+			succState = this.computeSuccesorsProbEnum(state, actionGreedy.tmID2ADD);
+		else
+			succState = state.getActionSuccProbab()[posActionGreedy];
+			
+		State nextState = null;
+		
+		Double value, sum = 0d;
+		
+		double ran = randomGenerator.nextDouble();
+		
+		Iterator it = succState.getNextStatesProbs().keySet().iterator();
+		
+		while (it.hasNext()){
+			nextState = (State) it.next();
+			value = succState.getNextStatesProbs().get(nextState);
+			sum += value;
+			
+			if (ran <= sum) return nextState;
 		}
+		
 		return nextState;
-        
     }
+
 	private double computeQEnum(HashMap V,State state, Action action,TreeMap iD2ADD, char c, int posAction) {
-		SuccProbabilitiesM succ=state.getActionSuccProbab()[posAction];
+		SuccProbabilitiesM succ = state.getActionSuccProbab()[posAction];
+
 		//if it has not been calculed before, compute it 
-        if(succ==null){
-        	succ=computeSuccesorsProbEnum(state,iD2ADD);
-        	if (succ.getNextStatesProbs().size()==0){
-        		System.out.println("Not Sucessors for state: "+state);
+        if (succ == null || context.workingWithParameterized) {       	
+        	succ = computeSuccesorsProbEnum(state, iD2ADD, true);
+        	
+        	if (succ.getNextStatesProbs().size() == 0){
+        		System.out.println("Not Sucessors for state: " + state);
         		System.exit(1);
         	}
-        	state.getActionSuccProbab()[posAction]=succ;
+        	
+        	state.getActionSuccProbab()[posAction] = succ;
         }
         	
-        double res=mulSumSuccessors(succ,V,c);
- 		return res;
-		//at the end we have a number		
+        return mulSumSuccessors(succ, V, c);	
 	}
 	
-	private SuccProbabilitiesM computeSuccesorsProbEnum(State state,TreeMap iD2ADD) {
-	       
-		Object multCPTs=context.getTerminalNode(1d);
+	private SuccProbabilitiesM computeSuccesorsProbEnum(State state, TreeMap iD2ADD) {
+		return this.computeSuccesorsProbEnum(state, iD2ADD, false);
+	}
+	
+	private SuccProbabilitiesM computeSuccesorsProbEnum(State state, TreeMap iD2ADD, boolean successorsForQValue) {
+		Object multCPTs = context.getTerminalNode(1d);
+		
 		Integer xiprime;
-		Iterator x=this.hmPrimeRemap.entrySet().iterator();
-		while (x.hasNext()){
+		Iterator x = this.hmPrimeRemap.entrySet().iterator();
+		
+		while (x.hasNext()) {
 			Map.Entry xiprimeme = (Map.Entry)x.next();
-			xiprime=(Integer) xiprimeme.getValue();
-			Object cpt_a_xiprime=iD2ADD.get(xiprime);
-			//context.view(cpt_a_xiprime);
-			double probTrue,probFalse;
-			probTrue=context.getProbCPTForStateInContextEnum((Integer)cpt_a_xiprime,state,xiprime,true,this.numVars);
-			probFalse=1-probTrue;
-
-			Object Fh=context.getTerminalNode(probTrue);
-			Object Fl=context.getTerminalNode(probFalse);
-			Object newCPT=context.getInternalNode(xiprime, Fh, Fl);
+			xiprime = (Integer) xiprimeme.getValue();
+			Object cpt_a_xiprime = iD2ADD.get(xiprime);
+			
+			Object Fh = null, Fl = null;
+			
+			if (context.workingWithParameterized) {
+				Polynomial probTrue = (Polynomial) context.getProbCPTForStateInContextEnum((Integer)cpt_a_xiprime, state, xiprime, true, this.numVars);
+				Polynomial probFalse = new Polynomial(1.0, new Hashtable(), context).subPolynomial(probTrue);
+				
+				Fh = context.getTerminalNode(probTrue);
+				Fl = context.getTerminalNode(probFalse);
+			}
+			else {
+				double probTrue = (Double) context.getProbCPTForStateInContextEnum((Integer)cpt_a_xiprime, state, xiprime, true, this.numVars);
+				double probFalse = 1 - probTrue;
+				
+				Fh = context.getTerminalNode(probTrue);
+				Fl = context.getTerminalNode(probFalse);
+			}
+			
+			Object newCPT = context.getInternalNode(xiprime, Fh, Fl);
+			
 			//multiply all the new 
 			multCPTs = context.apply(multCPTs, newCPT, Context.PROD);
 		}
-		//context.view(multCPTs);
-		return getSuccessorsFromTable(multCPTs);
-		
+
+		return getSuccessorsFromTable(multCPTs, successorsForQValue);
 	}
 	
 	/**
@@ -3195,29 +2859,49 @@ public abstract class MDP {
 		}
         return sum;
 	}
+
 	/**
 	 * it gets all the states with not zero probability from a Table
 	 * @param multCPTs
 	 * @return
 	 */
-	private SuccProbabilitiesM getSuccessorsFromTable(Object multCPTs) {
-		double sumProb=0;
-		SuccProbabilitiesM succ=new SuccProbabilitiesM(); 
-		Table table=(Table)context.getInverseNodesCache().get(multCPTs);
-		for (int i=0;i< table.getValues().size();i++){//for all states (with prime)
-			Double val=(Double)table.getValues().get(i);
-			//if(val.compareTo(0d)!=0){
-			if(Math.abs(val.doubleValue() - 0d) > 1e-10d){
-				State newState=createStateFrom(i,table.getVars().size()); //create only if state does not exist yet
+	private SuccProbabilitiesM getSuccessorsFromTable(Object multCPTs, boolean successorsForQValue) {
+		
+		boolean usePolynomials = context.workingWithParameterized && typeSampledRTDPMDPIP == 4 && !successorsForQValue;
+		
+		double sumProb = 0;
+		
+		SuccProbabilitiesM succ = new SuccProbabilitiesM(); 
+		
+		if (context.workingWithParameterized && !usePolynomials)
+			multCPTs = context.doMinCallOverNodes(multCPTs, NAME_FILE_CONTRAINTS, pruneAfterEachIt);
+
+		Table table = (Table)context.getInverseNodesCache().get(multCPTs);		 
+		
+		if (usePolynomials)
+			context.probSample = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
+		
+		for (int i = 0; i < table.getValues().size(); i++){//for all states (with prime)
+			Double val = Double.NaN;
+			
+			if (usePolynomials) {
+				Polynomial poly = (Polynomial) table.getValues().get(i);
+				val = poly.evalWithListValues(context.probSample, context);
+			}
+			else {
+				val = (Double) table.getValues().get(i);	
+			}
+			
+			if (Math.abs(val.doubleValue() - 0d) > 1e-10d) {
+				State newState = createStateFrom(i, table.getVars().size()); //create only if state does not exist yet
 				succ.getNextStatesProbs().put(newState, val);
-				/*succ.getNextStates().add(newState);
-				succ.getProbs().add(val);*/
-				sumProb=sumProb+val;
+				sumProb += val;
 			}
 		}
-		if (Math.abs(sumProb - 1d) > 1e-10d){
-			System.out.println("Precision error sumProb must be 1 and is: " +sumProb);
-		}
+		
+		if (Math.abs(sumProb - 1d) > 1e-10d)
+			System.out.println("Precision error sumProb must be 1 and is: " + sumProb);
+		
 		return succ;
 	}
 	
@@ -3342,6 +3026,7 @@ public abstract class MDP {
 	    }
 	    return perf; 
 	}	
+
 	private State chooseNextStateBRTDPEnum(State state, Action actionGreedy, Random randomGenerator,double tau,State stateInitial,int posActionGreedy) {
 		SuccProbabilitiesM succState=state.getActionSuccProbab()[posActionGreedy];
 		//calculate b
@@ -3397,66 +3082,537 @@ public abstract class MDP {
 		}
 		return b;
 	}
-}
 
-class StateEnumerator implements ADDLeafOperation {
-	public StateEnumerator(List<Integer> variables) {
-		this.variables = variables;
-	}
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+	// MDP-IP algorithms main methods
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	private List<State> states = new ArrayList<State>();
-	
-	private List<Integer> variables = null;
-	
-	public List<State> getStates() {
-		return states;
+	/**
+	 * Value Iteration for Enumerative MDP-IPs 
+	 **/
+	public int solveVI(int maxNumberIterations, String initialStateLogPath) {	
+		int numIterations = 0;   
+        Object QiPlus1DD, DiffDD;
+        
+        ContextTable currentContext = (ContextTable) context;
+        
+        double Rmax = currentContext.apply(this.rewardDD, Context.MAXVALUE);
+		maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
+		
+		valueiDD = currentContext.getTerminalNode(maxUpper);
+		
+    	double Vmax = Rmax; 
+    	currentContext.workingWithParameterizedBef = currentContext.workingWithParameterized;
+    	currentContext.createBoundsProb(NAME_FILE_CONTRAINTS);
+    	
+    	long initialTime = System.currentTimeMillis();
+    	boolean keepIterating = true;
+    	
+    	while (keepIterating && numIterations < maxNumberIterations) {
+    		valueiPlus1DD = currentContext.getTerminalNode(Double.NEGATIVE_INFINITY);
+   		
+    		for (Object actionAsObject : mName2Action.values()) {
+    			Action action = (Action) actionAsObject;
+
+    			currentContext.workingWithParameterized = currentContext.workingWithParameterizedBef;
+      			
+      			QiPlus1DD = this.regress(valueiDD, action, 0.0, action.tmID2ADD, OptimizationType.Minimization, false, false);
+    			
+      			valueiPlus1DD = currentContext.apply(valueiPlus1DD, QiPlus1DD, Context.MAX);
+     			
+        	    flushCaches(null);		
+    		}   	
+
+    		valueiPlus1DD = currentContext.apply(valueiPlus1DD, currentContext.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
+    		valueiPlus1DD = currentContext.apply(valueiPlus1DD, this.rewardDD, Context.SUM);
+    				
+    		DiffDD = currentContext.apply(valueiPlus1DD, valueiDD, Context.SUB);
+    		Double maxDiff = (Double) currentContext.apply(DiffDD, Context.MAXVALUE);
+    		Double minDiff = (Double) currentContext.apply(DiffDD, Context.MINVALUE);
+    		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
+ 
+    		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
+    			 System.out.println("Terminate after " + numIterations + " iterations");
+    			 keepIterating = false;
+    		}
+    		
+    		valueiDD = valueiPlus1DD;  		
+    		
+    		numIterations = numIterations + 1;
+
+    		Vmax = Rmax + this.bdDiscount.doubleValue() * Vmax;
+    		
+    		long elapsedTime = (System.currentTimeMillis() - initialTime);
+    	    
+    		State initialState = listInitialStatesEnum.get(0);
+	    	Double value = (double) currentContext.getValueForStateInContextEnum((Integer) valueiPlus1DD, initialState, this.numVars);
+	    	
+	    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
+    	}
+    	
+        int contNumNodes = this.context.contNumberNodes(valueiDD);
+    	flushCaches(null);
+    	
+        return contNumNodes;    	
 	}
 
-	@Override
-	public void processADDLeaf(TreeMap<Integer, Boolean> assign, Object value) {
-		if (value instanceof Double) {
-			double valueAsDouble = (Double) value;
-			if (valueAsDouble <= 0.0) return;
-		}
-		else if (value instanceof Polynomial) {
-			Polynomial valueAsPolynomial = (Polynomial) value;
-
-			if (valueAsPolynomial.getTerms().size() == 0 && valueAsPolynomial.getC() <= 0.0) return;
-		}
-		
-		this.generateStatesForIncompletePath(assign);
-	}
-
-	private void generateStatesForIncompletePath(TreeMap<Integer, Boolean> assign) {
-		List<Integer> missingVariables = new ArrayList<Integer>();
-		
-		for (Integer var : this.variables) {			
-			if (!assign.containsKey(var))
-				missingVariables.add(var);
-		}
-		
-		if (missingVariables.size() > 0)
-			this.generateStatesForIncompletePath(assign, missingVariables, 0);
-		else {
-			State s = new State(new TreeMap<Integer, Boolean>(assign));
-			states.add(s);
-		}
-	}
-
-	private void generateStatesForIncompletePath(TreeMap<Integer, Boolean> assign, List<Integer> missingVariables, int i) {
-		if (i >= missingVariables.size()) {
-			State s = new State(new TreeMap<Integer, Boolean>(assign));
-			states.add(s);
-		}
-		else {
-			Integer variable = missingVariables.get(i);
+	/**
+	 * Value Iteration for Factored MDP-IPs
+	 */
+	public int solveSPUDDIP(int maxNumberIterations, String finalVUpperPath, String initialStateLogPath, String initVUpperPath) {
+				
+		int numIterations = 0;   
+        Object QiPlus1DD, DiffDD;
+        
+        double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
+        
+        if (initVUpperPath == null) {
+			//Initialize Vu with admissible value function //////////////////////////////////
+			//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
+			maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
 			
-			assign.put(variable, true);
-			generateStatesForIncompletePath(assign, missingVariables, i+1);
+			valueiDD = context.getTerminalNode(maxUpper);
+		}
+		else {
+			context.workingWithParameterized = false;
+			valueiDD = context.readValueFunction(initVUpperPath);
+			valueiDD = context.remapIdWithPrime(this.valueiDD, hmPrimeRemap);
+			context.workingWithParameterized = true;			
+		}
+		
+    	double Vmax = Rmax; 
+    	context.workingWithParameterizedBef = context.workingWithParameterized;
+    	context.createBoundsProb(NAME_FILE_CONTRAINTS);
+    	
+    	long initialTime = System.currentTimeMillis();
+    	boolean keepIterating = true;
+    	
+    	while (keepIterating && numIterations < maxNumberIterations) {
+    		valueiPlus1DD = context.getTerminalNode(Double.NEGATIVE_INFINITY);
+   		
+    		for (Object actionAsObject : mName2Action.values()) {
+    			Action action = (Action) actionAsObject;
+    			//System.out.println("  - Regress action " + action.getName());
+
+      			context.workingWithParameterized = context.workingWithParameterizedBef;
+    			QiPlus1DD = this.regress(valueiDD, action, 0.0, action.tmID2ADD, OptimizationType.Minimization, false, false);
+    			    			
+   				valueiPlus1DD = context.apply(valueiPlus1DD, QiPlus1DD, Context.MAX);
+     			
+        	    flushCaches(null);		
+    		}   	
+
+    		valueiPlus1DD = context.apply(valueiPlus1DD, context.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
+    		valueiPlus1DD = context.apply(valueiPlus1DD, this.rewardDD, Context.SUM);
+    				
+    		DiffDD = context.apply(valueiPlus1DD, valueiDD, Context.SUB);
+    		Double maxDiff = (Double) context.apply(DiffDD, Context.MAXVALUE);
+    		Double minDiff = (Double) context.apply(DiffDD, Context.MINVALUE);
+    		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
+ 
+    		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
+    			 System.out.println("Terminate after " + numIterations + " iterations");
+    			 keepIterating = false;
+    		}
+    		
+    		valueiDD = valueiPlus1DD;
+    		
+//    		System.out.println("Iteration: " + numIterations + " NumCallSolver:  " + context.numCallSolver 
+//    				+ " Reuse Cache Internal Node instead of  Call Solver: " + context.reuseCacheIntNode 
+//    				+ " reuse: " + context.contReuse + " no reuse: " + context.contNoReuse + " reduced to value:  " + context.numberReducedToValue 
+//    				+ " reuse using lattice " + context.contReuseUsingLattice);    		
+    		
+    		numIterations = numIterations + 1;
+
+    		Vmax = Rmax + this.bdDiscount.doubleValue() * Vmax;
+    		
+    		long elapsedTime = (System.currentTimeMillis() - initialTime);
+    	    
+	    	TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
+	    	Double value = context.getValueForStateInContext((Integer) valueiPlus1DD, initialState, null, null);
+	    	
+	    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
+    	}
+    	
+    	//SPUDD-IP execute one mass update in all states per iteration
+    	//so, the number of updates is the number of iterations
+    	contUpperUpdates = numIterations;
+    	
+    	if (printFinalADD)
+    		context.view(valueiDD);
+    	    	
+// 		System.out.println("dumping VUpper in" + finalVUpperPath);
+   		context.dump(valueiDD, finalVUpperPath);
+    	
+        int contNumNodes = this.context.contNumberNodes(valueiDD);
+    	flushCaches(null);
+    	
+        return contNumNodes;
+	}
+	
+	/**
+	 * Value Iteration with pruning in Objective function for Factored MDP-IPs
+	 */
+	public int solveObjectiveIP(int maxNumberIterations, double mergeError, String finalVUpperPath, String initialStateLogPath, String initVUpperPath) {
+		
+		this.pruneAfterEachIt = true;
+		
+		int numIterations = 0;   
+        Object QiPlus1DD, DiffDD;
+        
+        double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
+        
+        if (initVUpperPath == null) {
+			//Initialize Vu with admissible value function //////////////////////////////////
+			//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
+			maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
 			
-			assign.put(variable, false);
-			generateStatesForIncompletePath(assign, missingVariables, i+1);
+			valueiDD = context.getTerminalNode(maxUpper);
+		}
+		else {
+			context.workingWithParameterized = false;
+			valueiDD = context.readValueFunction(initVUpperPath);
+			valueiDD = context.remapIdWithPrime(this.valueiDD, hmPrimeRemap);
+			context.workingWithParameterized = true;			
+		}
+		
+    	double Vmax = Rmax; 
+    	context.workingWithParameterizedBef = context.workingWithParameterized;
+    	context.createBoundsProb(NAME_FILE_CONTRAINTS);
+    	
+    	long initialTime = System.currentTimeMillis();
+    	boolean keepIterating = true;
+    	
+    	while (keepIterating && numIterations < maxNumberIterations) {
+    		valueiPlus1DD = context.getTerminalNode(Double.NEGATIVE_INFINITY);
+   		
+    		for (Object actionAsObject : mName2Action.values()) {
+    			Action action = (Action) actionAsObject;
+    			//System.out.println("  - Regress action " + action.getName());
+
+      			context.workingWithParameterized = context.workingWithParameterizedBef;
+    			QiPlus1DD = this.regress(valueiDD, action, mergeError * Vmax, action.tmID2ADD, OptimizationType.Minimization, false, false);
+    			    			
+   				valueiPlus1DD = context.apply(valueiPlus1DD, QiPlus1DD, Context.MAX);
+     			
+        	    flushCaches(null);		
+    		}   	
+
+    		valueiPlus1DD = context.apply(valueiPlus1DD, context.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
+    		valueiPlus1DD = context.apply(valueiPlus1DD, this.rewardDD, Context.SUM);
+    				
+    		DiffDD = context.apply(valueiPlus1DD, valueiDD, Context.SUB);
+    		Double maxDiff = (Double) context.apply(DiffDD, Context.MAXVALUE);
+    		Double minDiff = (Double) context.apply(DiffDD, Context.MINVALUE);
+    		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
+ 
+    		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
+    			 System.out.println("Terminate after " + numIterations + " iterations");
+    			 keepIterating = false;
+    		}
+    		
+    		valueiDD = valueiPlus1DD;
+    		
+//    		System.out.println("Iteration: " + numIterations + " NumCallSolver:  " + context.numCallSolver 
+//    				+ " Reuse Cache Internal Node instead of  Call Solver: " + context.reuseCacheIntNode 
+//    				+ " reuse: " + context.contReuse + " no reuse: " + context.contNoReuse + " reduced to value:  " + context.numberReducedToValue 
+//    				+ " reuse using lattice " + context.contReuseUsingLattice);    		
+    		
+    		numIterations = numIterations + 1;
+
+    		Vmax = Rmax + this.bdDiscount.doubleValue() * Vmax;
+    		
+    		long elapsedTime = (System.currentTimeMillis() - initialTime);
+    	    
+	    	TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
+	    	Double value = context.getValueForStateInContext((Integer) valueiPlus1DD, initialState, null, null);
+	    	
+	    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
+    	}
+    	
+    	if (printFinalADD)
+    		context.view(valueiDD);
+    	    	
+// 		System.out.println("dumping VUpper in" + finalVUpperPath);
+   		context.dump(valueiDD, finalVUpperPath);
+    	
+        int contNumNodes = this.context.contNumberNodes(valueiDD);
+    	flushCaches(null);
+    	
+        return contNumNodes;
+	}
+
+	/**
+	 * Real-time dynamic programming for Factored MDP-IPs
+	 */
+	public void solveRTDPIPFac(int maxDepth, long timeOut, int stateSamplingType, Random randomGenInitial, Random randomGenNextState, 
+			String finalVUpperPath, String initialStateLogPath, String initVUpperPath) {
+				
+		typeSampledRTDPMDPIP = stateSamplingType;
+		
+		Stack<TreeMap<Integer,Boolean>> visited = new Stack<TreeMap<Integer,Boolean>>();
+		
+		long totalTrialTime=0;
+		long totalTrialTimeSec=0;
+		ResetTimer();
+		
+		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
+			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
+
+		if (initVUpperPath == null) {
+			//Initialize Vu with admissible value function //////////////////////////////////
+			//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
+			double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
+			
+			if (this.bdDiscount.doubleValue() == 1)
+				maxUpper = Rmax * maxDepth;
+			else
+				maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
+			
+			VUpper = context.getTerminalNode(maxUpper);
+		}
+		else {
+			context.workingWithParameterized = false;
+			VUpper = context.readValueFunction(initVUpperPath);
+			VUpper = context.remapIdWithPrime(this.VUpper, hmPrimeRemap);
+			context.workingWithParameterized = true;			
+		}
+		
+		contUpperUpdates = 0;
+
+		context.workingWithParameterizedBef = context.workingWithParameterized;
+		
+		long initialTime = System.currentTimeMillis();
+		
+		while (totalTrialTimeSec <= timeOut){	
+			int depth = 0;
+			visited.clear();// clear visited states stack
+			
+			TreeMap<Integer,Boolean> state = sampleInitialStateFromList(randomGenInitial); 
+
+			//do trial //////////////////////////////////
+			while (!inGoalSet(state) && (state !=null) && depth < maxDepth) {
+				if (totalTrialTimeSec > timeOut) break;
+				
+				depth++;
+				visited.push(state);
+				
+				//this compute maxUpperUpdated and actionGreedy
+				Action greedyAction = updateVUpper(state); // Here we fill probNature
+				
+				contUpperUpdates++;
+				
+				//System.out.println("action greedy: " + greedyAction.getName());
+				
+				context.workingWithParameterized = context.workingWithParameterizedBef;
+				state = chooseNextStateRTDP(state, greedyAction, randomGenNextState);
+				
+				//System.out.println("next state: " + state);
+				flushCachesRTDP(false);
+				
+				totalTrialTime = GetElapsedTime();
+	            totalTrialTimeSec = totalTrialTime / 1000;	            
+			}
+			
+			//adiciona o goal na lista de estados visitados para ele ser
+			//considerado nos backups
+			visited.add(state);
+			
+			//do optimization
+			while (!visited.empty()) {
+				state = visited.pop();
+				updateVUpper(state);
+				contUpperUpdates++;
+			}
+			
+			totalTrialTime = GetElapsedTime();
+            totalTrialTimeSec = totalTrialTime / 1000;
+            
+            if (initialStateLogPath != null) {
+	            //medição para o estado inicial
+	            long elapsedTime = (System.currentTimeMillis() - initialTime);
+	            
+	            TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
+		    	
+		    	TreeMap<Integer, Boolean> remappedInitialState = new TreeMap<Integer, Boolean>();
+		    	for (Object key : hmPrimeRemap.keySet())
+		    		remappedInitialState.put((Integer) hmPrimeRemap.get(key), initialState.get(key));
+		    	
+		    	Double value = context.getValueForStateInContext((Integer) this.VUpper, remappedInitialState, null, null);
+		    	        	    	
+		    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
+            }
+		}
+					
+		context.workingWithParameterized = false;
+			
+		Object remappedVUpper = context.remapIdWithOutPrime(this.VUpper, hmPrime2IdRemap);
+		
+    	if (finalVUpperPath != null){
+    		System.out.println("dumping VUpper in" + finalVUpperPath);	
+    		context.dump(remappedVUpper, finalVUpperPath);
+    	}
+	}
+	
+	/**
+	 * Real-time dynamic programming for Enumerative MDP-IPs
+	 */
+	public void solveRTDPIPEnum(int maxDepth, long timeOut, int stateSamplingType, 
+			Random randomGenInitial, Random randomGenNextState, String initialStateLogPath) {
+		
+		ContextTable currentContext = (ContextTable) context;
+		
+		typeSampledRTDPMDPIP = stateSamplingType;
+		
+		Stack<State> visited = new Stack<State>();
+		
+		long totalTrialTime=0;
+		long totalTrialTimeSec=0;
+		ResetTimer();
+		
+		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
+			currentContext.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
+	
+		//Initialize Vu with admissible value function //////////////////////////////////
+		//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
+		double Rmax = currentContext.apply(this.rewardDD, Context.MAXVALUE);
+		
+		if (this.bdDiscount.doubleValue() == 1)
+			maxUpper = Rmax * maxDepth;
+		else
+			maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
+		
+		VUpper = new HashMap<State,Double>();
+		//TODO: como inicializar o VUpper ?
+		
+		contUpperUpdates = 0;
+
+		currentContext.workingWithParameterizedBef = currentContext.workingWithParameterized;
+		
+		long initialTime = System.currentTimeMillis();
+		
+		while (totalTrialTimeSec <= timeOut){	
+			int depth = 0;
+			visited.clear();// clear visited states stack
+			
+			State state = sampleInitialStateFromListEnum(randomGenInitial); 
+
+			//do trial //////////////////////////////////
+			while (!inGoalSetEnum(state) && (state !=null) && depth < maxDepth) {
+				if (totalTrialTimeSec > timeOut) break;
+				
+				depth++;
+				visited.push(state);
+				
+				//this compute maxUpperUpdated and actionGreedy
+				Action greedyAction = updateVUpper(state); // Here we fill probNature
+				
+				contUpperUpdates++;
+				
+				//System.out.println("action greedy: " + greedyAction.getName());
+				
+				currentContext.workingWithParameterized = currentContext.workingWithParameterizedBef;
+				state = chooseNextStateRTDPEnum(state, greedyAction, randomGenNextState, posActionGreedy);
+				
+				//System.out.println("next state: " + state);
+				flushCachesRTDP(false);
+				
+				totalTrialTime = GetElapsedTime();
+	            totalTrialTimeSec = totalTrialTime / 1000;	            
+			}
+			
+			//adiciona o goal na lista de estados visitados para ele ser
+			//considerado nos backups
+			visited.add(state);
+			
+			//do optimization
+			while (!visited.empty()) {
+				state = visited.pop();
+				updateVUpper(state);
+				contUpperUpdates++;
+			}
+			
+			totalTrialTime = GetElapsedTime();
+            totalTrialTimeSec = totalTrialTime / 1000;
+            
+            if (initialStateLogPath != null) {
+	            //medição para o estado inicial
+	            long elapsedTime = (System.currentTimeMillis() - initialTime);
+	            
+	            State initialState = listInitialStatesEnum.get(0);
+		    			    	
+		    	Double value = ((HashMap<State,Double>) this.VUpper).get(initialState);
+		    	        	    	
+		    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
+            }
 		}
 	}
-}
+	
+	/**
+	 * Labeled Real-time dynamic programming for Factored MDP-IPs
+	 */
+	public void solveLRTDPIPFac(int maxDepth, long timeOut, int stateSamplingType, Random randomGenInitial, Random randomGenNextState, 
+			String finalVUpperPath, String initialStateLogPath, String initVUpperPath) {
+		//Define o tipo de amostragem de estados
+		typeSampledRTDPMDPIP = stateSamplingType;
+		
+		long totalTrialTime = 0;
+		long totalTrialTimeSec = 0;
+		
+		ResetTimer();
+		
+		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
+			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
 
+		if (initVUpperPath == null) {
+			//Initialize Vu with admissible value function //////////////////////////////////
+			//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
+			double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
+			
+			if (this.bdDiscount.doubleValue() == 1)
+				maxUpper = Rmax * maxDepth;
+			else
+				maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
+			
+			VUpper = context.getTerminalNode(maxUpper);
+		}
+		else {
+			context.workingWithParameterized = false;
+			VUpper = context.readValueFunction(initVUpperPath);
+			VUpper = context.remapIdWithPrime(this.VUpper, hmPrimeRemap);
+			context.workingWithParameterized = true;			
+		}
+		
+		contUpperUpdates = 0;
+
+		context.workingWithParameterizedBef = context.workingWithParameterized;
+		
+		HashSet<State> solvedStates = new HashSet<State>();
+		
+		State s = new State(sampleInitialStateFromList(randomGenInitial));
+		
+		int trialCounter = 0;		
+		long initialTime = System.currentTimeMillis();
+		
+		while (totalTrialTimeSec <= timeOut && !solvedStates.contains(s)){
+			totalTrialTimeSec = lrtdpTrial(maxDepth, timeOut, randomGenNextState, s, solvedStates, initialStateLogPath, initialTime);
+			trialCounter++;
+   	    	
+   	    	s = new State(sampleInitialStateFromList(randomGenInitial));
+   	    	
+   	    	System.out.println("Chamadas ao solver: " + context.numCallNonLinearSolver);
+   	    	System.out.println("Número de Backups: " + contUpperUpdates);
+		}
+			
+		ArrayList<Object[]> result = new ArrayList<Object[]>();
+		
+		context.workingWithParameterized = false;
+		
+		Object remappedVUpper = context.remapIdWithOutPrime(this.VUpper, hmPrime2IdRemap);
+		
+    	if (finalVUpperPath != null){
+    		System.out.println("dumping VUpper in" + finalVUpperPath);	
+    		context.dump(remappedVUpper, finalVUpperPath);
+    	}
+	}
+}
