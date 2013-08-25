@@ -863,9 +863,7 @@ public abstract class Context {
 	public abstract Object getValuePolyForStateInContext(Integer F,TreeMap<Integer, Boolean> state,Integer xiprime,Boolean valXiprime);
 	public abstract Double getValueForStateInContext(Integer F,TreeMap<Integer, Boolean> state,Integer xiprime,Boolean valXiprime);
 	public abstract Double getRewardForStateInContextEnum(Integer F,State state,int numVars);
-	public abstract Double getProbCPTForStateInContextEnum(Integer F,State state,Integer xiprime,Boolean valXiprime, int numVars);
-	
-	
+	public abstract Object getProbCPTForStateInContextEnum(Integer F,State state,Integer xiprime,Boolean valXiprime, int numVars);
 
 	public void setProbWeightVGap(Object F,TreeMap<Integer, Boolean> state, TreeMap iD2ADD) {
 		// TODO: if F is not dirty, just return without updating further

@@ -42,6 +42,7 @@ public class MDP_Flat extends MDP {
 		tmID2Var   = new TreeMap();
 //		_tmAct2Regr = new TreeMap();
 		hmPrimeRemap  = new HashMap();
+		hmPrime2IdRemap = new HashMap();
 		mName2Action = new TreeMap();
 		alSaveNodesValue   = new ArrayList();
 		bdDiscount  = new BigDecimal(""+(-1));

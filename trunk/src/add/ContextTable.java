@@ -60,15 +60,18 @@ public class ContextTable extends Context {
 	public void copyInNewCacheNode(Object id) {
 		//ok
 		Object table =  inverseNodesCache.get(id);
-		if (table instanceof Table) {
-			inverseNodesCacheNew.put(id, table);
-			nodesCacheNew.put(table,id);
+		
+		if (table != null)
+		{
+			if (table instanceof Table) {
+				inverseNodesCacheNew.put(id, table);
+				nodesCacheNew.put(table,id);
+			}
+			else{
+				System.out.println("Erro in copyInNewCacheNode ContextTable: must be table");			
+				System.exit(0);
+			}
 		}
-		else{
-			
-			System.out.println("Erro in copyInNewCacheNode ContextTable: must be table");
-			System.exit(0);
-		}		
 
 	}
 
@@ -401,7 +404,7 @@ public class ContextTable extends Context {
 	}
 	
 //	 the parameter is ParADD and the result is an ADD
-    public Object doMinCallOverNodes(Object VDD,String NAME_FILE_CONTRAINTS,boolean pruneAfterEachIt) {
+    public Object doMinCallOverNodes(Object VDD, String NAME_FILE_CONTRAINTS, boolean pruneAfterEachIt) {
 	            //TODO : working in it
    	    		Table table=(Table)this.getInverseNodesCache().get(VDD);
    	    		TreeSet varsNew=new TreeSet(table.vars);
@@ -454,9 +457,9 @@ public class ContextTable extends Context {
 		System.exit(1);
 		return null;
 	}
+
 	@Override
-	
-	public Double getProbCPTForStateInContextEnum(Integer F,State state,Integer xiprime,Boolean valXiprime,int numVars){
+	public Object getProbCPTForStateInContextEnum(Integer F,State state,Integer xiprime,Boolean valXiprime,int numVars){
 		//compute the position of each variable in state into the CPT table that has first xiprime and then the other variables
 		// and return the probabilitity
 		Table table=(Table)inverseNodesCache.get(F);
@@ -485,15 +488,17 @@ public class ContextTable extends Context {
 			System.exit(1);
 			return null;
 		}*/
-		return (Double) table.values.get(posFinal);
+		return table.values.get(posFinal);
 	}
 	
 	public Double getRewardForStateInContextEnum(Integer F, State state, int numVars) {
-		
-		return getProbCPTForStateInContextEnum(F,state,null,null,numVars);
-		
+		return (Double) getProbCPTForStateInContextEnum(F,state,null,null,numVars);	
 	}
 
+	public Object getValueForStateInContextEnum(Integer F, State state, int numVars) {
+		return getProbCPTForStateInContextEnum(F,state,null,null,numVars);	
+	}
+	
 	@Override
 	public Object getValuePolyForStateInContext(Integer F, TreeMap<Integer, Boolean> state, Integer xiprime, Boolean valXiprime) {
 		// TODO Auto-generated method stub
