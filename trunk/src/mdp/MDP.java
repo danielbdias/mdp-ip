@@ -3044,7 +3044,7 @@ public abstract class MDP {
 	 */
 	private SuccProbabilitiesM getSuccessorsFromTable(Object multCPTs) {
 		
-		boolean usePolynomials = context.workingWithParameterized && typeSampledRTDPMDPIP == 4;
+		boolean usePolynomials = context.workingWithParameterized;
 		
 		double sumProb = 0;
 		
