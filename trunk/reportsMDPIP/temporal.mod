@@ -1,7 +1,7 @@
 option solver minos;
 var p1>=0, <=1;
 var p2>=0, <=1;
-maximize obj: -0.06721117444978175*p2+-0.5931762436499097*p1;
+minimize obj: -10+8.1*p1;
 subject to r1:  p1>=0.900000;
 subject to r2:  p2<=1.000000;
 subject to r3:  p2>=0.100000;

@@ -727,7 +727,16 @@ public abstract class Context {
   		return randomProbabilities;
 	}
 	
-  	public Integer convertCPT(Integer F, Hashtable sampleProbabilities) {
+	public Hashtable<String, Double> getProbabilitiesSubjectTo(String NAME_FILE_CONTRAINTS, Polynomial poly) {
+		String objective = poly.toString(this, "p");
+		
+		createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min");
+  		callNonLinearSolver();
+  		
+		return currentValuesProb;
+	}
+  	
+	public Integer convertCPT(Integer F, Hashtable sampleProbabilities) {
 		if(this.isTerminalNode(F)){
 			//evaluate the parameterized leave with the sampleProbabilities 
     		return evaluate(F,sampleProbabilities);
