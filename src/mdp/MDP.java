@@ -6,6 +6,8 @@ import java.io.*;
 import java.math.*;
 import java.util.*;
 
+import util.Pair;
+
 import add.*;
 
 public abstract class MDP {
@@ -2675,7 +2677,7 @@ public abstract class MDP {
 	/* updateVUpper and put the max in maxUpperUpdated 
 	 * return the actionGreedy
 	 */
-	private Action updateVUpper(State state) {
+	private Pair computeVUpper(State state) {
 		double max = Double.NEGATIVE_INFINITY;
 		Action actionGreedy = null;
 		
@@ -2702,10 +2704,21 @@ public abstract class MDP {
 
 		double rew = context.getRewardForStateInContextEnum((Integer)this.rewardDD, state,this.numVars);
 		double maxTotal = rew + this.bdDiscount.doubleValue() * max;
-
+		
+		return new Pair(actionGreedy, maxTotal);
+	}
+	
+	private Action updateVUpper(State state) {
+		
+		Pair result = this.computeVUpper(state);
+		
+		Action actionGreedy = (Action) result.get_o1();
+		double maxTotal = (double) result.get_o2();
+		
 		((HashMap)VUpper).put(state, maxTotal);
 	
 		maxUpperUpdated = maxTotal;
+		
 		return actionGreedy;
 	}
 
@@ -2740,24 +2753,32 @@ public abstract class MDP {
 	}
 
 	private State chooseNextStateRTDPEnum(State state, Action actionGreedy, Random randomGenerator, int posActionGreedy) {
-		SuccProbabilitiesM succState = null;
-		
-		if (context.workingWithParameterized && typeSampledRTDPMDPIP == 4)
-			succState = this.computeSuccesorsProbEnum(state, actionGreedy.tmID2ADD);
-		else
-			succState = state.getActionSuccProbab()[posActionGreedy];
-			
+		SuccProbabilitiesM succState = state.getActionSuccProbab()[posActionGreedy];
+					
 		State nextState = null;
 		
 		Double value, sum = 0d;
 		
+		if (context.workingWithParameterized && typeSampledRTDPMDPIP == 4)
+			context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
+		
 		double ran = randomGenerator.nextDouble();
 		
-		Iterator it = succState.getNextStatesProbs().keySet().iterator();
+		Iterator it = null;
+		
+		if (!context.workingWithParameterized)
+			it = succState.getNextStatesProbs().keySet().iterator();
+		else
+			it = succState.getNextStatesPoly().keySet().iterator();
 		
 		while (it.hasNext()){
 			nextState = (State) it.next();
-			value = succState.getNextStatesProbs().get(nextState);
+			
+			if (!context.workingWithParameterized)
+				value = succState.getNextStatesProbs().get(nextState);
+			else
+				value = succState.getNextStatesPoly().get(nextState).evalWithListValues(context.currentValuesProb, context);
+			
 			sum += value;
 			
 			if (ran <= sum) return nextState;
@@ -2766,29 +2787,153 @@ public abstract class MDP {
 		return nextState;
     }
 
-	private double computeQEnum(HashMap V,State state, Action action,TreeMap iD2ADD, char c, int posAction) {
+	private double computeQEnum(HashMap V, State state, Action action, TreeMap iD2ADD, char c, int posAction) {
 		SuccProbabilitiesM succ = state.getActionSuccProbab()[posAction];
 
 		//if it has not been calculed before, compute it 
-        if (succ == null || context.workingWithParameterized) {       	
-        	succ = computeSuccesorsProbEnum(state, iD2ADD, true);
+        if (succ == null) {       	
+        	succ = computeSuccesorsProbEnum(state, iD2ADD);
         	
-        	if (succ.getNextStatesProbs().size() == 0){
-        		System.out.println("Not Sucessors for state: " + state);
+        	if (succ.getNextStatesProbs().size() == 0 && succ.getNextStatesPoly().size() == 0){
+        		System.out.println("Not Successors for state: " + state);
         		System.exit(1);
         	}
         	
         	state.getActionSuccProbab()[posAction] = succ;
         }
-        	
-        return mulSumSuccessors(succ, V, c);	
+        
+        if (!context.workingWithParameterized)	
+        	return mulSumSuccessors(succ, V, c);
+        else
+        	return mulSumSuccessorsPoly(succ, V, c);
+	}
+	
+	private int getBestActionForState(HashMap V, State state) {
+		
+		double max = Double.NEGATIVE_INFINITY;
+		Action actionGreedy = null;
+		
+		Iterator actions = mName2Action.entrySet().iterator();
+		
+		int posAction = 0;
+		int bestActionIndex = -1;
+		
+		while (actions.hasNext()){
+			Map.Entry meaction=(Map.Entry) actions.next();
+			Action action=(Action) meaction.getValue();
+
+			double Qt = this.computeQEnum(V, state, action, action.tmID2ADD, 'u', posAction);
+		
+			max = Math.max(max,Qt);
+		
+			if (Math.abs(max - Qt) <= 1e-10d){
+				actionGreedy = action;
+				bestActionIndex = posAction;
+			}
+			
+			posAction++;
+		}
+		
+		return bestActionIndex;
+	}
+	
+	private boolean checkConvergencyForGreedyGraph(HashMap V, State state) {
+		Stack<State> statesToVisit = new Stack<State>();
+		ArrayList<State> visitedStates = new ArrayList<State>();
+		
+		statesToVisit.add(state);
+		
+		while (!statesToVisit.empty()) {
+			state = statesToVisit.pop();
+			visitedStates.add(state);
+			
+			double currentValue = maxUpper;
+			
+			if (V.containsKey(state))
+				currentValue = (double) V.get(state);
+			
+			Pair result = this.computeVUpper(state);
+			double nextValue = (double) result.get_o2();
+			
+			double residual = Math.abs(currentValue - nextValue);
+			
+			if (residual > epsilon) return false;
+			
+			int bestAction = this.getBestActionForState(V, state);
+			
+			SuccProbabilitiesM probs = state.getActionSuccProbab()[bestAction];
+			
+			Set<State> nextStates = null;
+			
+			if (context.workingWithParameterized)
+				nextStates = probs.getNextStatesPoly().keySet();
+			else
+				nextStates = probs.getNextStatesProbs().keySet();
+			
+			for (State nextState : nextStates) {
+				if (visitedStates.contains(nextState)) break;
+				statesToVisit.add(nextState);
+			}
+		}
+		
+		return true;
+	}
+	
+	private boolean checkSolved(HashMap V, HashSet<State> solvedStates, State state) {
+		boolean rv = true;
+		
+		Stack<State> open = new Stack<State>();
+		Stack<State> closed = new Stack<State>();
+		
+		if (!solvedStates.contains(state)) open.push(state);
+		
+		while (!open.empty()) {
+			state = open.pop();
+			closed.push(state);
+			
+			Pair pair = this.computeVUpper(state);
+			double nextValue = (double) pair.get_o2();
+			double previousValue = (double) V.get(state);
+			
+			if (Math.abs(nextValue - previousValue) > epsilon)
+			{
+				rv = false;
+				continue;
+			}
+			
+			int greedyActionIndex = this.getBestActionForState(V, state);
+			
+			SuccProbabilitiesM nextProbs = state.getActionSuccProbab()[greedyActionIndex];
+			
+			Set<State> nextStates = null;
+			
+			if (context.workingWithParameterized)
+				nextStates = nextProbs.getNextStatesPoly().keySet();
+			else
+				nextStates = nextProbs.getNextStatesProbs().keySet();
+			
+			for (State nextState : nextStates) {
+				if (!solvedStates.contains(nextState) && !open.contains(nextState) && !closed.contains(nextState))
+					open.push(nextState);
+			}
+		}
+		
+		if (rv) {
+			for (State nextState : closed) 
+				solvedStates.add(nextState);
+		}
+		else {
+			while (!closed.empty()) {
+				state = closed.pop();
+				this.updateVUpper(state);
+				contUpperUpdates++;
+			}
+		}
+		
+		return rv;
 	}
 	
 	private SuccProbabilitiesM computeSuccesorsProbEnum(State state, TreeMap iD2ADD) {
-		return this.computeSuccesorsProbEnum(state, iD2ADD, false);
-	}
-	
-	private SuccProbabilitiesM computeSuccesorsProbEnum(State state, TreeMap iD2ADD, boolean successorsForQValue) {
 		Object multCPTs = context.getTerminalNode(1d);
 		
 		Integer xiprime;
@@ -2822,7 +2967,7 @@ public abstract class MDP {
 			multCPTs = context.apply(multCPTs, newCPT, Context.PROD);
 		}
 
-		return getSuccessorsFromTable(multCPTs, successorsForQValue);
+		return getSuccessorsFromTable(multCPTs);
 	}
 	
 	/**
@@ -2832,75 +2977,106 @@ public abstract class MDP {
 	 * @param c  type upper=' u' lower='l'
 	 * @return
 	 */
-	private double mulSumSuccessors(SuccProbabilitiesM succ, HashMap V,char c) {
-		double sum=0;
+	private double mulSumSuccessors(SuccProbabilitiesM succ, HashMap V, char c) {
+		double sum = 0.0;
 		
-		State state;
-		Double prob;
-		Iterator it=succ.getNextStatesProbs().keySet().iterator();
-		//for(int i=0;i<succ.getNextStates().size();i++){
-		while(it.hasNext()){	
-			state=(State)it.next();
-			prob=succ.getNextStatesProbs().get(state);
-			Double valueV=(Double)V.get(state);
-			if (valueV==null){
-				if (c=='u'){
-					valueV=maxUpper;
-				}
-				else if (c=='l'){
-					valueV=minLower;
-				}
+		Iterator it = succ.getNextStatesProbs().keySet().iterator();
+
+		while (it.hasNext()){	
+			State state = (State) it.next();
+			Double prob = succ.getNextStatesProbs().get(state);
+			Double valueV = (Double)V.get(state);
+			
+			if (valueV == null){
+				if (c == 'u')
+					valueV = maxUpper;
+				else if (c == 'l')
+					valueV = minLower;
 				else{
 					System.out.println("must be u:upper l:lower");
 					System.exit(1);
 				}
 			}
-			sum=sum+prob*valueV;
+			
+			sum = sum + prob * valueV;
 		}
         return sum;
 	}
 
+	private double mulSumSuccessorsPoly(SuccProbabilitiesM succ, HashMap V, char c) {
+		Polynomial result = new Polynomial(0.0, new Hashtable(), context);
+		
+		Iterator it = succ.getNextStatesPoly().keySet().iterator();
+
+		while (it.hasNext()){	
+			State state = (State) it.next();
+			Polynomial prob = succ.getNextStatesPoly().get(state);
+			Double valueV = (Double)V.get(state);
+
+			if (valueV == null){
+				if (c == 'u')
+					valueV = maxUpper;
+				else if (c == 'l')
+					valueV = minLower;
+				else{
+					System.out.println("must be u:upper l:lower");
+					System.exit(1);
+				}
+			}
+			
+			prob = prob.prodPolynomial(new Polynomial(valueV, new Hashtable(), context), context);
+			result = prob.sumPolynomial(result);
+		}
+		
+		if (result.getTerms().size() > 0) {
+			context.getProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS, result);
+		
+			return result.evalWithListValues(context.currentValuesProb, context);
+		}
+		else {
+			return result.getC();
+		}
+	}
+	
 	/**
 	 * it gets all the states with not zero probability from a Table
 	 * @param multCPTs
 	 * @return
 	 */
-	private SuccProbabilitiesM getSuccessorsFromTable(Object multCPTs, boolean successorsForQValue) {
+	private SuccProbabilitiesM getSuccessorsFromTable(Object multCPTs) {
 		
-		boolean usePolynomials = context.workingWithParameterized && typeSampledRTDPMDPIP == 4 && !successorsForQValue;
+		boolean usePolynomials = context.workingWithParameterized && typeSampledRTDPMDPIP == 4;
 		
 		double sumProb = 0;
 		
 		SuccProbabilitiesM succ = new SuccProbabilitiesM(); 
-		
-		if (context.workingWithParameterized && !usePolynomials)
-			multCPTs = context.doMinCallOverNodes(multCPTs, NAME_FILE_CONTRAINTS, pruneAfterEachIt);
 
 		Table table = (Table)context.getInverseNodesCache().get(multCPTs);		 
 		
-		if (usePolynomials)
-			context.probSample = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
-		
-		for (int i = 0; i < table.getValues().size(); i++){//for all states (with prime)
-			Double val = Double.NaN;
-			
-			if (usePolynomials) {
-				Polynomial poly = (Polynomial) table.getValues().get(i);
-				val = poly.evalWithListValues(context.probSample, context);
-			}
-			else {
-				val = (Double) table.getValues().get(i);	
+		if (!usePolynomials) {
+			for (int i = 0; i < table.getValues().size(); i++){//for all states (with prime)
+				Double val = (Double) table.getValues().get(i);	
+				
+				if (Math.abs(val.doubleValue() - 0d) > 1e-10d) {
+					State newState = createStateFrom(i, table.getVars().size()); //create only if state does not exist yet
+					succ.getNextStatesProbs().put(newState, val);
+					sumProb += val;
+				}
 			}
 			
-			if (Math.abs(val.doubleValue() - 0d) > 1e-10d) {
-				State newState = createStateFrom(i, table.getVars().size()); //create only if state does not exist yet
-				succ.getNextStatesProbs().put(newState, val);
-				sumProb += val;
+			if (Math.abs(sumProb - 1d) > 1e-10d)
+				System.out.println("Precision error sumProb must be 1 and is: " + sumProb);
+		}
+		else {
+			for (int i = 0; i < table.getValues().size(); i++){//for all states (with prime)
+				Polynomial val = (Polynomial) table.getValues().get(i);	
+				
+				if (Math.abs(val.getC() - 0d) > 1e-10d || val.getTerms().size() > 0) {
+					State newState = createStateFrom(i, table.getVars().size()); //create only if state does not exist yet
+					succ.getNextStatesPoly().put(newState, val);
+				}
 			}
 		}
-		
-		if (Math.abs(sumProb - 1d) > 1e-10d)
-			System.out.println("Precision error sumProb must be 1 and is: " + sumProb);
 		
 		return succ;
 	}
@@ -3483,7 +3659,6 @@ public abstract class MDP {
 			maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
 		
 		VUpper = new HashMap<State,Double>();
-		//TODO: como inicializar o VUpper ?
 		
 		contUpperUpdates = 0;
 
@@ -3497,8 +3672,11 @@ public abstract class MDP {
 			
 			State state = sampleInitialStateFromListEnum(randomGenInitial); 
 
+			if (this.checkConvergencyForGreedyGraph((HashMap) VUpper, state)) 
+				break;
+			
 			//do trial //////////////////////////////////
-			while (!inGoalSetEnum(state) && (state !=null) && depth < maxDepth) {
+			while (!inGoalSetEnum(state) && (state != null) && depth < maxDepth) {
 				if (totalTrialTimeSec > timeOut) break;
 				
 				depth++;
@@ -3547,7 +3725,99 @@ public abstract class MDP {
             }
 		}
 	}
+
+	/**
+	 * Labeled Real-time dynamic programming for Enumerative MDP-IPs
+	 */
+	public void solveLRTDPIPEnum(int maxDepth, long timeOut, int stateSamplingType, 
+			Random randomGenInitial, Random randomGenNextState, String initialStateLogPath) {
+		
+		ContextTable currentContext = (ContextTable) context;
+		
+		typeSampledRTDPMDPIP = stateSamplingType;
+		
+		Stack<State> visited = new Stack<State>();
+		HashSet<State> solvedStates = new HashSet<State>(); 
+		
+		long totalTrialTime=0;
+		long totalTrialTimeSec=0;
+		ResetTimer();
+		
+		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
+			currentContext.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
 	
+		//Initialize Vu with admissible value function //////////////////////////////////
+		//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
+		double Rmax = currentContext.apply(this.rewardDD, Context.MAXVALUE);
+		
+		if (this.bdDiscount.doubleValue() == 1)
+			maxUpper = Rmax * maxDepth;
+		else
+			maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
+		
+		VUpper = new HashMap<State,Double>();
+		
+		contUpperUpdates = 0;
+
+		currentContext.workingWithParameterizedBef = currentContext.workingWithParameterized;
+		
+		long initialTime = System.currentTimeMillis();
+		
+		while (totalTrialTimeSec <= timeOut){	
+			int depth = 0;
+			visited.clear();// clear visited states stack
+			
+			State state = sampleInitialStateFromListEnum(randomGenInitial); 
+
+			//do trial //////////////////////////////////
+			while ((state != null) && depth < maxDepth && !solvedStates.contains(state)) {
+				if (totalTrialTimeSec > timeOut) break;
+
+				visited.push(state);
+				
+				if (inGoalSetEnum(state)) break;
+				
+				depth++;
+				
+				//this compute maxUpperUpdated and actionGreedy
+				Action greedyAction = updateVUpper(state); // Here we fill probNature
+				
+				contUpperUpdates++;
+				
+				//System.out.println("action greedy: " + greedyAction.getName());
+				
+				currentContext.workingWithParameterized = currentContext.workingWithParameterizedBef;
+				state = chooseNextStateRTDPEnum(state, greedyAction, randomGenNextState, posActionGreedy);
+				
+				//System.out.println("next state: " + state);
+				flushCachesRTDP(false);
+				
+				totalTrialTime = GetElapsedTime();
+	            totalTrialTimeSec = totalTrialTime / 1000;	            
+			}
+			
+			//do optimization
+			while (!visited.empty()) {
+				state = visited.pop();
+				checkSolved((HashMap) VUpper, solvedStates, state);
+			}
+			
+			totalTrialTime = GetElapsedTime();
+            totalTrialTimeSec = totalTrialTime / 1000;
+            
+            if (initialStateLogPath != null) {
+	            //medição para o estado inicial
+	            long elapsedTime = (System.currentTimeMillis() - initialTime);
+	            
+	            State initialState = listInitialStatesEnum.get(0);
+		    			    	
+		    	Double value = ((HashMap<State,Double>) this.VUpper).get(initialState);
+		    	        	    	
+		    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
+            }
+		}
+	}
+
 	/**
 	 * Labeled Real-time dynamic programming for Factored MDP-IPs
 	 */

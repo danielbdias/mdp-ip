@@ -1,0 +1,6 @@
+RTDP-IP Enum
+/home/daniel/workspaces/java/mestrado/mdp-ip/problemsMDPIP/navigation_6.net /home/daniel/workspaces/java/mestrado/mdp-ip/reportsMDPIP/results/rtdp_enum/report_navigation_rtdp_enum.txt 1000 3600 4 /home/daniel/workspaces/java/mestrado/mdp-ip/reportsMDPIP/results/rtdp_enum/initial_values/initial_navigation_6_iv.txt
+-Xms200m -Xmx2560m
+
+factLRTDP-IP rand
+/home/daniel/workspaces/java/mestrado/mdp-ip/problemsMDPIP/triangle_tireworld_8.net /home/daniel/workspaces/java/mestrado/mdp-ip/reportsMDPIP/results/lrtdp/rnd/triangle_tireworld_test_convergence.txt 100 600 4 /home/daniel/workspaces/java/mestrado/mdp-ip/reportsMDPIP/results/lrtdp/rnd/valuetriangle_tireworld_8_lrtdp_convergence.net /home/daniel/workspaces/java/mestrado/mdp-ip/reportsMDPIP/results/lrtdp/rnd/initial_valuetriangle_tireworld_8_lrtdp_convergence.txt
