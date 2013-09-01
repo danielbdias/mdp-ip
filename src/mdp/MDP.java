@@ -1720,9 +1720,8 @@ public abstract class MDP {
             totalTrialTimeSec = totalTrialTime / 1000;
             
             if (initialStateLogPath != null) {
-	            //medição para o estado inicial
-	            long elapsedTime = (System.currentTimeMillis() - initialTime);
-            	//long elapsedTime = (System.currentTimeMillis() - initialTime) - context.linearSolverElapsedTime;
+	            //long elapsedTime = (System.currentTimeMillis() - initialTime);
+            	long elapsedTime = (System.currentTimeMillis() - initialTime) - context.linearSolverElapsedTime;
             	
 	            TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
 		    	
@@ -2713,7 +2712,7 @@ public abstract class MDP {
 		Pair result = this.computeVUpper(state);
 		
 		Action actionGreedy = (Action) result.get_o1();
-		double maxTotal = (double) result.get_o2();
+		double maxTotal = (Double) result.get_o2();
 		
 		((HashMap)VUpper).put(state, maxTotal);
 	
@@ -2850,10 +2849,10 @@ public abstract class MDP {
 			double currentValue = maxUpper;
 			
 			if (V.containsKey(state))
-				currentValue = (double) V.get(state);
+				currentValue = (Double) V.get(state);
 			
 			Pair result = this.computeVUpper(state);
-			double nextValue = (double) result.get_o2();
+			double nextValue = (Double) result.get_o2();
 			
 			double residual = Math.abs(currentValue - nextValue);
 			
@@ -2892,8 +2891,8 @@ public abstract class MDP {
 			closed.push(state);
 			
 			Pair pair = this.computeVUpper(state);
-			double nextValue = (double) pair.get_o2();
-			double previousValue = (double) V.get(state);
+			double nextValue = (Double) pair.get_o2();
+			double previousValue = (Double) V.get(state);
 			
 			if (Math.abs(nextValue - previousValue) > epsilon)
 			{
@@ -3321,7 +3320,7 @@ public abstract class MDP {
     		long elapsedTime = (System.currentTimeMillis() - initialTime);
     	    
     		State initialState = listInitialStatesEnum.get(0);
-	    	Double value = (double) currentContext.getValueForStateInContextEnum((Integer) valueiPlus1DD, initialState, this.numVars);
+	    	Double value = (Double) currentContext.getValueForStateInContextEnum((Integer) valueiPlus1DD, initialState, this.numVars);
 	    	
 	    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
     	}

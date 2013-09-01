@@ -7,7 +7,7 @@
 echo Updating environment variables
 
 #Program root dir
-export ROOT_DIR=/home/daniel/workspaces/java/mestrado/mdp-ip
+export ROOT_DIR=/home/daniel/workspaces/java/mdpip/ADD
 
 #Directory where the problems are located
 export PROBLEM_DIR=$ROOT_DIR/problemsMDPIP

@@ -57,14 +57,14 @@ TEST_TYPE="full"
 
 PROBLEM_TYPE=uni_ring_IP
 
-#execute_problem $PROBLEM_TYPE 1 $TEST_TYPE $MAX_ITER
-#execute_problem $PROBLEM_TYPE 2 $TEST_TYPE $MAX_ITER
-#execute_problem $PROBLEM_TYPE 3 $TEST_TYPE $MAX_ITER
-#execute_problem $PROBLEM_TYPE 4 $TEST_TYPE $MAX_ITER
-#execute_problem $PROBLEM_TYPE 5 $TEST_TYPE $MAX_ITER
-#execute_problem $PROBLEM_TYPE 6 $TEST_TYPE $MAX_ITER
-#execute_problem $PROBLEM_TYPE 7 $TEST_TYPE $MAX_ITER
-#execute_problem $PROBLEM_TYPE 8 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 1 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 2 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 3 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 4 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 5 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 6 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 7 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 8 $TEST_TYPE $MAX_ITER
 
 PROBLEM_TYPE=traffic
 
@@ -75,20 +75,19 @@ PROBLEM_TYPE=traffic
 
 PROBLEM_TYPE=navigation
 
-#execute_problem $PROBLEM_TYPE 6 $TEST_TYPE $MAX_ITER
-#execute_problem $PROBLEM_TYPE 8 $TEST_TYPE $MAX_ITER
-#execute_problem $PROBLEM_TYPE 9 $TEST_TYPE $MAX_ITER
-#execute_problem $PROBLEM_TYPE 10 $TEST_TYPE $MAX_ITER
-#execute_problem $PROBLEM_TYPE 12 $TEST_TYPE $MAX_ITER
-#execute_problem $PROBLEM_TYPE 15 $TEST_TYPE $MAX_ITER
-#execute_problem $PROBLEM_TYPE 18 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 6 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 8 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 9 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 10 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 12 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 15 $TEST_TYPE $MAX_ITER
+execute_problem $PROBLEM_TYPE 18 $TEST_TYPE $MAX_ITER
 
 PROBLEM_TYPE=triangle_tireworld
 
 execute_problem $PROBLEM_TYPE 8 $TEST_TYPE $MAX_ITER
 execute_problem $PROBLEM_TYPE 12 $TEST_TYPE $MAX_ITER
 execute_problem $PROBLEM_TYPE 17 $TEST_TYPE $MAX_ITER
-#execute_problem $PROBLEM_TYPE 23 $TEST_TYPE $MAX_ITER
 
 echo End of tests
 

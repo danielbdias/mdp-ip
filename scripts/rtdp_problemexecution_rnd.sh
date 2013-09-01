@@ -58,14 +58,14 @@ echo
 PROBLEM_TYPE="triangle_tireworld"
 TEST_TYPE="convergence"
 
-execute_problem $PROBLEM_TYPE 8 $TEST_TYPE 20
-execute_problem $PROBLEM_TYPE 12 $TEST_TYPE 40
+#execute_problem $PROBLEM_TYPE 8 $TEST_TYPE 20
+#execute_problem $PROBLEM_TYPE 12 $TEST_TYPE 40
 execute_problem $PROBLEM_TYPE 17 $TEST_TYPE 80
-execute_problem $PROBLEM_TYPE 23 $TEST_TYPE 200
-execute_problem $PROBLEM_TYPE 30 $TEST_TYPE 400
-execute_problem $PROBLEM_TYPE 38 $TEST_TYPE 800
-execute_problem $PROBLEM_TYPE 47 $TEST_TYPE 1600
-execute_problem $PROBLEM_TYPE 57 $TEST_TYPE 2400
+#execute_problem $PROBLEM_TYPE 23 $TEST_TYPE 200
+#execute_problem $PROBLEM_TYPE 30 $TEST_TYPE 400
+#execute_problem $PROBLEM_TYPE 38 $TEST_TYPE 800
+#execute_problem $PROBLEM_TYPE 47 $TEST_TYPE 1600
+#execute_problem $PROBLEM_TYPE 57 $TEST_TYPE 2400
 #execute_problem $PROBLEM_TYPE 68 $TEST_TYPE 1200
 #execute_problem $PROBLEM_TYPE 80 $TEST_TYPE 1800
 #execute_problem $PROBLEM_TYPE 93 $TEST_TYPE 2400
@@ -75,32 +75,32 @@ execute_problem $PROBLEM_TYPE 57 $TEST_TYPE 2400
 PROBLEM_TYPE="navigation"
 TEST_TYPE="convergence"
 
-execute_problem $PROBLEM_TYPE 6 $TEST_TYPE 20
-execute_problem $PROBLEM_TYPE 8 $TEST_TYPE 20
-execute_problem $PROBLEM_TYPE 9 $TEST_TYPE 20
-execute_problem $PROBLEM_TYPE 10 $TEST_TYPE 20
-execute_problem $PROBLEM_TYPE 12 $TEST_TYPE 20
-execute_problem $PROBLEM_TYPE 15 $TEST_TYPE 40
+#execute_problem $PROBLEM_TYPE 6 $TEST_TYPE 20
+#execute_problem $PROBLEM_TYPE 8 $TEST_TYPE 20
+#execute_problem $PROBLEM_TYPE 9 $TEST_TYPE 20
+#execute_problem $PROBLEM_TYPE 10 $TEST_TYPE 20
+#execute_problem $PROBLEM_TYPE 12 $TEST_TYPE 20
+#execute_problem $PROBLEM_TYPE 15 $TEST_TYPE 40
 execute_problem $PROBLEM_TYPE 18 $TEST_TYPE 40
-execute_problem $PROBLEM_TYPE 20 $TEST_TYPE 40
-execute_problem $PROBLEM_TYPE 21 $TEST_TYPE 40
-execute_problem $PROBLEM_TYPE 24 $TEST_TYPE 80
-execute_problem $PROBLEM_TYPE 25 $TEST_TYPE 80
-execute_problem $PROBLEM_TYPE 28 $TEST_TYPE 80
-execute_problem $PROBLEM_TYPE 30 $TEST_TYPE 80
-execute_problem $PROBLEM_TYPE 49 $TEST_TYPE 140
-execute_problem $PROBLEM_TYPE 64 $TEST_TYPE 200
-execute_problem $PROBLEM_TYPE 81 $TEST_TYPE 400
-execute_problem $PROBLEM_TYPE 100 $TEST_TYPE 800
-execute_problem $PROBLEM_TYPE 121 $TEST_TYPE 2400
+#execute_problem $PROBLEM_TYPE 20 $TEST_TYPE 40
+#execute_problem $PROBLEM_TYPE 21 $TEST_TYPE 40
+#execute_problem $PROBLEM_TYPE 24 $TEST_TYPE 80
+#execute_problem $PROBLEM_TYPE 25 $TEST_TYPE 80
+#execute_problem $PROBLEM_TYPE 28 $TEST_TYPE 80
+#execute_problem $PROBLEM_TYPE 30 $TEST_TYPE 80
+#execute_problem $PROBLEM_TYPE 49 $TEST_TYPE 140
+#execute_problem $PROBLEM_TYPE 64 $TEST_TYPE 200
+#execute_problem $PROBLEM_TYPE 81 $TEST_TYPE 400
+#execute_problem $PROBLEM_TYPE 100 $TEST_TYPE 800
+#execute_problem $PROBLEM_TYPE 121 $TEST_TYPE 2400
 
 PROBLEM_TYPE="uni_ring_IP"
 TEST_TYPE="convergence"
 
-execute_problem $PROBLEM_TYPE 1 $TEST_TYPE 20
-execute_problem $PROBLEM_TYPE 2 $TEST_TYPE 80
-execute_problem $PROBLEM_TYPE 3 $TEST_TYPE 200
-execute_problem $PROBLEM_TYPE 4 $TEST_TYPE 600
+#execute_problem $PROBLEM_TYPE 1 $TEST_TYPE 20
+#execute_problem $PROBLEM_TYPE 2 $TEST_TYPE 80
+#execute_problem $PROBLEM_TYPE 3 $TEST_TYPE 200
+#execute_problem $PROBLEM_TYPE 4 $TEST_TYPE 600
 execute_problem $PROBLEM_TYPE 5 $TEST_TYPE 2400
 
 PROBLEM_TYPE="traffic"
