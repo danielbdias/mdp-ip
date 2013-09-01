@@ -66,10 +66,10 @@ execute_problem $PROBLEM_TYPE 30 $TEST_TYPE 1200
 execute_problem $PROBLEM_TYPE 38 $TEST_TYPE 1200
 execute_problem $PROBLEM_TYPE 47 $TEST_TYPE 1200
 execute_problem $PROBLEM_TYPE 57 $TEST_TYPE 1200
-#execute_problem $PROBLEM_TYPE 68 $TEST_TYPE 1200
-#execute_problem $PROBLEM_TYPE 80 $TEST_TYPE 1800
-#execute_problem $PROBLEM_TYPE 93 $TEST_TYPE 2400
-#execute_problem $PROBLEM_TYPE 107 $TEST_TYPE 2400
+execute_problem $PROBLEM_TYPE 68 $TEST_TYPE 1200
+execute_problem $PROBLEM_TYPE 80 $TEST_TYPE 1800
+execute_problem $PROBLEM_TYPE 93 $TEST_TYPE 2400
+execute_problem $PROBLEM_TYPE 107 $TEST_TYPE 2400
 #execute_problem $PROBLEM_TYPE 122 $TEST_TYPE 3600
 
 PROBLEM_TYPE="navigation"

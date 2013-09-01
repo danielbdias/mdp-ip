@@ -64,7 +64,7 @@ public class LRTDPIP {
 		int numVariables = myMDP.hmPrime2IdRemap.keySet().size();
 		
 		printReport(problemFilename, typeContext, timeSeg, outputFilename, 
-				   myMDP.context.numCallNonLinearSolver, myMDP.contUpperUpdates, 
+				   myMDP.context.numCallNonLinearSolver + myMDP.context.numCallLinearSolver, myMDP.contUpperUpdates, 
 				   typeSolution, numVariables);
 	}
 	
