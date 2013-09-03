@@ -1459,6 +1459,19 @@ public abstract class MDP {
 	 * Update VUpper and return the action greedy
 	 */
 	private Action updateVUpper(TreeMap<Integer, Boolean> state) {
+		Pair result = computeVUpper(state);
+		
+		double maxTotal = (double) result.get_o2();
+		
+        //update the ADD VUpper
+		updateValueBranch(state, 'u', maxTotal);
+
+		maxUpperUpdated = maxTotal; //Error, maxUpper must not be updated, we need to use other variable
+		
+		return (Action) result.get_o1();
+	}
+	
+	private Pair computeVUpper(TreeMap<Integer, Boolean> state) {
 		double max = Double.NEGATIVE_INFINITY;
 		Action actionGreedy = null;
 		Iterator actions = mName2Action.entrySet().iterator();
@@ -1486,11 +1499,32 @@ public abstract class MDP {
 
 		double rew = context.getValueForStateInContext((Integer)this.rewardDD, state, null, null);
 		double maxTotal = rew + this.bdDiscount.doubleValue() * max;
-        //update the ADD VUpper
-		updateValueBranch(state, 'u', maxTotal);
 
-		maxUpperUpdated = maxTotal; //Error, maxUpper must not be updated, we need to use other variable
-		return actionGreedy;
+		return new Pair(actionGreedy, maxTotal);
+	}
+	
+	private int getBestActionForState(Integer V, State state){
+		double max = Double.NEGATIVE_INFINITY;
+		Iterator actions = mName2Action.entrySet().iterator();
+		int posAction = 0;
+		int bestAction = -1;
+		
+		while (actions.hasNext()) {
+			Map.Entry meaction = (Map.Entry) actions.next();
+			Action action = (Action) meaction.getValue();
+
+			context.workingWithParameterized = context.workingWithParameterizedBef; 
+			double Qt = this.computeQ(VUpper, state.getValues(), action, action.tmID2ADD);
+
+			max = Math.max(max, Qt);
+			
+			if (Math.abs(max - Qt) <= 1e-10d)
+				bestAction = posAction;
+
+			posAction++;
+		}
+		
+		return bestAction;
 	}
 	
 	private void updateValueBranch(TreeMap<Integer, Boolean> state, char c, double value) {
@@ -1665,6 +1699,38 @@ public abstract class MDP {
 		return perf;
 	}
 		
+	private boolean checkConvergencyForGreedyGraphFactored(Integer V, State state) {
+		Stack<State> statesToVisit = new Stack<State>();
+		ArrayList<State> visitedStates = new ArrayList<State>();
+		
+		statesToVisit.add(state);
+		
+		while (!statesToVisit.empty()) {
+			state = statesToVisit.pop();
+			visitedStates.add(state);
+			
+			TreeMap<Integer, Boolean> remappedVars = remapWithPrimes(state.getValues());
+			double currentValue = context.getValueForStateInContext(V, remappedVars, null, null);;
+			
+			Pair result = this.computeVUpper(state.getValues());
+			double nextValue = (Double) result.get_o2();
+			Action bestAction = (Action) result.get_o1();
+			
+			double residual = Math.abs(currentValue - nextValue);
+			
+			if (residual > epsilon) return false;
+
+			List<State> nextStates = this.getSuccessorsFromAction(state, bestAction);
+			
+			for (State nextState : nextStates) {
+				if (visitedStates.contains(nextState)) break;
+				statesToVisit.add(nextState);
+			}
+		}
+		
+		return true;
+	}
+	
 	 /* 
 	   * Perform one Trial of the LRTDP in the given Factored MDP-IP.
 	   * If maxDepth > 0, then the stop condition (depth < maxDepth) is also
@@ -3565,6 +3631,9 @@ public abstract class MDP {
 			
 			TreeMap<Integer,Boolean> state = sampleInitialStateFromList(randomGenInitial); 
 
+			if (this.checkConvergencyForGreedyGraphFactored((Integer) VUpper, new State(state))) 
+				break;
+			
 			//do trial //////////////////////////////////
 			while (!inGoalSet(state) && (state !=null) && depth < maxDepth) {
 				if (totalTrialTimeSec > timeOut) break;
@@ -3795,10 +3864,11 @@ public abstract class MDP {
 	            totalTrialTimeSec = totalTrialTime / 1000;	            
 			}
 			
-			//do optimization
-			while (!visited.empty()) {
-				state = visited.pop();
-				checkSolved((HashMap) VUpper, solvedStates, state);
+			if (depth < maxDepth && totalTrialTimeSec < timeOut) {
+				while (!visited.empty()) {
+					state = visited.pop();
+					checkSolved((HashMap) VUpper, solvedStates, state);
+				}
 			}
 			
 			totalTrialTime = GetElapsedTime();
