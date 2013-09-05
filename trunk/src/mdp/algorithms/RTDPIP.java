@@ -40,6 +40,9 @@ public class RTDPIP {
 		String initVUpperPath   = null;
 		if (args.length > 7) initVUpperPath = args[7];
 		
+		Boolean checkConvergency = false;
+		if (args.length > 8) checkConvergency = Boolean.parseBoolean(args[8]);
+		
 		//Tipo do contexto do problema. Pode ter 3 valores possíveis:
 		//1:ADD 2:AditADD 3: Tables
 		int typeContext			= 1; //ADDs, significando que sempre resolveremos problemas fatorados
@@ -58,7 +61,7 @@ public class RTDPIP {
 		
 		long startTime = System.currentTimeMillis();
 		
-		myMDP.solveRTDPIPFac(maxTrialDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, finalVUpperPath, initialStateLogPath, initVUpperPath);
+		myMDP.solveRTDPIPFac(maxTrialDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, finalVUpperPath, initialStateLogPath, initVUpperPath, checkConvergency);
 		   
 		long timeSeg = (System.currentTimeMillis() - startTime) / 1000;
 		

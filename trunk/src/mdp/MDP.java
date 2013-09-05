@@ -3587,7 +3587,7 @@ public abstract class MDP {
 	 * Real-time dynamic programming for Factored MDP-IPs
 	 */
 	public void solveRTDPIPFac(int maxDepth, long timeOut, int stateSamplingType, Random randomGenInitial, Random randomGenNextState, 
-			String finalVUpperPath, String initialStateLogPath, String initVUpperPath) {
+			String finalVUpperPath, String initialStateLogPath, String initVUpperPath, Boolean checkConvergency) {
 				
 		typeSampledRTDPMDPIP = stateSamplingType;
 		
@@ -3631,8 +3631,8 @@ public abstract class MDP {
 			
 			TreeMap<Integer,Boolean> state = sampleInitialStateFromList(randomGenInitial); 
 
-			if (this.checkConvergencyForGreedyGraphFactored((Integer) VUpper, new State(state))) 
-				break;
+			if (checkConvergency && this.checkConvergencyForGreedyGraphFactored((Integer) VUpper, new State(state))) 
+				break; //end the trials
 			
 			//do trial //////////////////////////////////
 			while (!inGoalSet(state) && (state !=null) && depth < maxDepth) {
