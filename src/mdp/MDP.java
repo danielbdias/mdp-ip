@@ -1786,8 +1786,8 @@ public abstract class MDP {
             totalTrialTimeSec = totalTrialTime / 1000;
             
             if (initialStateLogPath != null) {
-	            //long elapsedTime = (System.currentTimeMillis() - initialTime);
-            	long elapsedTime = (System.currentTimeMillis() - initialTime) - context.linearSolverElapsedTime;
+	            long elapsedTime = (System.currentTimeMillis() - initialTime);
+            	//long elapsedTime = (System.currentTimeMillis() - initialTime) - context.linearSolverElapsedTime;
             	
 	            TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
 		    	
