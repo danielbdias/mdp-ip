@@ -2762,6 +2762,8 @@ public abstract class MDP {
 			if (Math.abs(max - Qt) <= 1e-10d){
 				actionGreedy = action;
 				posActionGreedy = posAction;
+				
+				probNature = new Hashtable(context.currentValuesProb);
 			}
 			
 			posAction++;
@@ -2825,7 +2827,7 @@ public abstract class MDP {
 		Double value, sum = 0d;
 		
 		if (context.workingWithParameterized && typeSampledRTDPMDPIP == 4)
-			context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
+			probNature = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
 		
 		double ran = randomGenerator.nextDouble();
 		
@@ -2842,7 +2844,7 @@ public abstract class MDP {
 			if (!context.workingWithParameterized)
 				value = succState.getNextStatesProbs().get(nextState);
 			else
-				value = succState.getNextStatesPoly().get(nextState).evalWithListValues(context.currentValuesProb, context);
+				value = succState.getNextStatesPoly().get(nextState).evalWithListValues(probNature, context);
 			
 			sum += value;
 			
