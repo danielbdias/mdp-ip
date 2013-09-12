@@ -26,15 +26,21 @@ public class State {
 		this.values = values;
 	}
 
-	public State(TreeMap<Integer, Boolean> values, int numActions,
-			BigInteger identifier) {
+	public State(TreeMap<Integer, Boolean> values, int numActions, BigInteger identifier) {
 		this.identifier = identifier;
 		this.values = values;
 		actionSuccProbab = new SuccProbabilitiesM[numActions];
 	}
 
+	public State(TreeMap<Integer, Boolean> values, int numActions)
+	{
+		this(values);
+		actionSuccProbab = new SuccProbabilitiesM[numActions];
+	}
+	
 	public State(TreeMap<Integer, Boolean> values) { // Para LRTDP-IP
 		BigInteger identifier = new BigInteger("0"); // take into account the position (prime) variable
+		
 		int i = 0;
 		
 		for (Integer key : values.keySet()) {
@@ -45,7 +51,7 @@ public class State {
 			
 			i++;
 		}
-
+		
 		this.identifier = identifier;
 		this.values = values;
 	}
