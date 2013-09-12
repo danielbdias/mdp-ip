@@ -1,12 +1,9 @@
 package mdp.algorithms;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Random;
+import java.io.*;
+import java.util.*;
 
-import mdp.MDP_Flat;
+import mdp.*;
 
 public class RTDPIPEnum {
 
@@ -36,7 +33,7 @@ public class RTDPIPEnum {
 		
 		//Tipo do contexto do problema. Pode ter 3 valores possíveis:
 		//1:ADD 2:AditADD 3: Tables
-		int typeContext			= 3; //Tables, significando que sempre resolveremos problemas enumerativos
+		int typeContext			= 1;
 		
 		//Tipo da aproximação utilizada. Pode ter 2 valores: 
 		//0:normal 1:with lattice
@@ -48,7 +45,7 @@ public class RTDPIPEnum {
 		Random randomGenInitial = new Random(19580434);
 		Random randomGenNextState = new Random(19580807);
 		
-		MDP_Flat myMDP = new MDP_Flat(problemFilename, typeContext, typeAproxPol, typeSolution);
+		MDP_Fac myMDP = new MDP_Fac(problemFilename, typeContext, typeAproxPol, typeSolution);
 		
 		long startTime = System.currentTimeMillis();
 		

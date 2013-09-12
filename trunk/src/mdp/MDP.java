@@ -1907,7 +1907,7 @@ public abstract class MDP {
 			
 			TreeMap<Integer, Boolean> remappedVars = new TreeMap<Integer, Boolean>(remapWithOutPrimes(varsAsHashMap));
 			
-			list.set(i, new State(remappedVars));
+			list.set(i, new State(remappedVars, mName2Action.size()));
 		}
 		
 		return list;
@@ -2769,7 +2769,7 @@ public abstract class MDP {
 			posAction++;
 		}
 
-		double rew = context.getRewardForStateInContextEnum((Integer)this.rewardDD, state,this.numVars);
+		double rew = context.getValueForStateInContext((Integer)this.rewardDD, state.getValues(), null, null);
 		double maxTotal = rew + this.bdDiscount.doubleValue() * max;
 		
 		return new Pair(actionGreedy, maxTotal);
@@ -2858,8 +2858,9 @@ public abstract class MDP {
 		SuccProbabilitiesM succ = state.getActionSuccProbab()[posAction];
 
 		//if it has not been calculed before, compute it 
-        if (succ == null) {       	
-        	succ = computeSuccesorsProbEnum(state, iD2ADD);
+        if (succ == null) {
+        	//succ = computeSuccesorsProbEnum(state, iD2ADD);
+        	succ = computeSuccessorsProb(state, iD2ADD);
         	
         	if (succ.getNextStatesProbs().size() == 0 && succ.getNextStatesPoly().size() == 0){
         		System.out.println("Not Successors for state: " + state);
@@ -2998,6 +2999,35 @@ public abstract class MDP {
 		}
 		
 		return rv;
+	}
+	
+	private SuccProbabilitiesM computeSuccessorsProb(State state, TreeMap iD2ADD) {
+		int jointProbADD = this.computeSuccessors(state, iD2ADD);
+		
+		StateEnumerator enumerator = new StateEnumerator(new ArrayList<Integer>(this.hmPrimeRemap.values()));
+		context.enumeratePaths(jointProbADD, enumerator);
+		
+		List<State> successorStates = enumerator.getStates();
+		
+		SuccProbabilitiesM succ = new SuccProbabilitiesM();
+		
+		for (State successorState : successorStates) {
+			HashMap varsAsHashMap = new HashMap(successorState.getValues());
+			TreeMap<Integer, Boolean> remappedVars = new TreeMap<Integer, Boolean>(remapWithOutPrimes(varsAsHashMap));
+			
+			State nextState = new State(remappedVars, mName2Action.size());
+			
+			if (context.workingWithParameterized) {
+				Polynomial poly = (Polynomial) context.getValuePolyForStateInContext(jointProbADD, successorState.getValues(), null, null);
+				succ.getNextStatesPoly().put(nextState, poly);
+			}
+			else {
+				Double value = context.getValueForStateInContext(jointProbADD, successorState.getValues(), null, null);
+				succ.getNextStatesProbs().put(nextState, value);
+			}
+		}
+				
+		return succ;
 	}
 	
 	private SuccProbabilitiesM computeSuccesorsProbEnum(State state, TreeMap iD2ADD) {
@@ -3706,8 +3736,6 @@ public abstract class MDP {
 	public void solveRTDPIPEnum(int maxDepth, long timeOut, int stateSamplingType, 
 			Random randomGenInitial, Random randomGenNextState, String initialStateLogPath) {
 		
-		ContextTable currentContext = (ContextTable) context;
-		
 		typeSampledRTDPMDPIP = stateSamplingType;
 		
 		Stack<State> visited = new Stack<State>();
@@ -3717,11 +3745,11 @@ public abstract class MDP {
 		ResetTimer();
 		
 		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
-			currentContext.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
+			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
 	
 		//Initialize Vu with admissible value function //////////////////////////////////
 		//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
-		double Rmax = currentContext.apply(this.rewardDD, Context.MAXVALUE);
+		double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
 		
 		if (this.bdDiscount.doubleValue() == 1)
 			maxUpper = Rmax * maxDepth;
@@ -3732,7 +3760,7 @@ public abstract class MDP {
 		
 		contUpperUpdates = 0;
 
-		currentContext.workingWithParameterizedBef = currentContext.workingWithParameterized;
+		context.workingWithParameterizedBef = context.workingWithParameterized;
 		
 		long initialTime = System.currentTimeMillis();
 		
@@ -3740,13 +3768,13 @@ public abstract class MDP {
 			int depth = 0;
 			visited.clear();// clear visited states stack
 			
-			State state = sampleInitialStateFromListEnum(randomGenInitial); 
+			State state = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size()); 
 
 			if (this.checkConvergencyForGreedyGraph((HashMap) VUpper, state)) 
 				break;
 			
 			//do trial //////////////////////////////////
-			while (!inGoalSetEnum(state) && (state != null) && depth < maxDepth) {
+			while (!inGoalSet(state.getValues()) && (state != null) && depth < maxDepth) {
 				if (totalTrialTimeSec > timeOut) break;
 				
 				depth++;
@@ -3759,7 +3787,7 @@ public abstract class MDP {
 				
 				//System.out.println("action greedy: " + greedyAction.getName());
 				
-				currentContext.workingWithParameterized = currentContext.workingWithParameterizedBef;
+				context.workingWithParameterized = context.workingWithParameterizedBef;
 				state = chooseNextStateRTDPEnum(state, greedyAction, randomGenNextState, posActionGreedy);
 				
 				//System.out.println("next state: " + state);
@@ -3787,7 +3815,7 @@ public abstract class MDP {
 	            //medição para o estado inicial
 	            long elapsedTime = (System.currentTimeMillis() - initialTime);
 	            
-	            State initialState = listInitialStatesEnum.get(0);
+	            State initialState = new State(listInitialStates.get(0), mName2Action.size());
 		    			    	
 		    	Double value = ((HashMap<State,Double>) this.VUpper).get(initialState);
 		    	        	    	
@@ -3800,10 +3828,7 @@ public abstract class MDP {
 	 * Labeled Real-time dynamic programming for Enumerative MDP-IPs
 	 */
 	public void solveLRTDPIPEnum(int maxDepth, long timeOut, int stateSamplingType, 
-			Random randomGenInitial, Random randomGenNextState, String initialStateLogPath) {
-		
-		ContextTable currentContext = (ContextTable) context;
-		
+			Random randomGenInitial, Random randomGenNextState, String initialStateLogPath) {		
 		typeSampledRTDPMDPIP = stateSamplingType;
 		
 		Stack<State> visited = new Stack<State>();
@@ -3814,11 +3839,11 @@ public abstract class MDP {
 		ResetTimer();
 		
 		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
-			currentContext.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
+			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
 	
 		//Initialize Vu with admissible value function //////////////////////////////////
 		//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
-		double Rmax = currentContext.apply(this.rewardDD, Context.MAXVALUE);
+		double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
 		
 		if (this.bdDiscount.doubleValue() == 1)
 			maxUpper = Rmax * maxDepth;
@@ -3829,7 +3854,7 @@ public abstract class MDP {
 		
 		contUpperUpdates = 0;
 
-		currentContext.workingWithParameterizedBef = currentContext.workingWithParameterized;
+		context.workingWithParameterizedBef = context.workingWithParameterized;
 		
 		long initialTime = System.currentTimeMillis();
 		
@@ -3837,7 +3862,7 @@ public abstract class MDP {
 			int depth = 0;
 			visited.clear();// clear visited states stack
 			
-			State state = sampleInitialStateFromListEnum(randomGenInitial); 
+			State state = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size()); 
 
 			//do trial //////////////////////////////////
 			while ((state != null) && depth < maxDepth && !solvedStates.contains(state)) {
@@ -3845,7 +3870,7 @@ public abstract class MDP {
 
 				visited.push(state);
 				
-				if (inGoalSetEnum(state)) break;
+				if (inGoalSet(state.getValues())) break;
 				
 				depth++;
 				
@@ -3856,7 +3881,7 @@ public abstract class MDP {
 				
 				//System.out.println("action greedy: " + greedyAction.getName());
 				
-				currentContext.workingWithParameterized = currentContext.workingWithParameterizedBef;
+				context.workingWithParameterized = context.workingWithParameterizedBef;
 				state = chooseNextStateRTDPEnum(state, greedyAction, randomGenNextState, posActionGreedy);
 				
 				//System.out.println("next state: " + state);
@@ -3880,7 +3905,7 @@ public abstract class MDP {
 	            //medição para o estado inicial
 	            long elapsedTime = (System.currentTimeMillis() - initialTime);
 	            
-	            State initialState = listInitialStatesEnum.get(0);
+	            State initialState = new State(listInitialStates.get(0), mName2Action.size());
 		    			    	
 		    	Double value = ((HashMap<State,Double>) this.VUpper).get(initialState);
 		    	        	    	
