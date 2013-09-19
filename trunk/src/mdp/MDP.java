@@ -2044,7 +2044,7 @@ public abstract class MDP {
             if (typeSampledRTDPMDPIP == 2 && probFalse == 0.0) //OPTION 2 
             	probFalse = epsilon;
 		}
-        else if (typeSampledRTDPMDPIP == 3 || typeSampledRTDPMDPIP == 4){// OPTION 3 
+        else if (typeSampledRTDPMDPIP == 3 || typeSampledRTDPMDPIP == 4 || typeSampledRTDPMDPIP == 5){// OPTION 3 
         	probFalse = probFalsePol.evalWithListValues(context.probSample, context);
         }
 		
@@ -2826,8 +2826,12 @@ public abstract class MDP {
 		
 		Double value, sum = 0d;
 		
-		if (context.workingWithParameterized && typeSampledRTDPMDPIP == 4)
-			probNature = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
+		if (context.workingWithParameterized) {
+			if (typeSampledRTDPMDPIP == 4)
+				probNature = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
+			else if (typeSampledRTDPMDPIP == 5)
+				probNature = context.probSample;
+		}
 		
 		double ran = randomGenerator.nextDouble();
 		
@@ -3631,6 +3635,8 @@ public abstract class MDP {
 		
 		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
 			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
+		else if (typeSampledRTDPMDPIP == 5)
+			context.probSample = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
 
 		if (initVUpperPath == null) {
 			//Initialize Vu with admissible value function //////////////////////////////////
@@ -3746,6 +3752,8 @@ public abstract class MDP {
 		
 		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
 			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
+		else if (typeSampledRTDPMDPIP == 5)
+			context.probSample = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
 	
 		//Initialize Vu with admissible value function //////////////////////////////////
 		//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
@@ -3840,6 +3848,8 @@ public abstract class MDP {
 		
 		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
 			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
+		else if (typeSampledRTDPMDPIP == 5)
+			context.probSample = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
 	
 		//Initialize Vu with admissible value function //////////////////////////////////
 		//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
@@ -3929,6 +3939,8 @@ public abstract class MDP {
 		
 		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
 			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
+		else if (typeSampledRTDPMDPIP == 5)
+			context.probSample = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
 
 		if (initVUpperPath == null) {
 			//Initialize Vu with admissible value function //////////////////////////////////
