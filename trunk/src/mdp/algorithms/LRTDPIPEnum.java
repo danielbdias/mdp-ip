@@ -49,7 +49,7 @@ public class LRTDPIPEnum {
 		
 		long startTime = System.currentTimeMillis();
 		
-		myMDP.solveRTDPIPEnum(maxTrialDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, initialStateLogPath);
+		myMDP.solveLRTDPIPEnum(maxTrialDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, initialStateLogPath);
 		
 		long timeSeg = (System.currentTimeMillis() - startTime) / 1000;
 		 

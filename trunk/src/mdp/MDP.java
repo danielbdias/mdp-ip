@@ -2965,7 +2965,12 @@ public abstract class MDP {
 			
 			Pair pair = this.computeVUpper(state);
 			double nextValue = (Double) pair.get_o2();
-			double previousValue = (Double) V.get(state);
+			double previousValue = Double.NaN;
+			
+			if (V.containsKey(state))
+				previousValue = (Double) V.get(state);
+			else
+				previousValue = maxUpper;
 			
 			if (Math.abs(nextValue - previousValue) > epsilon)
 			{
@@ -2992,7 +2997,10 @@ public abstract class MDP {
 		
 		if (rv) {
 			for (State nextState : closed) 
+			{
 				solvedStates.add(nextState);
+				System.out.println("SOLVED: " + nextState);
+			}
 		}
 		else {
 			while (!closed.empty()) {
@@ -3865,7 +3873,7 @@ public abstract class MDP {
 		contUpperUpdates = 0;
 
 		context.workingWithParameterizedBef = context.workingWithParameterized;
-		
+				
 		long initialTime = System.currentTimeMillis();
 		
 		while (totalTrialTimeSec <= timeOut){	
@@ -3874,6 +3882,8 @@ public abstract class MDP {
 			
 			State state = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size()); 
 
+			if (solvedStates.contains(state)) break; //all states converged
+			
 			//do trial //////////////////////////////////
 			while ((state != null) && depth < maxDepth && !solvedStates.contains(state)) {
 				if (totalTrialTimeSec > timeOut) break;

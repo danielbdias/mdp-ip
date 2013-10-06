@@ -22,10 +22,10 @@ public class CallPrincipal {
 			int numberOfVariables = numberOfLines * numberOfColumns;
 			
 			String[] anotherArgs = {
-					"//home//daniel//workspaces//java//mestrado//mdp-ip//problemsMDPIP//navigation_" + numberOfVariables  + ".net",
+					"//home//daniel//workspaces//java//mestrado//mdp-ip//problemsMDPIP//ssp_navigation_" + numberOfVariables  + ".net",
 					Integer.toString(numberOfLines),
 					Integer.toString(numberOfColumns),
-					"0.9",
+					"1.0",
 					"0.01"
 				};
 			
@@ -38,9 +38,9 @@ public class CallPrincipal {
 			int numberOfVariables = (((3 + i) * (2 + i)) / 2) + 2;
 			
 			String[] anotherArgs = {
-					"//home//daniel//workspaces//java//mestrado//mdp-ip//problemsMDPIP//triangle_tireworld_" + numberOfVariables  + ".net",
+					"//home//daniel//workspaces//java//mestrado//mdp-ip//problemsMDPIP//ssp_triangle_tireworld_" + numberOfVariables  + ".net",
 					Integer.toString(i),
-					"0.9",
+					"1.0",
 					"0.01"
 				};
 			
