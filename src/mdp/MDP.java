@@ -1768,7 +1768,7 @@ public abstract class MDP {
 				  if (debugTrial){ System.out.println("Exiting  because time > " + timeOut); }
 			        break;
 			  }
-						
+			
 			depth++;
 			visited.push(state);
 			
@@ -3368,6 +3368,71 @@ public abstract class MDP {
 		return b;
 	}
 
+	private long lrtdpEnumTrial(State state, HashSet<State> solvedStates, int maxDepth, Random randomGenNextState, long timeOut, long initialTime, String initialStateLogPath)
+	{
+		Stack<State> visited = new Stack<State>();
+		
+		int depth = 0;
+		long totalTrialTime = 0;
+		long totalTrialTimeSec = 0;
+		
+		while (true) {
+			if (depth > maxDepth) break; //ended because reached max depth
+			if (totalTrialTimeSec > timeOut) break; //ended by timeout
+			if (solvedStates.contains(state)) break; //ended because reached a solved state
+			
+			visited.push(state);
+			
+			if (inGoalSet(state.getValues())) break;
+			
+			depth++;
+			
+			//this compute maxUpperUpdated and actionGreedy
+			Action greedyAction = updateVUpper(state); // Here we fill probNature
+			
+			contUpperUpdates++;
+			
+			//System.out.println("action greedy: " + greedyAction.getName());
+			
+			context.workingWithParameterized = context.workingWithParameterizedBef;
+			state = chooseNextStateRTDPEnum(state, greedyAction, randomGenNextState, posActionGreedy);
+			
+			//System.out.println("next state: " + state);
+			flushCachesRTDP(false);       
+			
+			totalTrialTime = GetElapsedTime();
+            totalTrialTimeSec = totalTrialTime / 1000;
+            
+            if (initialStateLogPath != null) {
+	            //medição para o estado inicial
+	            long elapsedTime = (System.currentTimeMillis() - initialTime);
+	            
+	            State initialState = new State(listInitialStates.get(0), mName2Action.size());
+		    			    	
+		    	Double value = ((HashMap<State,Double>) this.VUpper).get(initialState);
+		    	        	    	
+		    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
+            }
+		}
+		
+		if (depth >= maxDepth || totalTrialTimeSec > timeOut ) {
+			System.out.println("Not trying to label states as solved because " + "depth >= " + maxDepth + " or totalTime > " + timeOut); 
+			totalTrialTime = GetElapsedTime();
+	        totalTrialTimeSec = totalTrialTime / 1000;		
+			return totalTrialTimeSec;
+		}
+		
+		while (!visited.empty()) {
+			state = visited.pop();
+			if (!checkSolved((HashMap) VUpper, solvedStates, state))
+				break;
+		}
+		
+		totalTrialTime = GetElapsedTime();
+        totalTrialTimeSec = totalTrialTime / 1000;		
+		return totalTrialTimeSec;
+	}
+	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	// MDP-IP algorithms main methods
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3847,7 +3912,6 @@ public abstract class MDP {
 			Random randomGenInitial, Random randomGenNextState, String initialStateLogPath) {		
 		typeSampledRTDPMDPIP = stateSamplingType;
 		
-		Stack<State> visited = new Stack<State>();
 		HashSet<State> solvedStates = new HashSet<State>(); 
 		
 		long totalTrialTime=0;
@@ -3876,61 +3940,11 @@ public abstract class MDP {
 				
 		long initialTime = System.currentTimeMillis();
 		
-		while (totalTrialTimeSec <= timeOut){	
-			int depth = 0;
-			visited.clear();// clear visited states stack
-			
-			State state = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size()); 
-
-			if (solvedStates.contains(state)) break; //all states converged
-			
+		State state = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
+		
+		while (solvedStates.contains(state) && totalTrialTimeSec <= timeOut){
 			//do trial //////////////////////////////////
-			while ((state != null) && depth < maxDepth && !solvedStates.contains(state)) {
-				if (totalTrialTimeSec > timeOut) break;
-
-				visited.push(state);
-				
-				if (inGoalSet(state.getValues())) break;
-				
-				depth++;
-				
-				//this compute maxUpperUpdated and actionGreedy
-				Action greedyAction = updateVUpper(state); // Here we fill probNature
-				
-				contUpperUpdates++;
-				
-				//System.out.println("action greedy: " + greedyAction.getName());
-				
-				context.workingWithParameterized = context.workingWithParameterizedBef;
-				state = chooseNextStateRTDPEnum(state, greedyAction, randomGenNextState, posActionGreedy);
-				
-				//System.out.println("next state: " + state);
-				flushCachesRTDP(false);
-				
-				totalTrialTime = GetElapsedTime();
-	            totalTrialTimeSec = totalTrialTime / 1000;	            
-			}
-			
-			if (depth < maxDepth && totalTrialTimeSec < timeOut) {
-				while (!visited.empty()) {
-					state = visited.pop();
-					checkSolved((HashMap) VUpper, solvedStates, state);
-				}
-			}
-			
-			totalTrialTime = GetElapsedTime();
-            totalTrialTimeSec = totalTrialTime / 1000;
-            
-            if (initialStateLogPath != null) {
-	            //medição para o estado inicial
-	            long elapsedTime = (System.currentTimeMillis() - initialTime);
-	            
-	            State initialState = new State(listInitialStates.get(0), mName2Action.size());
-		    			    	
-		    	Double value = ((HashMap<State,Double>) this.VUpper).get(initialState);
-		    	        	    	
-		    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
-            }
+			totalTrialTimeSec = this.lrtdpEnumTrial(state, solvedStates, maxDepth, randomGenNextState, timeOut, initialTime, initialStateLogPath);
 		}
 	}
 
@@ -3991,9 +4005,7 @@ public abstract class MDP {
    	    	System.out.println("Chamadas ao solver: " + context.numCallNonLinearSolver);
    	    	System.out.println("Número de Backups: " + contUpperUpdates);
 		}
-			
-		ArrayList<Object[]> result = new ArrayList<Object[]>();
-		
+					
 		context.workingWithParameterized = false;
 		
 		Object remappedVUpper = context.remapIdWithOutPrime(this.VUpper, hmPrime2IdRemap);
