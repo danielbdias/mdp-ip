@@ -3942,7 +3942,7 @@ public abstract class MDP {
 		
 		State state = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
 		
-		while (solvedStates.contains(state) && totalTrialTimeSec <= timeOut){
+		while (totalTrialTimeSec <= timeOut && !solvedStates.contains(state)){
 			//do trial //////////////////////////////////
 			totalTrialTimeSec = this.lrtdpEnumTrial(state, solvedStates, maxDepth, randomGenNextState, timeOut, initialTime, initialStateLogPath);
 		}
