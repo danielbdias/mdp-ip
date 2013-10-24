@@ -107,7 +107,7 @@ public abstract class MDP {
 	public Object valueWHDD;
    
 	///////////////////////////////
-	private HashMap<HashMap, Hashtable> stationarySimulatorProbabilities = null;
+	protected HashMap<HashMap, Hashtable> stationarySimulatorProbabilities = null;
 	
 	public void buildMDP_Fac(ArrayList input,int typeContext,String typeSolution) {
 
@@ -706,7 +706,7 @@ public abstract class MDP {
         return res;
 	}
 
-	private HashMap getStateRepresentationAsHashMap(TreeMap<Integer, Boolean> state) {
+	protected HashMap getStateRepresentationAsHashMap(TreeMap<Integer, Boolean> state) {
 		HashMap stateRepresentation = new HashMap();
 		
 		for (Integer key : state.keySet()) {
@@ -717,7 +717,7 @@ public abstract class MDP {
 		return stateRepresentation;
 	}
 	
-	private double simulateSingleMDPIP(int maxHorizons, int policeValueADD, Random randomGenInitial, Random randomGenNextState, TreeMap action2QDD, int simulationType) {
+	protected double simulateSingleMDPIP(int maxHorizons, int policeValueADD, Random randomGenInitial, Random randomGenNextState, TreeMap action2QDD, int simulationType) {
 		
 		if (this.stationarySimulatorProbabilities != null)
 			this.stationarySimulatorProbabilities.clear();
@@ -756,7 +756,7 @@ public abstract class MDP {
 		return rewardState;
 	}
 	
-	private TreeMap<Integer, Integer> chooseNextStateForMDPIPSimulation(HashMap stateAsHashMap, int policyValueADD, Action aBest, Random randomGenerator, int simulationType) {
+	protected TreeMap<Integer, Integer> chooseNextStateForMDPIPSimulation(HashMap stateAsHashMap, int policyValueADD, Action aBest, Random randomGenerator, int simulationType) {
 		TreeMap<Integer, Boolean> state = new TreeMap<Integer, Boolean>();
 		
 		for (Object variable : stateAsHashMap.keySet()) {
@@ -1097,7 +1097,7 @@ public abstract class MDP {
          return g;       
 	}
 	
-	private Action findBestA(HashMap state, TreeMap action2QDD) {
+	protected Action findBestA(HashMap state, TreeMap action2QDD) {
 		double bestQ = Double.NEGATIVE_INFINITY;
 	    Action bestAction = null;
 	    Action qAction = null;
@@ -1137,7 +1137,7 @@ public abstract class MDP {
 		return bestAction;
 	}
 	
-	private double getReward(HashMap state) {
+	protected double getReward(HashMap state) {
 		//context.view(rewardDD);
 		return context.getValueForStateInADD((Integer)rewardDD,state,null,null,null);
 	}
@@ -1173,7 +1173,7 @@ public abstract class MDP {
 		return initial;
 	}
 		
-	private TreeMap calculateQHash(Object valueRes,Boolean workWithMDPIP) {
+	protected TreeMap calculateQHash(Object valueRes,Boolean workWithMDPIP) {
 		TreeMap action2QDD = new TreeMap(new ActionComparator());
 		//iterate over each action
 
@@ -2802,7 +2802,7 @@ public abstract class MDP {
     	return state;
     }
                 
-	private TreeMap<Integer, Boolean> sampleInitialStateFromList(Random randomGenerator) {
+	protected TreeMap<Integer, Boolean> sampleInitialStateFromList(Random randomGenerator) {
 		int ranIndex=randomGenerator.nextInt(listInitialStates.size());
 		return listInitialStates.get(ranIndex);
 	}
@@ -2963,14 +2963,16 @@ public abstract class MDP {
 			state = open.pop();
 			closed.push(state);
 			
-			Pair pair = this.computeVUpper(state);
-			double nextValue = (Double) pair.get_o2();
 			double previousValue = Double.NaN;
 			
 			if (V.containsKey(state))
 				previousValue = (Double) V.get(state);
 			else
 				previousValue = maxUpper;
+			
+			this.updateVUpper(state);
+			
+			double nextValue = (Double) V.get(state);
 			
 			if (Math.abs(nextValue - previousValue) > epsilon)
 			{
