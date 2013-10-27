@@ -1,15 +1,19 @@
 package add;
 import graph.Graph;
+
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -58,7 +62,7 @@ public abstract class Context {
     protected Integer unllocatedIdLabelProd;
     protected Hashtable reduceCacheMinPar=new Hashtable();
     protected Hashtable reduceCacheMaxPar=new Hashtable();
-    public final static String  NAME_FILE_AMPL = Config.getConfig().getAmplTempFile();
+    public static String  NAME_FILE_AMPL = Config.getConfig().getAmplTempFile();
     public final static String  NAME_FILE_AMPL_BOUNDS = Config.getConfig().getAmplBoundTempFile();
     
     HashMap probBound=new HashMap();  // String prob -> array[lower,upper]
@@ -75,7 +79,7 @@ public abstract class Context {
     public final static String  SOLVER="option solver minos;";
 	
 	 // For printing
-    public static DecimalFormat _df = new DecimalFormat("#.######");
+    public static DecimalFormat _df = new DecimalFormat("#.######", new DecimalFormatSymbols(Locale.ENGLISH));
     
     ///For evaluator
     protected Hashtable printCache;
@@ -368,26 +372,46 @@ public abstract class Context {
 		}
 		
 	    protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS, String optimizationType) {
-	 		
+	    	BufferedWriter out = null;
+	    	BufferedReader input = null;
+	    	
 	     	try {
+	     		String extension = NAME_FILE_AMPL.substring(NAME_FILE_AMPL.lastIndexOf('.'));	
+	     		String fileWithoutExtension = NAME_FILE_AMPL.replace(extension, "");
 	     		
-	             BufferedWriter out = new BufferedWriter(new FileWriter(NAME_FILE_AMPL));
-	             writeVarObjective(objective, out, optimizationType);
-	             BufferedReader input= new BufferedReader(new FileReader(NAME_FILE_CONTRAINTS));
-	             String line = null;
-	             while (( line = input.readLine()) != null){
-	                 out.append(line);
-	                 out.append(System.getProperty("line.separator"));
-	             }
+	     		if (fileWithoutExtension.contains("_"))
+	     			fileWithoutExtension = fileWithoutExtension.replace(fileWithoutExtension.substring(fileWithoutExtension.lastIndexOf('_')), "");
+	     		
+	     		NAME_FILE_AMPL = fileWithoutExtension + "_" + System.currentTimeMillis() + extension;
+	     		
+				out = new BufferedWriter(new FileWriter(NAME_FILE_AMPL));
+				writeVarObjective(objective, out, optimizationType);
+				input = new BufferedReader(new FileReader(NAME_FILE_CONTRAINTS));
+				String line = null;
+	            while (( line = input.readLine()) != null){
+	            	out.append(line);
+	                out.append(System.getProperty("line.separator"));
+	            }
 	             
-	             //print the probabilities founded by the solver
-	             writeProbFounded(out);
-	             input.close();
-	             out.close();
-	         } catch (IOException e) {
-	         	System.out.println("Problem with the creation AMPL file");
+	            //print the probabilities founded by the solver
+	            writeProbFounded(out);
+	            input.close();
+	            out.close();
+	     	} catch (IOException e) {
+	     		System.out.println("Problem with the creation AMPL file.");
+	         	System.err.println("Error: " + e);
+	         	e.printStackTrace(System.err);
 	         	System.exit(0);
-	         }
+	        }
+	     	finally 
+	     	{
+				try {
+					if (input != null) input.close();
+					if (out != null) out.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+	     	}
 
 	 	}
 	    
@@ -499,8 +523,15 @@ public abstract class Context {
 					}
 				}
 
+	    		new File(NAME_FILE_AMPL).delete();
+	    		
 				if (pros.exitValue() != 0)
+				{
+					for (String line : lines)
+						System.err.println(line);
+					
 					return null;
+				}
 				else
 					return obj;
 				
