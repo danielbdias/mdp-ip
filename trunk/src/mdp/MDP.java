@@ -3917,7 +3917,15 @@ public abstract class MDP {
 	 * Labeled Real-time dynamic programming for Enumerative MDP-IPs
 	 */
 	public void solveLRTDPIPEnum(int maxDepth, long timeOut, int stateSamplingType, 
-			Random randomGenInitial, Random randomGenNextState, String initialStateLogPath) {		
+			Random randomGenInitial, Random randomGenNextState, String initialStateLogPath) {
+		this.solveLRTDPIPEnum(maxDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, initialStateLogPath, new HashMap<State,Double>());
+	}
+	
+	/**
+	 * Labeled Real-time dynamic programming for Enumerative MDP-IPs
+	 */
+	public void solveLRTDPIPEnum(int maxDepth, long timeOut, int stateSamplingType, 
+			Random randomGenInitial, Random randomGenNextState, String initialStateLogPath, HashMap<State,Double> vUpper) {		
 		typeSampledRTDPMDPIP = stateSamplingType;
 		
 		HashSet<State> solvedStates = new HashSet<State>(); 
@@ -3940,7 +3948,7 @@ public abstract class MDP {
 		else
 			maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
 		
-		VUpper = new HashMap<State,Double>();
+		VUpper = new HashMap<State,Double>(vUpper);
 		
 		contUpperUpdates = 0;
 
