@@ -84,7 +84,8 @@ public abstract class MDP {
 	public int contbreak; 
 	public int contUpperUpdates;
 	  
-	private double maxUpper,minLower;
+	protected double maxUpper;
+	private double minLower;
 	private double maxUpperUpdated,maxLowerUpdated;
 	public static long timeTrials;  
 	double gapInitial;
@@ -1586,7 +1587,7 @@ public abstract class MDP {
 		return ((TerminalNodeKeyADD) context.getInverseNodesCache().get(VPrime)).getValue();
 	}
 	
-	private boolean inGoalSet(TreeMap<Integer, Boolean> state) {
+	protected boolean inGoalSet(TreeMap<Integer, Boolean> state) {
 		return listGoalStates.contains(state); 
 	}
 
@@ -2769,13 +2770,18 @@ public abstract class MDP {
 			posAction++;
 		}
 
-		double rew = context.getValueForStateInContext((Integer)this.rewardDD, state.getValues(), null, null);
+		double rew = this.getRewardEnum(state);
 		double maxTotal = rew + this.bdDiscount.doubleValue() * max;
 		
 		return new Pair(actionGreedy, maxTotal);
 	}
 	
-	private Action updateVUpper(State state) {
+	protected double getRewardEnum(State state)
+	{
+		return context.getValueForStateInContext((Integer)this.rewardDD, state.getValues(), null, null);
+	}
+	
+	protected Action updateVUpper(State state) {
 		
 		Pair result = this.computeVUpper(state);
 		
@@ -2819,7 +2825,7 @@ public abstract class MDP {
 		return false;
 	}
 
-	private State chooseNextStateRTDPEnum(State state, Action actionGreedy, Random randomGenerator, int posActionGreedy) {
+	protected State chooseNextStateRTDPEnum(State state, Action actionGreedy, Random randomGenerator, int posActionGreedy) {
 		SuccProbabilitiesM succState = state.getActionSuccProbab()[posActionGreedy];
 					
 		State nextState = null;
@@ -2858,7 +2864,7 @@ public abstract class MDP {
 		return nextState;
     }
 
-	private double computeQEnum(HashMap V, State state, Action action, TreeMap iD2ADD, char c, int posAction) {
+	protected double computeQEnum(HashMap V, State state, Action action, TreeMap iD2ADD, char c, int posAction) {
 		SuccProbabilitiesM succ = state.getActionSuccProbab()[posAction];
 
 		//if it has not been calculed before, compute it 
@@ -2880,7 +2886,7 @@ public abstract class MDP {
         	return mulSumSuccessorsPoly(succ, V, c);
 	}
 	
-	private int getBestActionForState(HashMap V, State state) {
+	protected int getBestActionForState(HashMap V, State state) {
 		
 		double max = Double.NEGATIVE_INFINITY;
 		Action actionGreedy = null;
@@ -2951,7 +2957,7 @@ public abstract class MDP {
 		return true;
 	}
 	
-	private boolean checkSolved(HashMap V, HashSet<State> solvedStates, State state) {
+	protected boolean checkSolved(HashMap V, HashSet<State> solvedStates, State state) {
 		boolean rv = true;
 		
 		Stack<State> open = new Stack<State>();
@@ -3015,7 +3021,7 @@ public abstract class MDP {
 		return rv;
 	}
 	
-	private SuccProbabilitiesM computeSuccessorsProb(State state, TreeMap iD2ADD) {
+	protected SuccProbabilitiesM computeSuccessorsProb(State state, TreeMap iD2ADD) {
 		int jointProbADD = this.computeSuccessors(state, iD2ADD);
 		
 		StateEnumerator enumerator = new StateEnumerator(new ArrayList<Integer>(this.hmPrimeRemap.values()));

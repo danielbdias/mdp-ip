@@ -1,12 +1,7 @@
 package mdp;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Random;
-import java.util.TreeMap;
+import java.math.*;
+import java.util.*;
 
 import prob.mdp.HierarchicalParser;
 
@@ -29,120 +24,182 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		
 		this.bdDiscount = new BigDecimal(1.0);
 	}
-	
-	public ArrayList<Double> runRTDPIP_AsOfflinePlanner(int maxDepth, long timeOut, int stateSamplingType, 
-			Random randomGenInitial, Random randomGenNextState, String initialStateLogPath)
+
+	public HashMap<State,Double> executeSSiPP(int t, Random randomGenInitial, Random randomGenNextState, 
+			int maxDepth, long timeOut, int stateSamplingType)
 	{
-		int simulations = 50;
-		int simulationType = 4; //Stationary
+		maxUpper = 0;
 		
-		this.solveRTDPIPEnum(maxDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, initialStateLogPath);
+		HashMap<State,Double> vLower = new HashMap<State,Double>();
 		
-		return this.simulateMDPIP_Enumerative(simulations, maxDepth, (HashMap) this.VUpper, simulationType);
-	}
-	
-	public void runRTDPIP_AsOnlinePlanner()
-	{
-	
-	}
-	
-	public ArrayList<Double> simulateMDPIP_Enumerative(int numberOfSimulations, int maxHorizons, HashMap valueFunction, int simulationType) {
-
-		Integer valueRes = convertValueFunctionInAdd(valueFunction);
+		State state = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
 		
-		context.workingWithParameterizedBef = context.workingWithParameterized;
-		context.workingWithParameterized = false;
-
-	    ArrayList<Double> listReward = new ArrayList<Double>();
-	    
-	    Random randomGenInitial = new Random(19580427);
-		Random randomGenNextState = new Random(19580800);
-		
-	    // This policy should be based on the MDPIP regression
-	    // where you do a min_{ p_1 ... P_n } Q(s,a,p_1,...,p_n)
-	    TreeMap action2QDD = this.calculateQHash(valueRes, true); //here we call the solver
-
-	    context.workingWithParameterized = true;
-	    
-    	double sumReward = 0;
-    	
-    	for (int simulation = 1; simulation <= numberOfSimulations; simulation++){
-    		System.out.printf("Executing simulation %d...", simulation);
-    		System.out.println();
-    		
-    		double rewardState = simulateSingleMDPIP(maxHorizons, valueRes, randomGenInitial, randomGenNextState, action2QDD, simulationType);
-
-    		listReward.add(rewardState);
-    		sumReward += rewardState;
-    		
-    		System.out.println("Simulation executed.");
-    	}
-    	
-    	flushCachesSimulator(action2QDD, false, null, null, null);
-    	
-    	double mean = sumReward / numberOfSimulations;
-        double sigma = calculateStandarD(mean, listReward);
-        double standardError = sigma / Math.sqrt(numberOfSimulations);
-        
-        ArrayList<Double> res = new ArrayList<Double>();
-        res.add(mean);
-        res.add(standardError);
-
-        return res;
-	}
-	
-	private Integer convertValueFunctionInAdd(HashMap valueFunction) {
-		Integer add = (Integer) context.getTerminalNode(0.0);
-		
-		for (Object key : valueFunction.keySet()) {
-			State state = (State) key;
+		while (!inGoalSet(state.getValues()))
+		{
+			HashSet<State> goalStates = shortSightedSSPIP(state, t);
 			
-			Iterator iteratorState = state.getValues().keySet().iterator();			
+			HashMap<State,Double> optimalVLower = this.planWithLRTDPEnum(goalStates, maxDepth, timeOut, 
+																		 stateSamplingType, randomGenInitial, randomGenNextState);
 			
-			Double value = (Double) valueFunction.get(state);
+			for (State s : optimalVLower.keySet()) 
+				vLower.put(s, optimalVLower.get(s));
 			
-			context.insertValueInDD(add, state.getValues(), value, iteratorState, this.hmPrimeRemap);
+			while (!goalStates.contains(state))
+				state = executeAction(vLower, state, randomGenNextState);
 		}
 		
-		return add;
+		return vLower;
 	}
 
-	protected double simulateSingleSSPIP(int maxHorizons, int policeValueADD, Random randomGenInitial, Random randomGenNextState, TreeMap action2QDD, int simulationType) {
+	private State executeAction(HashMap<State, Double> vLower, State state, Random randomGenNextState) {
+		double max = Double.NEGATIVE_INFINITY;
+		Action actionGreedy = null;
 		
-		if (this.stationarySimulatorProbabilities != null)
-			this.stationarySimulatorProbabilities.clear();
-		else
-			this.stationarySimulatorProbabilities = new HashMap<HashMap, Hashtable>();
+		Iterator actions = mName2Action.entrySet().iterator();
 		
-		if (simulationType == 4) { //Stationary
-			context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
-			probNature = new Hashtable<String, Double>(context.currentValuesProb);
-		}
+		int posAction = 0;
+		int bestActionIndex = -1;
 		
-		HashMap state = getStateRepresentationAsHashMap(sampleInitialStateFromList(randomGenInitial));
+		while (actions.hasNext()){
+			Map.Entry meaction=(Map.Entry) actions.next();
+			Action action=(Action) meaction.getValue();
+
+			double Qt = this.computeQEnum(vLower, state, action, action.tmID2ADD, 'u', posAction);
 		
-		double rewardState = getReward(state);
-		                
-		for (int t = 1; t <= maxHorizons; t++) {
-			Action aBest = findBestA(state, action2QDD); //this is the work of the agent
-			
-			if (aBest == null){
-				System.out.println("Some problem finding best action");
-				System.exit(0);
+			max = Math.max(max,Qt);
+		
+			if (Math.abs(max - Qt) <= 1e-10d){
+				actionGreedy = action;
+				bestActionIndex = posAction;
 			}
 			
-			//this is the work of the simulator true for using tmID2ADDNewSample
-			TreeMap<Integer, Integer> nextState = chooseNextStateForMDPIPSimulation(state, policeValueADD, aBest, randomGenNextState, simulationType);
-			
-			System.out.println("Horizon " + t + ": " + aBest.getName());
-			System.out.println("Previous state:" + new TreeMap<Integer, Integer>(state));
-			System.out.println("Next state:" + nextState);
-			
-			state = new HashMap(nextState);
-			    			
-			rewardState += Math.pow(this.bdDiscount.doubleValue(),t) * getReward(state);       			
+			posAction++;
 		}
 		
-		return rewardState;
+		return chooseNextStateRTDPEnum(state, actionGreedy, randomGenNextState, bestActionIndex);
+	}
+
+	private HashSet<State> shortSightedSSPIP(State s, int t) {
+		
+		HashSet<State> previousEpochStates = new HashSet<State>();
+		previousEpochStates.add(s);
+		
+		HashSet<State> currentEpochStates = null;
+		
+		for (int epoch = 1; epoch <= t; epoch++) {
+			currentEpochStates = new HashSet<State>();
+			
+			for (Object actionName : mName2Action.keySet()) {
+				Action action = (Action) mName2Action.get(actionName);
+				
+				for (State state : previousEpochStates) {
+					SuccProbabilitiesM succ = computeSuccessorsProb(state, action.tmID2ADD);
+					
+					for (State nextState : succ.getNextStatesPoly().keySet())
+						currentEpochStates.add(nextState);
+				}
+			}
+			
+			previousEpochStates = currentEpochStates;
+		}
+		
+		if (currentEpochStates.contains(s))
+			currentEpochStates.remove(s);
+		
+		return currentEpochStates;
+	}
+
+	private HashMap<State,Double> planWithLRTDPEnum(HashSet<State> goalStates, int maxDepth, long timeOut, int stateSamplingType, 
+			Random randomGenInitial, Random randomGenNextState)
+	{
+		//change goals to the ShortSighted Goals
+		ArrayList<TreeMap> realGoals = listGoalStates;
+		
+		listGoalStates = new ArrayList<TreeMap>();
+		
+		for (State state : goalStates)
+			listGoalStates.add(state.getValues());
+		
+		this.solveLRTDPIPEnum(maxDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, null);
+		
+		//Restore the original goals
+		listGoalStates = realGoals;
+		
+		return (HashMap<State,Double>) VUpper;
+	}
+
+	protected boolean checkSolved(HashMap V, HashSet<State> solvedStates, State state) {
+		boolean rv = true;
+		
+		Stack<State> open = new Stack<State>();
+		Stack<State> closed = new Stack<State>();
+		
+		if (!solvedStates.contains(state)) open.push(state);
+		
+		while (!open.empty()) {
+			state = open.pop();
+			closed.push(state);
+			
+			double previousValue = Double.NaN;
+			
+			if (V.containsKey(state))
+				previousValue = (Double) V.get(state);
+			else
+				previousValue = maxUpper;
+			
+			this.updateVUpper(state);
+			
+			double nextValue = (Double) V.get(state);
+			
+			if (Math.abs(nextValue - previousValue) > epsilon)
+			{
+				rv = false;
+				continue;
+			}
+			
+			if (listGoalStates.contains(state.getValues()))
+				continue;
+			
+			int greedyActionIndex = this.getBestActionForState(V, state);
+			
+			SuccProbabilitiesM nextProbs = state.getActionSuccProbab()[greedyActionIndex];
+			
+			Set<State> nextStates = null;
+			
+			if (context.workingWithParameterized)
+				nextStates = nextProbs.getNextStatesPoly().keySet();
+			else
+				nextStates = nextProbs.getNextStatesProbs().keySet();
+			
+			for (State nextState : nextStates) {
+				if (!solvedStates.contains(nextState) && !open.contains(nextState) && !closed.contains(nextState))
+					open.push(nextState);
+			}
+		}
+		
+		if (rv) {
+			for (State nextState : closed) 
+			{
+				solvedStates.add(nextState);
+				System.out.println("SOLVED: " + nextState);
+			}
+		}
+		else {
+			while (!closed.empty()) {
+				state = closed.pop();
+				this.updateVUpper(state);
+				contUpperUpdates++;
+			}
+		}
+		
+		return rv;
+	}
+
+	@Override
+	protected double getRewardEnum(State state) {
+		if (inGoalSet(state.getValues()))
+			return maxUpper;
+
+		return super.getRewardEnum(state);
 	}
 }
