@@ -9,7 +9,7 @@ import java.util.Random;
 
 import mdp.ShortSightedSSPIP;
 
-public class SimulatedRTDPIPEnum {
+public class SimulatedLRTDPIPEnum {
 
 	public static void main(String[] args) {
 		//Nome do arquivo com a descrição do domínio e do problema a ser resolvido
@@ -32,9 +32,6 @@ public class SimulatedRTDPIPEnum {
 		//4: sorteio random, sorteando aleatoriamente as os parâmetros de probabilidades do conjunto credal 
 		int stateSamplingType   = Integer.parseInt(args[4]);
 		
-		String initialStateLogPath   = null;
-		if (args.length > 5) initialStateLogPath = args[5];
-		
 		//Tipo do contexto do problema. Pode ter 3 valores possíveis:
 		//1:ADD 2:AditADD 3: Tables
 		int typeContext			= 1;
@@ -53,15 +50,16 @@ public class SimulatedRTDPIPEnum {
 		
 		long startTime = System.currentTimeMillis();
 		
-		ArrayList<Double> result = myMDP.runRTDPIP_AsOfflinePlanner(maxTrialDepth, timeOut, stateSamplingType, 
-																    randomGenInitial, randomGenNextState, initialStateLogPath);
+		int t = 1;
 		
+		myMDP.executeSSiPP(t, randomGenInitial, randomGenNextState, maxTrialDepth, timeOut, stateSamplingType);
+				
 		long timeSeg = (System.currentTimeMillis() - startTime) / 1000;
 		 
 		int numVariables = myMDP.hmPrime2IdRemap.keySet().size();
 		
 		printReport(problemFilename, typeContext, timeSeg, outputFilename, 
-					result.get(0), result.get(1), typeSolution, numVariables);
+					0.0, 0.0, typeSolution, numVariables);
 	}
 	
 	private static void printReport(String filename, int typeContext, long timeSeg, 
