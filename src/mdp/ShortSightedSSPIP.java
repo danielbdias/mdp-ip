@@ -25,6 +25,10 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		this.bdDiscount = new BigDecimal(1.0);
 	}
 
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+	// Short Sighted SSP-IP
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+	
 	public HashMap<State,Double> executeSSiPP(int t, Random randomGenInitial, Random randomGenNextState, 
 			int maxDepth, long timeOut, int stateSamplingType)
 	{
@@ -38,8 +42,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		{
 			HashSet<State> goalStates = shortSightedSSPIP(state, t);
 			
-			HashMap<State,Double> optimalVLower = this.planWithLRTDPEnum(goalStates, maxDepth, timeOut, 
-																		 stateSamplingType, randomGenInitial, randomGenNextState);
+			HashMap<State,Double> optimalVLower = this.planWithLRTDPEnum(state, goalStates, maxDepth, timeOut, stateSamplingType, 
+																		 randomGenInitial, randomGenNextState, vLower);
 			
 			for (State s : optimalVLower.keySet()) 
 				vLower.put(s, optimalVLower.get(s));
@@ -109,20 +113,27 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		return currentEpochStates;
 	}
 
-	private HashMap<State,Double> planWithLRTDPEnum(HashSet<State> goalStates, int maxDepth, long timeOut, int stateSamplingType, 
-			Random randomGenInitial, Random randomGenNextState)
+	private HashMap<State,Double> planWithLRTDPEnum(State initialState, HashSet<State> goalStates, int maxDepth, long timeOut, 
+			int stateSamplingType, Random randomGenInitial, Random randomGenNextState, HashMap<State,Double> vLower)
 	{
+		//change initial states to the ShortSighted Goals
+		ArrayList<TreeMap> realInitialStates = listInitialStates;
+		
+		listInitialStates = new ArrayList<TreeMap>();
+		listInitialStates.add(initialState.getValues());
+		
 		//change goals to the ShortSighted Goals
 		ArrayList<TreeMap> realGoals = listGoalStates;
-		
+				
 		listGoalStates = new ArrayList<TreeMap>();
 		
 		for (State state : goalStates)
-			listGoalStates.add(state.getValues());
+			listGoalStates.add(state.getValues());		
 		
-		this.solveLRTDPIPEnum(maxDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, null);
+		this.solveLRTDPIPEnum(maxDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, null, vLower);
 		
-		//Restore the original goals
+		//Restore the original goals and initial states
+		listInitialStates = realInitialStates;
 		listGoalStates = realGoals;
 		
 		return (HashMap<State,Double>) VUpper;
@@ -201,5 +212,37 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			return maxUpper;
 
 		return super.getRewardEnum(state);
+	}
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+	// LRTDP-IP with simulation
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	public HashMap<State,Double> executeLRTDPIWithSimulation(int t, Random randomGenInitial, Random randomGenNextState, 
+			int maxDepth, long timeOut, int stateSamplingType)
+	{
+		maxUpper = 0;
+		
+		HashMap<State,Double> vLower = new HashMap<State,Double>();
+		
+		HashSet<State> goalStates = new HashSet<State>();
+		
+		for (TreeMap state : listGoalStates)
+			goalStates.add(new State(state));
+		
+		State state = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
+		
+		while (!inGoalSet(state.getValues()))
+		{		
+			HashMap<State,Double> optimalVLower = this.planWithLRTDPEnum(state, goalStates, maxDepth, timeOut, stateSamplingType, 
+																		 randomGenInitial, randomGenNextState, vLower);
+			
+			for (State s : optimalVLower.keySet()) 
+				vLower.put(s, optimalVLower.get(s));
+			
+			state = executeAction(vLower, state, randomGenNextState);
+		}
+		
+		return vLower;
 	}
 }
