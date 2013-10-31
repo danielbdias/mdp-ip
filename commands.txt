@@ -1,6 +1,18 @@
-RTDP-IP Enum
-/home/daniel/workspaces/java/mestrado/mdp-ip/problemsMDPIP/navigation_6.net /home/daniel/workspaces/java/mestrado/mdp-ip/reportsMDPIP/results/rtdp_enum/report_navigation_rtdp_enum.txt 1000 3600 4 /home/daniel/workspaces/java/mestrado/mdp-ip/reportsMDPIP/results/rtdp_enum/initial_values/initial_navigation_6_iv.txt
+==============================================================================================================================
+On Windows
+==============================================================================================================================
+
+RTDP-IP
+[workspace_root]\mdp-ip\problemsMDPIP\navigation_6.net [workspace_root]\mdp-ip\reportsMDPIP\results\rtdp_enum\report_navigation_rtdp_enum.txt 1000 3600 4 [workspace_root]\mdp-ip\reportsMDPIP\results\rtdp_enum\initial_values\initial_navigation_6_iv.txt
 -Xms200m -Xmx2560m
 
-factLRTDP-IP rand
-/home/daniel/workspaces/java/mestrado/mdp-ip/problemsMDPIP/triangle_tireworld_8.net /home/daniel/workspaces/java/mestrado/mdp-ip/reportsMDPIP/results/lrtdp/rnd/triangle_tireworld_test_convergence.txt 100 600 4 /home/daniel/workspaces/java/mestrado/mdp-ip/reportsMDPIP/results/lrtdp/rnd/valuetriangle_tireworld_8_lrtdp_convergence.net /home/daniel/workspaces/java/mestrado/mdp-ip/reportsMDPIP/results/lrtdp/rnd/initial_valuetriangle_tireworld_8_lrtdp_convergence.txt
+factLRTDP-IP (rand)
+[workspace_root]\mdp-ip\problemsMDPIP\triangle_tireworld_8.net [workspace_root]\mdp-ip\reportsMDPIP\results\lrtdp\rnd\triangle_tireworld_test_convergence.txt 100 600 4 [workspace_root]\mdp-ip\reportsMDPIP\results\lrtdp\rnd\valuetriangle_tireworld_8_lrtdp_convergence.net [workspace_root]\mdp-ip\reportsMDPIP\results\lrtdp\rnd\initial_valuetriangle_tireworld_8_lrtdp_convergence.txt
+
+LRTDP-IP (rand) with Simulation
+[workspace_root]\mdp-ip\problemsMDPIP\triangle_tireworld_8.net [workspace_root]\mdp-ip\reportsMDPIP\results\lrtdp_enum\rnd\triangle_tireworld_sim_ssp_ip.txt 100 600 4
+-Xms200m -Xmx2560m
+
+Short Sighted SSP-IP using LRTDP-IP (rand) with Simulation
+[workspace_root]\mdp-ip\problemsMDPIP\triangle_tireworld_8.net [workspace_root]\mdp-ip\reportsMDPIP\results\lrtdp_enum\rnd\triangle_tireworld_sim_shortsighted_ssp_ip.txt 100 600 4 1 [workspace_root]\mdp-ip\reportsMDPIP\results\lrtdp_enum\initial_values\initial_triangle_tireworld_8_lrtdp_enum.txt
+-Xms200m -Xmx2560m
