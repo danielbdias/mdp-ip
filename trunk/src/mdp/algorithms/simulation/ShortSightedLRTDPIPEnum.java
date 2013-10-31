@@ -9,7 +9,7 @@ import java.util.Random;
 
 import mdp.ShortSightedSSPIP;
 
-public class SimulatedLRTDPIPEnum {
+public class ShortSightedLRTDPIPEnum {
 
 	public static void main(String[] args) {
 		//Nome do arquivo com a descrição do domínio e do problema a ser resolvido
@@ -32,6 +32,9 @@ public class SimulatedLRTDPIPEnum {
 		//4: sorteio random, sorteando aleatoriamente as os parâmetros de probabilidades do conjunto credal 
 		int stateSamplingType   = Integer.parseInt(args[4]);
 		
+		//Profundidade escolhida para o ShortSighted
+		int t 					= Integer.parseInt(args[5]);
+		
 		//Tipo do contexto do problema. Pode ter 3 valores possíveis:
 		//1:ADD 2:AditADD 3: Tables
 		int typeContext			= 1;
@@ -50,7 +53,7 @@ public class SimulatedLRTDPIPEnum {
 		
 		long startTime = System.currentTimeMillis();
 		
-		myMDP.executeLRTDPIWithSimulation(randomGenInitial, randomGenNextState, maxTrialDepth, timeOut, stateSamplingType);
+		myMDP.executeSSiPP(t, randomGenInitial, randomGenNextState, maxTrialDepth, timeOut, stateSamplingType);
 				
 		long timeSeg = (System.currentTimeMillis() - startTime) / 1000;
 		 

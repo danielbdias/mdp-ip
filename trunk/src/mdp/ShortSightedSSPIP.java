@@ -218,7 +218,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 	// LRTDP-IP with simulation
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	public HashMap<State,Double> executeLRTDPIWithSimulation(int t, Random randomGenInitial, Random randomGenNextState, 
+	public HashMap<State,Double> executeLRTDPIWithSimulation(Random randomGenInitial, Random randomGenNextState, 
 			int maxDepth, long timeOut, int stateSamplingType)
 	{
 		maxUpper = 0;
