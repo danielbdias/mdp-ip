@@ -4,6 +4,7 @@ import java.math.*;
 import java.util.*;
 
 import prob.mdp.HierarchicalParser;
+import util.Pair;
 
 public class ShortSightedSSPIP extends MDP_Fac {
 
@@ -29,30 +30,72 @@ public class ShortSightedSSPIP extends MDP_Fac {
 	// Short Sighted SSP-IP
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	public HashMap<State,Double> executeSSiPP(int t, Random randomGenInitial, Random randomGenNextState, 
-			int maxDepth, long timeOut, int stateSamplingType)
+	public void executeSSiPPuntilConvergence(int t, Random randomGenInitial, Random randomGenNextState, 
+			int maxDepth, long timeOut, int stateSamplingType, String initialStateValuePath)
 	{
+		//convert in milliseconds
+		timeOut = timeOut * 1000;
+		
 		maxUpper = 0;
 		
-		HashMap<State,Double> vLower = new HashMap<State,Double>();
+		//choose initial state
+		State initialState = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
 		
-		State state = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
+		HashMap<State,Double> valueFunction = new HashMap<State,Double>();
+		valueFunction.put(initialState, maxUpper);
+		
+		long initialTime = System.currentTimeMillis();
+		
+		//log do estado inicial
+		if (initialStateValuePath != null)
+			this.logValueInFile(initialStateValuePath, valueFunction.get(initialState), 0);
+		
+		while (true){
+			if ((System.currentTimeMillis() - initialTime) >= timeOut) break; //timeout
+			
+			Pair result = this.computeVUpper(initialState, valueFunction);
+			double nextValue = (double) result.get_o2();
+			double currentValue = valueFunction.get(initialState);
+			
+			if (Math.abs(currentValue - nextValue) < epsilon) break; //convergence of initial state
+			
+			valueFunction = this.executeSSiPP(t, initialState, valueFunction, randomGenInitial, randomGenNextState, maxDepth, timeOut, stateSamplingType);
+			
+			//medição para o estado inicial
+			if (initialStateValuePath != null) {
+	            long elapsedTime = (System.currentTimeMillis() - initialTime);
+		    	Double value = valueFunction.get(initialState);
+		    	this.logValueInFile(initialStateValuePath, value, elapsedTime);
+            }
+		}
+		
+		System.out.println("Done !");
+	}
+	
+	public HashMap<State,Double> executeSSiPP(int t, State initialState, HashMap<State,Double> valueFunction, Random randomGenInitial, 
+			Random randomGenNextState, int maxDepth, long timeOut, int stateSamplingType)
+	{
+		State state = initialState;
 		
 		while (!inGoalSet(state.getValues()))
 		{
+			System.out.println(String.format("Planning using [%s] as initial state...", state));
+			
 			HashSet<State> goalStates = shortSightedSSPIP(state, t);
 			
-			HashMap<State,Double> optimalVLower = this.planWithLRTDPEnum(state, goalStates, maxDepth, timeOut, stateSamplingType, 
-																		 randomGenInitial, randomGenNextState, vLower);
+			HashMap<State,Double> optimalValueFunction = this.planWithLRTDPEnum(state, goalStates, maxDepth, timeOut, stateSamplingType, 
+																		 randomGenInitial, randomGenNextState, valueFunction);
 			
-			for (State s : optimalVLower.keySet()) 
-				vLower.put(s, optimalVLower.get(s));
+			for (State s : optimalValueFunction.keySet()) 
+				valueFunction.put(s, optimalValueFunction.get(s));
 			
 			while (!goalStates.contains(state))
-				state = executeAction(vLower, state, randomGenNextState);
+				state = executeAction(valueFunction, state, randomGenNextState);
 		}
 		
-		return vLower;
+		System.out.println("SSiPP executed.");
+		
+		return valueFunction;
 	}
 
 	private State executeAction(HashMap<State, Double> vLower, State state, Random randomGenNextState) {
@@ -212,37 +255,5 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			return maxUpper;
 
 		return super.getRewardEnum(state);
-	}
-
-	///////////////////////////////////////////////////////////////////////////////////////////////////
-	// LRTDP-IP with simulation
-	///////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	public HashMap<State,Double> executeLRTDPIWithSimulation(Random randomGenInitial, Random randomGenNextState, 
-			int maxDepth, long timeOut, int stateSamplingType)
-	{
-		maxUpper = 0;
-		
-		HashMap<State,Double> vLower = new HashMap<State,Double>();
-		
-		HashSet<State> goalStates = new HashSet<State>();
-		
-		for (TreeMap state : listGoalStates)
-			goalStates.add(new State(state));
-		
-		State state = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
-		
-		while (!inGoalSet(state.getValues()))
-		{		
-			HashMap<State,Double> optimalVLower = this.planWithLRTDPEnum(state, goalStates, maxDepth, timeOut, stateSamplingType, 
-																		 randomGenInitial, randomGenNextState, vLower);
-			
-			for (State s : optimalVLower.keySet()) 
-				vLower.put(s, optimalVLower.get(s));
-			
-			state = executeAction(vLower, state, randomGenNextState);
-		}
-		
-		return vLower;
 	}
 }

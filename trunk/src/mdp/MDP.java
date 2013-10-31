@@ -370,7 +370,9 @@ public abstract class MDP {
             writeConstraints(constraints,out);
             out.close();
         } catch (IOException e) {
-        	System.out.println("Problem with the Constraint file");
+        	System.out.println("Problem with the Constraint file.");
+        	System.err.println("Error:" + e);
+        	e.printStackTrace(System.err);
         	System.exit(0);
         }
 	}
@@ -498,7 +500,7 @@ public abstract class MDP {
 		}
 	}
 
-	private void logValueInFile(String logFile, double value, long time) {
+	protected void logValueInFile(String logFile, double value, long time) {
 		try {		
 			java.io.FileWriter writer = new FileWriter(logFile, true);
 			
@@ -1472,7 +1474,7 @@ public abstract class MDP {
 		return (Action) result.get_o1();
 	}
 	
-	private Pair computeVUpper(TreeMap<Integer, Boolean> state) {
+	protected Pair computeVUpper(TreeMap<Integer, Boolean> state) {
 		double max = Double.NEGATIVE_INFINITY;
 		Action actionGreedy = null;
 		Iterator actions = mName2Action.entrySet().iterator();
@@ -2740,10 +2742,14 @@ public abstract class MDP {
 	return conf;
 }
 
+	protected Pair computeVUpper(State state) {
+		return this.computeVUpper(state, (HashMap)VUpper);
+	}
+	
 	/* updateVUpper and put the max in maxUpperUpdated 
 	 * return the actionGreedy
 	 */
-	private Pair computeVUpper(State state) {
+	protected Pair computeVUpper(State state, HashMap vUpper) {
 		double max = Double.NEGATIVE_INFINITY;
 		Action actionGreedy = null;
 		
@@ -2756,7 +2762,7 @@ public abstract class MDP {
 			Map.Entry meaction=(Map.Entry) actions.next();
 			Action action=(Action) meaction.getValue();
 
-			double Qt = this.computeQEnum((HashMap)VUpper, state, action, action.tmID2ADD, 'u', posAction);
+			double Qt = this.computeQEnum(vUpper, state, action, action.tmID2ADD, 'u', posAction);
 		
 			max = Math.max(max,Qt);
 		

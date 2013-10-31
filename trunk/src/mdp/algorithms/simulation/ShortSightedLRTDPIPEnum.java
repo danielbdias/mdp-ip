@@ -35,6 +35,10 @@ public class ShortSightedLRTDPIPEnum {
 		//Profundidade escolhida para o ShortSighted
 		int t 					= Integer.parseInt(args[5]);
 		
+		//Arquivo estado de valores do estado inicial
+		String initialStateLogPath   = null;
+		if (args.length > 6) initialStateLogPath = args[6];
+		
 		//Tipo do contexto do problema. Pode ter 3 valores possíveis:
 		//1:ADD 2:AditADD 3: Tables
 		int typeContext			= 1;
@@ -53,17 +57,23 @@ public class ShortSightedLRTDPIPEnum {
 		
 		long startTime = System.currentTimeMillis();
 		
-		myMDP.executeSSiPP(t, randomGenInitial, randomGenNextState, maxTrialDepth, timeOut, stateSamplingType);
+		myMDP.executeSSiPPuntilConvergence(t, randomGenInitial, randomGenNextState, maxTrialDepth, timeOut, stateSamplingType, initialStateLogPath);
 				
 		long timeSeg = (System.currentTimeMillis() - startTime) / 1000;
 		 
 		int numVariables = myMDP.hmPrime2IdRemap.keySet().size();
 		
-		printReport(problemFilename, typeContext, timeSeg, outputFilename, typeSolution, numVariables);
+		printReport(problemFilename, typeContext, timeSeg, outputFilename, 
+				   myMDP.context.numCallNonLinearSolver, myMDP.contUpperUpdates, 
+				   typeSolution, numVariables);
 	}
 	
 	private static void printReport(String filename, int typeContext, long timeSeg, 
-			String fileNameReport, String typeSolution, int numVariables) {
+			String fileNameReport, int numCallSolver, int numBackups, 
+			String typeSolution, int numVariables) {
+
+		String typeCon = "Table";
+		String typeAprox = "REGR";
 		
 		try {
 			File reportFile = new File(fileNameReport);
@@ -74,14 +84,22 @@ public class ShortSightedLRTDPIPEnum {
 			if (!reportExists) {
 				//imprime header do arquivo			
 				out.write("Problema\t");
+				out.write("Contexto\t");
+				out.write("Aproximação\t");
 				out.write("Tempo de execução\t");
+				out.write("Chamadas ao Solver\t");
+				out.write("Número de Backups\t");
 				out.write("Algoritmo\t");
 				out.write("Número de variáveis\t");
 				out.write(System.getProperty("line.separator"));
 			}
 			
 			out.write(filename + "\t");
+			out.write(typeCon + "\t");
+			out.write(typeAprox + "\t");
 			out.write(timeSeg + "\t");
+			out.write(numCallSolver + "\t");
+			out.write(numBackups + "\t");
 			out.write(typeSolution + "\t");
 			out.write(numVariables + "\t");
 			out.write(System.getProperty("line.separator"));
