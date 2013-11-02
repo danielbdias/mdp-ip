@@ -1,4 +1,4 @@
-package mdp.algorithms.simulation;
+package mdp.algorithms;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -57,7 +57,7 @@ public class ShortSightedLRTDPIPEnum {
 		
 		long startTime = System.currentTimeMillis();
 		
-		myMDP.executeSSiPPuntilConvergence(t, randomGenInitial, randomGenNextState, maxTrialDepth, timeOut, stateSamplingType, initialStateLogPath);
+		myMDP.executeSSiPPwithLRTDPuntilConvergence(t, randomGenInitial, randomGenNextState, maxTrialDepth, timeOut, stateSamplingType, initialStateLogPath);
 				
 		long timeSeg = (System.currentTimeMillis() - startTime) / 1000;
 		 

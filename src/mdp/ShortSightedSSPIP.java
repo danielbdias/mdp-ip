@@ -30,7 +30,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 	// Short Sighted SSP-IP
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	public void executeSSiPPuntilConvergence(int t, Random randomGenInitial, Random randomGenNextState, 
+	public void executeSSiPPwithLRTDPuntilConvergence(int t, Random randomGenInitial, Random randomGenNextState, 
 			int maxDepth, long timeOut, int stateSamplingType, String initialStateValuePath)
 	{
 		//convert in milliseconds
