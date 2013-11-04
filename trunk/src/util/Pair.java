@@ -36,6 +36,14 @@ public class Pair implements Comparable {
 	public Object get_o2() {
 		return _o2;
 	}
+	
+	public void set_o1(Object _o1) {
+		this._o1 = _o1;
+	}
+
+	public void set_o2(Object _o2) {
+		this._o2 = _o2;
+	}
 
 	public int hashCode() {
     	return _o1.hashCode() - _o2.hashCode();
