@@ -50,16 +50,13 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		if (initialStateValuePath != null)
 			this.logValueInFile(initialStateValuePath, valueFunction.get(initialState), 0);
 		
+		HashSet<State> solvedStates = new HashSet<State>();
+		
 		while (true){
-			if ((System.currentTimeMillis() - initialTime) >= timeOut) break; //timeout
+			if ((System.currentTimeMillis() - initialTime) >= timeOut) break; //timeout		
+			if (solvedStates.contains(initialState)) break; //convergence of initial state
 			
-			Pair result = this.computeVUpper(initialState, valueFunction);
-			double nextValue = (double) result.get_o2();
-			double currentValue = valueFunction.get(initialState);
-			
-			if (Math.abs(currentValue - nextValue) < epsilon) break; //convergence of initial state
-			
-			valueFunction = this.executeSSiPP(t, initialState, valueFunction, randomGenInitial, randomGenNextState, maxDepth, timeOut, stateSamplingType);
+			valueFunction = this.executeSSiPP(t, initialState, valueFunction, solvedStates, randomGenInitial, randomGenNextState, maxDepth, timeOut, stateSamplingType);
 			
 			//medição para o estado inicial
 			if (initialStateValuePath != null) {
@@ -72,16 +69,26 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		System.out.println("Done !");
 	}
 	
-	public HashMap<State,Double> executeSSiPP(int t, State initialState, HashMap<State,Double> valueFunction, Random randomGenInitial, 
-			Random randomGenNextState, int maxDepth, long timeOut, int stateSamplingType)
+	public HashMap<State,Double> executeSSiPP(int t, State initialState, HashMap<State,Double> valueFunction, HashSet<State> solvedStates, 
+			Random randomGenInitial, Random randomGenNextState, int maxDepth, long timeOut, int stateSamplingType)
 	{
-		State state = initialState;
+		Stack<State> visitedStates = new Stack<State>();
 		
-		while (!inGoalSet(state.getValues()))
+		State state = initialState;
+		visitedStates.add(state);
+		
+		while (true)
 		{
+			if (inGoalSet(state.getValues())) break; //goal reached
+			if (solvedStates.contains(state)) break; //state solved
+			
 			System.out.println(String.format("Planning using [%s] as initial state...", state));
 			
 			HashSet<State> goalStates = shortSightedSSPIP(state, t);
+			
+			if (goalStates.size() == 0) break; //deadend, end loop
+			
+			goalStates.addAll(solvedStates);
 			
 			HashMap<State,Double> optimalValueFunction = this.planWithLRTDPEnum(state, goalStates, maxDepth, timeOut, stateSamplingType, 
 																		 randomGenInitial, randomGenNextState, valueFunction);
@@ -89,8 +96,18 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			for (State s : optimalValueFunction.keySet()) 
 				valueFunction.put(s, optimalValueFunction.get(s));
 			
-			while (!goalStates.contains(state))
+			while (!goalStates.contains(state)) {
 				state = executeAction(valueFunction, state, randomGenNextState);
+				visitedStates.add(state);
+			}
+		}
+		
+		if (inGoalSet(state.getValues())) {
+			while (!visitedStates.empty()) {
+				state = visitedStates.pop();
+				if (!checkSolved(valueFunction, solvedStates, state))
+					break;
+			}
 		}
 		
 		System.out.println("SSiPP executed.");
@@ -128,32 +145,65 @@ public class ShortSightedSSPIP extends MDP_Fac {
 
 	private HashSet<State> shortSightedSSPIP(State s, int t) {
 		
-		HashSet<State> previousEpochStates = new HashSet<State>();
-		previousEpochStates.add(s);
+		HashSet<State> goalSet = new HashSet<State>();
 		
-		HashSet<State> currentEpochStates = null;
+		PriorityQueue<Pair> queue = new PriorityQueue<Pair>(10, new Comparator<Pair>() {
+			 public int compare(Pair firstPair, Pair secondPair) {
+				 Integer firstPriority = (Integer) firstPair.get_o1();
+				 Integer secondPriority = (Integer) secondPair.get_o1();
+				 
+				 return firstPriority.compareTo(secondPriority);
+	         }
+		});
 		
-		for (int epoch = 1; epoch <= t; epoch++) {
-			currentEpochStates = new HashSet<State>();
+		queue.add(new Pair(new Integer(0), s));
+		
+		while (!queue.isEmpty()) {
+			Pair pair = queue.poll();
 			
-			for (Object actionName : mName2Action.keySet()) {
-				Action action = (Action) mName2Action.get(actionName);
-				
-				for (State state : previousEpochStates) {
-					SuccProbabilitiesM succ = computeSuccessorsProb(state, action.tmID2ADD);
-					
-					for (State nextState : succ.getNextStatesPoly().keySet())
-						currentEpochStates.add(nextState);
+			State sPrime = (State) pair.get_o2();
+			int tCur = (Integer) pair.get_o1();  
+			
+			if (inGoalSet(sPrime.getValues()) || t == tCur)
+			{
+				goalSet.add(sPrime);
+				continue;
+			}
+			else
+			{
+				for (Object actionName : mName2Action.keySet()) {
+                    Action action = (Action) mName2Action.get(actionName);
+
+                    SuccProbabilitiesM succ = computeSuccessorsProb(sPrime, action.tmID2ADD);
+                    
+                    for (State nextState : succ.getNextStatesPoly().keySet()) {
+                    	if (nextState.equals(sPrime) || goalSet.contains(nextState))
+                    		continue;
+                    	else {
+                    		Pair nextStatePair = findStateInQueue(nextState, queue);
+                    		
+                    		if (nextStatePair != null && ((Integer) nextStatePair.get_o1()) > tCur + 1) 
+                    			nextStatePair.set_o1(new Integer(tCur + 1));
+                    		else
+                    			queue.add(new Pair(new Integer(tCur + 1), nextState));
+                    	}
+                    }
 				}
 			}
-			
-			previousEpochStates = currentEpochStates;
 		}
 		
-		if (currentEpochStates.contains(s))
-			currentEpochStates.remove(s);
+		return goalSet;
+	}
+	
+	private Pair findStateInQueue(State nextState, PriorityQueue<Pair> queue) {
+
+		for (Iterator iterator = queue.iterator(); iterator.hasNext();) {
+			Pair pair = (Pair) iterator.next();
+			State s = (State) pair.get_o2();		
+			if (s.equals(nextState)) return pair;
+		}
 		
-		return currentEpochStates;
+		return null;
 	}
 
 	private HashMap<State,Double> planWithLRTDPEnum(State initialState, HashSet<State> goalStates, int maxDepth, long timeOut, 
@@ -202,6 +252,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				previousValue = maxUpper;
 			
 			this.updateVUpper(state);
+			V = (HashMap) VUpper;
 			
 			double nextValue = (Double) V.get(state);
 			
