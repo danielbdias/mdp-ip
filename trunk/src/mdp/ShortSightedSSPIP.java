@@ -34,7 +34,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			int maxDepth, long timeOut, int stateSamplingType, String initialStateValuePath)
 	{
 		//convert in milliseconds
-		timeOut = timeOut * 1000;
+		long timeOutInMilliseconds = timeOut * 1000;
 		
 		maxUpper = 0;
 		
@@ -53,18 +53,23 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		HashSet<State> solvedStates = new HashSet<State>();
 		
 		while (true){
-			long elapsedTime = System.currentTimeMillis() - initialTime; 
+			long elapsedTime = (System.currentTimeMillis() - initialTime);
 			
-			if (elapsedTime >= timeOut) 
-				break; //timeout
+			if (elapsedTime >= timeOutInMilliseconds) {
+				System.out.println("Finished by timeout !");
+				break; //timeout		
+			}
 			
-			//if (solvedStates.contains(initialState)) break; //convergence of initial state
+			if (solvedStates.contains(initialState)) {
+				System.out.println("Finished by convergence !");
+				break; //convergence of initial state
+			}
 			
 			valueFunction = this.executeSSiPP(t, initialState, valueFunction, solvedStates, randomGenInitial, randomGenNextState, maxDepth, timeOut, stateSamplingType);
 			
 			//medição para o estado inicial
 			if (initialStateValuePath != null) {
-	            elapsedTime = System.currentTimeMillis() - initialTime;
+	            elapsedTime = (System.currentTimeMillis() - initialTime);
 		    	Double value = valueFunction.get(initialState);
 		    	this.logValueInFile(initialStateValuePath, value, elapsedTime);
             }
@@ -76,6 +81,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 	public HashMap<State,Double> executeSSiPP(int t, State initialState, HashMap<State,Double> valueFunction, HashSet<State> solvedStates, 
 			Random randomGenInitial, Random randomGenNextState, int maxDepth, long timeOut, int stateSamplingType)
 	{
+		System.out.println(String.format("Executing SSiPP with [%s] as initial state...", initialState));
+		
 		Stack<State> visitedStates = new Stack<State>();
 		
 		State state = initialState;
@@ -84,15 +91,13 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		while (true)
 		{
 			if (inGoalSet(state.getValues())) break; //goal reached
-			//if (solvedStates.contains(state)) break; //state solved
+			if (solvedStates.contains(state)) break; //state solved
 			
-			System.out.println(String.format("Planning using [%s] as initial state...", state));
+			System.out.println(String.format("Planning using SS-SSP with [%s] as initial state...", state));
 			
 			HashSet<State> goalStates = shortSightedSSPIP(state, t);
 			
 			if (goalStates.size() == 0) break; //deadend, end loop
-			
-			System.out.println(goalStates);
 			
 			goalStates.addAll(solvedStates);
 			
@@ -109,14 +114,14 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		}
 		
 		if (inGoalSet(state.getValues())) {
-//			while (!visitedStates.empty()) {
-//				state = visitedStates.pop();
-//				if (!checkSolved(valueFunction, solvedStates, state))
-//					break;
-//			}
+			while (!visitedStates.empty()) {
+				state = visitedStates.pop();
+				if (!checkSolved(valueFunction, solvedStates, state, true))
+					break;
+			}
 		}
 		
-		System.out.println("SSiPP executed.");
+		//System.out.println("SSiPP executed.");
 		
 		return valueFunction;
 	}
@@ -182,16 +187,16 @@ public class ShortSightedSSPIP extends MDP_Fac {
 
                     SuccProbabilitiesM succ = computeSuccessorsProb(sPrime, action.tmID2ADD);
                     
-                    for (State nextState : succ.getNextStatesPoly().keySet()) {
-                    	if (nextState.equals(sPrime) || goalSet.contains(nextState))
+                    for (State sHat : succ.getNextStatesPoly().keySet()) {
+                    	if (sHat.equals(s) || sHat.equals(sPrime) || goalSet.contains(sHat))
                     		continue;
                     	else {
-                    		Pair nextStatePair = findStateInQueue(nextState, queue);
+                    		Pair nextStatePair = findStateInQueue(sHat, queue);
                     		
                     		if (nextStatePair != null && ((Integer) nextStatePair.get_o1()) > tCur + 1) 
                     			nextStatePair.set_o1(new Integer(tCur + 1));
                     		else
-                    			queue.add(new Pair(new Integer(tCur + 1), nextState));
+                    			queue.add(new Pair(new Integer(tCur + 1), sHat));
                     	}
                     }
 				}
@@ -239,6 +244,10 @@ public class ShortSightedSSPIP extends MDP_Fac {
 	}
 
 	protected boolean checkSolved(HashMap V, HashSet<State> solvedStates, State state) {
+		return this.checkSolved(V, solvedStates, state, false);
+	}
+	
+	protected boolean checkSolved(HashMap V, HashSet<State> solvedStates, State state, boolean verbose) {
 		boolean rv = true;
 		
 		Stack<State> open = new Stack<State>();
@@ -292,7 +301,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			for (State nextState : closed) 
 			{
 				solvedStates.add(nextState);
-				//System.out.println("SOLVED: " + nextState);
+				if (verbose) System.out.println("SOLVED: " + nextState);
 			}
 		}
 		else {
@@ -308,8 +317,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 
 	@Override
 	protected double getRewardEnum(State state) {
-		if (inGoalSet(state.getValues()))
-			return maxUpper;
+//		if (inGoalSet(state.getValues()))
+//			return maxUpper;
 
 		return super.getRewardEnum(state);
 	}

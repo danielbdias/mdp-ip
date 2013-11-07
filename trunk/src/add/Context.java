@@ -522,8 +522,6 @@ public abstract class Context {
 						}
 					}
 				}
-
-	    		new File(NAME_FILE_AMPL).delete();
 	    		
 				if (pros.exitValue() != 0)
 				{
@@ -533,7 +531,10 @@ public abstract class Context {
 					return null;
 				}
 				else
+				{
+					new File(NAME_FILE_AMPL).delete();
 					return obj;
+				}
 				
 	    	 } catch (InterruptedException ie) {
 	    		 ie.printStackTrace(System.err);
@@ -724,38 +725,41 @@ public abstract class Context {
 	
 	public Hashtable<String, Double> sampleProbabilitiesSubjectTo(String NAME_FILE_CONTRAINTS) {
 		String objective = generateRandomObjective();
-  		  
-		long initialTime = System.currentTimeMillis();
+  		
+		Hashtable<String, Double> randomProbabilities = new Hashtable<String, Double>();
 		
-  		createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min");
-  		callLinearSolver();
-  		
-  		Hashtable<String, Double> firstPoint = currentValuesProb;
-  		
-  		createFileAMPL(objective, NAME_FILE_CONTRAINTS, "max");
-  		callLinearSolver();
-  		
-  		Hashtable<String, Double> secondPoint = currentValuesProb;
-  		
-  		Hashtable<String, Double> randomProbabilities = new Hashtable<String, Double>();
-  		
-  		double signedRandomNumber = Math.random();
-  		signedRandomNumber = (Math.random() > 0.5 ? signedRandomNumber : -signedRandomNumber);
-  		
-  		for (String key : firstPoint.keySet()) {
-			double mean = (firstPoint.get(key) + secondPoint.get(key)) / 2;
-			double halfDist = Math.abs(firstPoint.get(key) - secondPoint.get(key)) / 2;
+		if (objective != null && !objective.isEmpty()) {
 			
-			double pointDimensionValue = mean + halfDist * signedRandomNumber;
-			randomProbabilities.put(key, pointDimensionValue);
+			long initialTime = System.currentTimeMillis();
+			
+			createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min");
+			callLinearSolver();
+			
+			Hashtable<String, Double> firstPoint = currentValuesProb;
+			
+			createFileAMPL(objective, NAME_FILE_CONTRAINTS, "max");
+			
+			callLinearSolver();
+			
+			Hashtable<String, Double> secondPoint = currentValuesProb;
+			
+			double signedRandomNumber = Math.random();
+			signedRandomNumber = (Math.random() > 0.5 ? signedRandomNumber : -signedRandomNumber);
+			
+			for (String key : firstPoint.keySet()) {
+				double mean = (firstPoint.get(key) + secondPoint.get(key)) / 2;
+				double halfDist = Math.abs(firstPoint.get(key) - secondPoint.get(key)) / 2;
+
+				double pointDimensionValue = mean + halfDist * signedRandomNumber;
+				randomProbabilities.put(key, pointDimensionValue);
+			}
+			
+			this.probSample = randomProbabilities;
+			long elapsedTime = System.currentTimeMillis() - initialTime;
+			this.linearSolverElapsedTime += elapsedTime;
 		}
-  		
-  		this.probSample = randomProbabilities;
-  		
-  		long elapsedTime = System.currentTimeMillis() - initialTime;
-  		this.linearSolverElapsedTime += elapsedTime;
-  		
-  		return randomProbabilities;
+		
+		return randomProbabilities;
 	}
 	
 	public Hashtable<String, Double> getProbabilitiesSubjectTo(String NAME_FILE_CONTRAINTS, Polynomial poly) {
