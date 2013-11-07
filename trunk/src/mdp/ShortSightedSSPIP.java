@@ -53,14 +53,18 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		HashSet<State> solvedStates = new HashSet<State>();
 		
 		while (true){
-			if ((System.currentTimeMillis() - initialTime) >= timeOut) break; //timeout		
-			if (solvedStates.contains(initialState)) break; //convergence of initial state
+			long elapsedTime = System.currentTimeMillis() - initialTime; 
+			
+			if (elapsedTime >= timeOut) 
+				break; //timeout
+			
+			//if (solvedStates.contains(initialState)) break; //convergence of initial state
 			
 			valueFunction = this.executeSSiPP(t, initialState, valueFunction, solvedStates, randomGenInitial, randomGenNextState, maxDepth, timeOut, stateSamplingType);
 			
 			//medição para o estado inicial
 			if (initialStateValuePath != null) {
-	            long elapsedTime = (System.currentTimeMillis() - initialTime);
+	            elapsedTime = System.currentTimeMillis() - initialTime;
 		    	Double value = valueFunction.get(initialState);
 		    	this.logValueInFile(initialStateValuePath, value, elapsedTime);
             }
@@ -80,13 +84,15 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		while (true)
 		{
 			if (inGoalSet(state.getValues())) break; //goal reached
-			if (solvedStates.contains(state)) break; //state solved
+			//if (solvedStates.contains(state)) break; //state solved
 			
 			System.out.println(String.format("Planning using [%s] as initial state...", state));
 			
 			HashSet<State> goalStates = shortSightedSSPIP(state, t);
 			
 			if (goalStates.size() == 0) break; //deadend, end loop
+			
+			System.out.println(goalStates);
 			
 			goalStates.addAll(solvedStates);
 			
@@ -103,11 +109,11 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		}
 		
 		if (inGoalSet(state.getValues())) {
-			while (!visitedStates.empty()) {
-				state = visitedStates.pop();
-				if (!checkSolved(valueFunction, solvedStates, state))
-					break;
-			}
+//			while (!visitedStates.empty()) {
+//				state = visitedStates.pop();
+//				if (!checkSolved(valueFunction, solvedStates, state))
+//					break;
+//			}
 		}
 		
 		System.out.println("SSiPP executed.");
@@ -286,7 +292,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			for (State nextState : closed) 
 			{
 				solvedStates.add(nextState);
-				System.out.println("SOLVED: " + nextState);
+				//System.out.println("SOLVED: " + nextState);
 			}
 		}
 		else {
