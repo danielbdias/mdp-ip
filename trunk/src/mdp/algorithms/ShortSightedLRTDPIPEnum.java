@@ -5,9 +5,14 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Random;
 
 import mdp.ShortSightedSSPIP;
+import mdp.State;
+import mdp.algorithms.ssipp.SSiPP_LRTDPCaller;
+import mdp.algorithms.ssipp.SSiPP_PlannerCaller;
 
 public class ShortSightedLRTDPIPEnum {
 
@@ -55,9 +60,11 @@ public class ShortSightedLRTDPIPEnum {
 		
 		ShortSightedSSPIP myMDP = new ShortSightedSSPIP(problemFilename, typeContext, typeAproxPol, typeSolution);
 		
+		SSiPP_PlannerCaller planner = new SSiPP_LRTDPCaller(myMDP);
+		
 		long startTime = System.currentTimeMillis();
 		
-		myMDP.executeSSiPPwithLRTDPuntilConvergence(t, randomGenInitial, randomGenNextState, maxTrialDepth, timeOut, stateSamplingType, initialStateLogPath);
+		myMDP.executeLabeledSSiPPuntilConvergence(t, randomGenInitial, randomGenNextState, maxTrialDepth, timeOut, stateSamplingType, planner, initialStateLogPath);
 				
 		long timeSeg = (System.currentTimeMillis() - startTime) / 1000;
 		 
