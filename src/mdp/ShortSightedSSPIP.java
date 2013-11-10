@@ -3,6 +3,7 @@ package mdp;
 import java.math.*;
 import java.util.*;
 
+import mdp.algorithms.ssipp.SSiPP_PlannerCaller;
 import prob.mdp.HierarchicalParser;
 import util.Pair;
 
@@ -30,8 +31,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 	// Short Sighted SSP-IP
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	public void executeSSiPPwithLRTDPuntilConvergence(int t, Random randomGenInitial, Random randomGenNextState, 
-			int maxDepth, long timeOut, int stateSamplingType, String initialStateValuePath)
+	public void executeLabeledSSiPPuntilConvergence(int t, Random randomGenInitial, Random randomGenNextState, 
+			int maxDepth, long timeOut, int stateSamplingType, SSiPP_PlannerCaller planner, String initialStateValuePath)
 	{
 		//convert in milliseconds
 		long timeOutInMilliseconds = timeOut * 1000;
@@ -65,7 +66,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				break; //convergence of initial state
 			}
 			
-			valueFunction = this.executeSSiPP(t, initialState, valueFunction, solvedStates, randomGenInitial, randomGenNextState, maxDepth, timeOut, stateSamplingType);
+			valueFunction = this.executeLabeledSSiPP(t, initialState, valueFunction, planner, solvedStates, randomGenInitial, randomGenNextState, maxDepth, timeOut, stateSamplingType);
 			
 			//medição para o estado inicial
 			if (initialStateValuePath != null) {
@@ -78,8 +79,9 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		System.out.println("Done !");
 	}
 	
-	public HashMap<State,Double> executeSSiPP(int t, State initialState, HashMap<State,Double> valueFunction, HashSet<State> solvedStates, 
-			Random randomGenInitial, Random randomGenNextState, int maxDepth, long timeOut, int stateSamplingType)
+	public HashMap<State,Double> executeLabeledSSiPP(int t, State initialState, HashMap<State,Double> valueFunction, 
+			SSiPP_PlannerCaller planner, HashSet<State> solvedStates, Random randomGenInitial, 
+			Random randomGenNextState, int maxDepth, long timeOut, int stateSamplingType)
 	{
 		System.out.println(String.format("Executing SSiPP with [%s] as initial state...", initialState));
 		
@@ -101,7 +103,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			
 			goalStates.addAll(solvedStates);
 			
-			HashMap<State,Double> optimalValueFunction = this.planWithLRTDPEnum(state, goalStates, maxDepth, timeOut, stateSamplingType, 
+			HashMap<State,Double> optimalValueFunction = planner.executePlanner(state, goalStates, maxDepth, timeOut, stateSamplingType, 
 																		 randomGenInitial, randomGenNextState, valueFunction);
 			
 			for (State s : optimalValueFunction.keySet()) 
@@ -121,7 +123,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			}
 		}
 		
-		//System.out.println("SSiPP executed.");
+		System.out.println("SSiPP executed.");
 		
 		return valueFunction;
 	}
@@ -217,7 +219,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		return null;
 	}
 
-	private HashMap<State,Double> planWithLRTDPEnum(State initialState, HashSet<State> goalStates, int maxDepth, long timeOut, 
+	public HashMap<State,Double> planWithLRTDPEnum(State initialState, HashSet<State> goalStates, int maxDepth, long timeOut, 
 			int stateSamplingType, Random randomGenInitial, Random randomGenNextState, HashMap<State,Double> vLower)
 	{
 		//change initial states to the ShortSighted Goals
