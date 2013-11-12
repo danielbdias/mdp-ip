@@ -7,13 +7,12 @@ import java.math.*;
 import java.util.*;
 
 import util.Pair;
-
 import add.*;
 
 public abstract class MDP {
 	public boolean pruneAfterEachIt;//=true;
 	boolean forceNumberIt = false;//=true;
-	boolean printFinalADD = false;
+	boolean printFinalADD = true;
 	boolean dumpValue = true;
 	boolean printTrafficFormat = false;
 	boolean sampleInitialFromI = true;
@@ -3230,6 +3229,27 @@ public abstract class MDP {
 	
 	}
 	
+	protected void printEnumValueFunction(HashMap<State, Double> valueFunction) {
+		System.out.println("Value function:");
+		
+		for (State state : valueFunction.keySet())
+			System.out.println(String.format("%s = %.16f", state.getIdentifier().longValue(), valueFunction.get(state)));
+	}
+	
+	private HashMap<State, Double> convertValueFunctionAddToHashMap(Object vUpper) {
+		HashMap<State, Double> valueFunction = new HashMap<State, Double>();
+		
+		StateEnumerator enumerator = new StateEnumerator(new ArrayList<Integer>(this.hmPrimeRemap.values()));
+		context.enumeratePaths((Integer) vUpper, enumerator);
+		
+		for (State s : enumerator.getStates()) {
+			Double value = context.getValueForStateInContext((Integer) vUpper, s.getValues(), null, null);
+			valueFunction.put(s, value);
+		}
+		
+		return valueFunction;
+	}
+	
 	/////////////////////////////////////////Enumerative BRTDP///////////////////////////////////////////////////////
 	public  ArrayList<ArrayList> solveBRTDPEnum(int maxDepth, long timeOut,long maxUpdates,double tau,String typeMDP,String typeSolution, int numTrials, int interval,int numTrialsSimulation, int numberInitialStates,Random randomGenInitial, Random randomGenNextState,MDP myMDPSimulator) {
 	    System.out.println("In solveBRTDPEnum");
@@ -3968,6 +3988,10 @@ public abstract class MDP {
 			//do trial //////////////////////////////////
 			totalTrialTimeSec = this.lrtdpEnumTrial(state, solvedStates, maxDepth, randomGenNextState, timeOut, initialTime, initialStateLogPath);
 		}
+		
+		HashMap<State,Double> vUpperAsHashMap = (HashMap<State,Double>) VUpper;
+		
+		this.printEnumValueFunction(vUpperAsHashMap);
 	}
 
 	/**
@@ -4036,5 +4060,12 @@ public abstract class MDP {
     		System.out.println("dumping VUpper in" + finalVUpperPath);	
     		context.dump(remappedVUpper, finalVUpperPath);
     	}
+    	
+    	if (printFinalADD) {
+			HashMap<State, Double> valueFunction = convertValueFunctionAddToHashMap(this.VUpper);
+			this.printEnumValueFunction(valueFunction);
+		}
 	}
+
+	
 }
