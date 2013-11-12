@@ -14,7 +14,7 @@ import mdp.State;
 import mdp.algorithms.ssipp.SSiPP_LRTDPCaller;
 import mdp.algorithms.ssipp.SSiPP_PlannerCaller;
 
-public class ShortSightedLRTDPIPEnum {
+public class LabeledSSiPP {
 
 	public static void main(String[] args) {
 		//Nome do arquivo com a descrição do domínio e do problema a ser resolvido
@@ -52,7 +52,7 @@ public class ShortSightedLRTDPIPEnum {
 		//0:normal 1:with lattice
 		int typeAproxPol 		= 0; //Como não há aproximação neste algoritmo o valor sempre será 0 (zero).
 		
-		//Indica que o tipo de algoritmo usado para solucionar o MDP-IP é o RTDP-IP.
+		//Indica que o tipo de algoritmo usado para solucionar o MDP-IP é o RTDP-IP (para efeito de inicialização de variáveis)
 		String typeSolution 	= "RTDPIP";
 		
 		Random randomGenInitial = new Random(19580434);
@@ -69,6 +69,9 @@ public class ShortSightedLRTDPIPEnum {
 		long timeSeg = (System.currentTimeMillis() - startTime) / 1000;
 		 
 		int numVariables = myMDP.hmPrime2IdRemap.keySet().size();
+		
+		//Corrige o tipo de algoritmo usado para solucionar o MDP-IP
+		typeSolution = "LabeledSSiPP";
 		
 		printReport(problemFilename, typeContext, timeSeg, outputFilename, 
 				   myMDP.context.numCallNonLinearSolver, myMDP.contUpperUpdates, 

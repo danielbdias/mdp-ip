@@ -12,9 +12,17 @@ class StateEnumerator implements ADDLeafOperation {
 		this.variables = variables;
 	}
 	
+	public StateEnumerator(List<Integer> variables, boolean ignoreZeros) {
+		this(variables);
+		
+		this.ignoreZeros = ignoreZeros;
+	}
+	
 	private List<State> states = new ArrayList<State>();
 	
 	private List<Integer> variables = null;
+	
+	private boolean ignoreZeros = true;
 	
 	public List<State> getStates() {
 		return states;
@@ -24,12 +32,12 @@ class StateEnumerator implements ADDLeafOperation {
 	public void processADDLeaf(TreeMap<Integer, Boolean> assign, Object value) {
 		if (value instanceof Double) {
 			double valueAsDouble = (Double) value;
-			if (valueAsDouble <= 0.0) return;
+			if (this.ignoreZeros && valueAsDouble == 0.0) return;
 		}
 		else if (value instanceof Polynomial) {
 			Polynomial valueAsPolynomial = (Polynomial) value;
 
-			if (valueAsPolynomial.getTerms().size() == 0 && valueAsPolynomial.getC() <= 0.0) return;
+			if (this.ignoreZeros && valueAsPolynomial.getTerms().size() == 0 && valueAsPolynomial.getC() == 0.0) return;
 		}
 		
 		this.generateStatesForIncompletePath(assign);

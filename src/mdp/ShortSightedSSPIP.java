@@ -28,105 +28,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////
-	// Short Sighted SSP-IP
+	// SSiPP aux methods
 	///////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	public void executeLabeledSSiPPuntilConvergence(int t, Random randomGenInitial, Random randomGenNextState, 
-			int maxDepth, long timeOut, int stateSamplingType, SSiPP_PlannerCaller planner, String initialStateValuePath)
-	{
-		//convert in milliseconds
-		long timeOutInMilliseconds = timeOut * 1000;
-		
-		maxUpper = 0;
-		
-		//choose initial state
-		State initialState = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
-		
-		HashMap<State,Double> valueFunction = new HashMap<State,Double>();
-		valueFunction.put(initialState, maxUpper);
-		
-		long initialTime = System.currentTimeMillis();
-		
-		//log do estado inicial
-		if (initialStateValuePath != null)
-			this.logValueInFile(initialStateValuePath, valueFunction.get(initialState), 0);
-		
-		HashSet<State> solvedStates = new HashSet<State>();
-		
-		while (true){
-			long elapsedTime = (System.currentTimeMillis() - initialTime);
-			
-			if (elapsedTime >= timeOutInMilliseconds) {
-				System.out.println("Finished by timeout !");
-				break; //timeout		
-			}
-			
-			if (solvedStates.contains(initialState)) {
-				System.out.println("Finished by convergence !");
-				break; //convergence of initial state
-			}
-			
-			valueFunction = this.executeLabeledSSiPP(t, initialState, valueFunction, planner, solvedStates, randomGenInitial, randomGenNextState, maxDepth, timeOut, stateSamplingType);
-			
-			//medição para o estado inicial
-			if (initialStateValuePath != null) {
-	            elapsedTime = (System.currentTimeMillis() - initialTime);
-		    	Double value = valueFunction.get(initialState);
-		    	this.logValueInFile(initialStateValuePath, value, elapsedTime);
-            }
-		}
-		
-		System.out.println("Done !");
-	}
-	
-	public HashMap<State,Double> executeLabeledSSiPP(int t, State initialState, HashMap<State,Double> valueFunction, 
-			SSiPP_PlannerCaller planner, HashSet<State> solvedStates, Random randomGenInitial, 
-			Random randomGenNextState, int maxDepth, long timeOut, int stateSamplingType)
-	{
-		System.out.println(String.format("Executing SSiPP with [%s] as initial state...", initialState));
-		
-		Stack<State> visitedStates = new Stack<State>();
-		
-		State state = initialState;
-		visitedStates.add(state);
-		
-		while (true)
-		{
-			if (inGoalSet(state.getValues())) break; //goal reached
-			if (solvedStates.contains(state)) break; //state solved
-			
-			System.out.println(String.format("Planning using SS-SSP with [%s] as initial state...", state));
-			
-			HashSet<State> goalStates = shortSightedSSPIP(state, t);
-			
-			if (goalStates.size() == 0) break; //deadend, end loop
-			
-			goalStates.addAll(solvedStates);
-			
-			HashMap<State,Double> optimalValueFunction = planner.executePlanner(state, goalStates, maxDepth, timeOut, stateSamplingType, 
-																		 randomGenInitial, randomGenNextState, valueFunction);
-			
-			for (State s : optimalValueFunction.keySet()) 
-				valueFunction.put(s, optimalValueFunction.get(s));
-			
-			while (!goalStates.contains(state)) {
-				state = executeAction(valueFunction, state, randomGenNextState);
-				visitedStates.add(state);
-			}
-		}
-		
-		if (inGoalSet(state.getValues())) {
-			while (!visitedStates.empty()) {
-				state = visitedStates.pop();
-				if (!checkSolved(valueFunction, solvedStates, state, true))
-					break;
-			}
-		}
-		
-		System.out.println("SSiPP executed.");
-		
-		return valueFunction;
-	}
 
 	private State executeAction(HashMap<State, Double> vLower, State state, Random randomGenNextState) {
 		double max = Double.NEGATIVE_INFINITY;
@@ -324,4 +227,223 @@ public class ShortSightedSSPIP extends MDP_Fac {
 
 		return super.getRewardEnum(state);
 	}
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+	// SSiPP
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	public void executeSSiPPuntilConvergence(int t, Random randomGenInitial, Random randomGenNextState, 
+			int maxDepth, long timeOut, int stateSamplingType, SSiPP_PlannerCaller planner, String initialStateValuePath)
+	{
+		//convert in milliseconds
+		long timeOutInMilliseconds = timeOut * 1000;
+		
+		maxUpper = 0;
+		
+		//choose initial state
+		State initialState = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
+		
+		HashMap<State,Double> valueFunction = new HashMap<State,Double>();
+		valueFunction.put(initialState, maxUpper);
+		
+		long initialTime = System.currentTimeMillis();
+		
+		//log do estado inicial
+		if (initialStateValuePath != null)
+			this.logValueInFile(initialStateValuePath, valueFunction.get(initialState), 0);
+		
+		while (true){
+			long elapsedTime = (System.currentTimeMillis() - initialTime);
+			
+			if (elapsedTime >= timeOutInMilliseconds) {
+				System.out.println("Finished by timeout !");
+				break; //timeout		
+			}
+			
+			valueFunction = this.executeSSiPP(t, initialState, valueFunction, planner, randomGenInitial, randomGenNextState, maxDepth, timeOut, stateSamplingType);
+			
+			//medição para o estado inicial
+			if (initialStateValuePath != null) {
+	            elapsedTime = (System.currentTimeMillis() - initialTime);
+		    	Double value = valueFunction.get(initialState);
+		    	this.logValueInFile(initialStateValuePath, value, elapsedTime);
+            }
+		}
+		
+		System.out.println("Done !");
+	}
+	
+	public HashMap<State,Double> executeSSiPP(int t, State initialState, HashMap<State,Double> valueFunction, 
+			SSiPP_PlannerCaller planner, Random randomGenInitial, Random randomGenNextState, int maxDepth, long timeOut, int stateSamplingType)
+	{
+		System.out.println(String.format("Executing SSiPP with [%s] as initial state and [%s] as t...", initialState, t));
+		
+		State state = initialState;
+		
+		int depth = 0;
+		
+		while (true)
+		{
+			if (inGoalSet(state.getValues())) {
+				System.out.println(String.format("Goal state [%s] reached.", state));
+				break; //goal reached
+			}
+			
+			if (depth > maxDepth) {
+				System.out.println(String.format("Max depth of [%s] reached.", maxDepth));
+				break; //max depth reached
+			}
+			
+			System.out.println(String.format("Planning using SS-SSP with [%s] as initial state...", state));
+			
+			HashSet<State> goalStates = shortSightedSSPIP(state, t);
+			
+			if (goalStates.size() == 0) {
+				System.out.println("Deadend found, finishing the SSiPP.");
+				break; //deadend, end loop
+			}
+			
+			HashMap<State,Double> optimalValueFunction = planner.executePlanner(state, goalStates, maxDepth, timeOut, stateSamplingType, 
+																		 randomGenInitial, randomGenNextState, valueFunction);
+			
+			for (State s : optimalValueFunction.keySet()) {
+				if (!inGoalSet(state.getValues()))
+					valueFunction.put(s, optimalValueFunction.get(s));
+			}
+				
+			
+			while (!goalStates.contains(state)) {
+				state = executeAction(valueFunction, state, randomGenNextState);
+				depth++;
+			}
+		}
+		
+		System.out.println("SSiPP executed.");
+		
+		return valueFunction;
+	}
+	
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+	// Labeled SSiPP
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	public void executeLabeledSSiPPuntilConvergence(int t, Random randomGenInitial, Random randomGenNextState, 
+			int maxDepth, long timeOut, int stateSamplingType, SSiPP_PlannerCaller planner, String initialStateValuePath)
+	{
+		//convert in milliseconds
+		long timeOutInMilliseconds = timeOut * 1000;
+		
+		maxUpper = 0;
+		
+		//choose initial state
+		State initialState = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
+		
+		HashMap<State,Double> valueFunction = new HashMap<State,Double>();
+		valueFunction.put(initialState, maxUpper);
+		
+		long initialTime = System.currentTimeMillis();
+		
+		//log do estado inicial
+		if (initialStateValuePath != null)
+			this.logValueInFile(initialStateValuePath, valueFunction.get(initialState), 0);
+		
+		HashSet<State> solvedStates = new HashSet<State>();
+		
+		while (true){
+			long elapsedTime = (System.currentTimeMillis() - initialTime);
+			
+			if (elapsedTime >= timeOutInMilliseconds) {
+				System.out.println("Finished by timeout !");
+				break; //timeout		
+			}
+			
+			if (solvedStates.contains(initialState)) {
+				System.out.println("Finished by convergence !");
+				break; //convergence of initial state
+			}
+			
+			valueFunction = this.executeLabeledSSiPP(t, initialState, valueFunction, planner, solvedStates, randomGenInitial, randomGenNextState, maxDepth, timeOut, stateSamplingType);
+			
+			//medição para o estado inicial
+			if (initialStateValuePath != null) {
+	            elapsedTime = (System.currentTimeMillis() - initialTime);
+		    	Double value = valueFunction.get(initialState);
+		    	this.logValueInFile(initialStateValuePath, value, elapsedTime);
+            }
+		}
+		
+		System.out.println("Done !");
+	}
+	
+	public HashMap<State,Double> executeLabeledSSiPP(int t, State initialState, HashMap<State,Double> valueFunction, 
+			SSiPP_PlannerCaller planner, HashSet<State> solvedStates, Random randomGenInitial, 
+			Random randomGenNextState, int maxDepth, long timeOut, int stateSamplingType)
+	{
+		System.out.println(String.format("Executing Labeled SSiPP with [%s] as initial state and [%s] as t...", initialState, t));
+		
+		Stack<State> visitedStates = new Stack<State>();
+		
+		State state = initialState;
+		visitedStates.add(state);
+		
+		int depth = 0;
+		
+		while (true)
+		{
+			if (inGoalSet(state.getValues())) {
+				System.out.println(String.format("Goal state [%s] reached.", state));
+				break; //goal reached
+			}
+			
+			if (solvedStates.contains(state)) {
+				System.out.println(String.format("Solved state [%s] reached.", state));
+				break; //state solved
+			}
+			
+			if (depth > maxDepth) {
+				System.out.println(String.format("Max depth of [%s] reached.", maxDepth));
+				break; //max depth reached
+			}
+			
+			System.out.println(String.format("Planning using SS-SSP with [%s] as initial state...", state));
+			
+			HashSet<State> goalStates = shortSightedSSPIP(state, t);
+			
+			if (goalStates.size() == 0) {
+				System.out.println("Deadend found, finishing the SSiPP.");
+				visitedStates.clear(); //do not update visited states in deadend cases
+				break; //deadend, end loop
+			}
+			
+			goalStates.addAll(solvedStates);
+			
+			HashMap<State,Double> optimalValueFunction = planner.executePlanner(state, goalStates, maxDepth, timeOut, stateSamplingType, 
+																		 randomGenInitial, randomGenNextState, valueFunction);
+			
+			for (State s : optimalValueFunction.keySet()) 
+				valueFunction.put(s, optimalValueFunction.get(s));
+			
+			while (!goalStates.contains(state)) {
+				state = executeAction(valueFunction, state, randomGenNextState);
+				visitedStates.add(state);
+				depth++;
+			}
+		}
+		
+		if (inGoalSet(state.getValues())) {
+			while (!visitedStates.empty()) {
+				state = visitedStates.pop();
+				if (!checkSolved(valueFunction, solvedStates, state, true))
+					break;
+			}
+		}
+		
+		System.out.println("Labeled SSiPP executed.");
+		
+		return valueFunction;
+	}
+	
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+	// Labeled SSiPP
+	///////////////////////////////////////////////////////////////////////////////////////////////////
 }
