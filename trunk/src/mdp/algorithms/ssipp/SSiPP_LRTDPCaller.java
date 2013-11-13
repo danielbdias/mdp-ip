@@ -19,7 +19,7 @@ public class SSiPP_LRTDPCaller implements SSiPP_PlannerCaller {
 	public HashMap<State, Double> executePlanner(State initialState, HashSet<State> goalStates, int maxDepth, long timeOut,
 			int stateSamplingType, Random randomGenInitial, Random randomGenNextState, HashMap<State, Double> vLower) {
 		
-		return ssp.planWithLRTDPEnum(initialState, goalStates, maxDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, vLower);
+		return ssp.planWithLRTDPFact(initialState, goalStates, maxDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, vLower);
 	}
 
 }

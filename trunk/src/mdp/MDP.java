@@ -3236,7 +3236,7 @@ public abstract class MDP {
 			System.out.println(String.format("%s = %.16f", state.getIdentifier().longValue(), valueFunction.get(state)));
 	}
 	
-	private HashMap<State, Double> convertValueFunctionAddToHashMap(Object vUpper) {
+	protected HashMap<State, Double> convertValueFunctionAddToHashMap(Object vUpper) {
 		HashMap<State, Double> valueFunction = new HashMap<State, Double>();
 		
 		StateEnumerator enumerator = new StateEnumerator(new ArrayList<Integer>(this.hmPrimeRemap.values()));
@@ -3248,6 +3248,19 @@ public abstract class MDP {
 		}
 		
 		return valueFunction;
+	}
+	
+	protected Object convertHashMapValueFunctionToAdd(HashMap<State, Double> valueFunction) {
+		Object add = context.getTerminalNode(0.0);
+		
+		for (State state : valueFunction.keySet()) {		
+			TreeMap<Integer, Boolean> s = state.getValues();
+			Iterator iteratorState = s.keySet().iterator();			
+			
+			add = context.insertValueInDD(add, s, valueFunction.get(state), iteratorState, this.hmPrimeRemap);
+		}
+		
+		return add;
 	}
 	
 	/////////////////////////////////////////Enumerative BRTDP///////////////////////////////////////////////////////
@@ -4067,5 +4080,4 @@ public abstract class MDP {
 		}
 	}
 
-	
 }
