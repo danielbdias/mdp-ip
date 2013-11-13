@@ -148,6 +148,41 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		return (HashMap<State,Double>) VUpper;
 	}
 
+	public HashMap<State,Double> planWithLRTDPFact(State initialState, HashSet<State> goalStates, int maxDepth, long timeOut, 
+			int stateSamplingType, Random randomGenInitial, Random randomGenNextState, HashMap<State,Double> vLower)
+	{
+		//change initial states to the ShortSighted Goals
+		ArrayList<TreeMap> realInitialStates = listInitialStates;
+		
+		listInitialStates = new ArrayList<TreeMap>();
+		listInitialStates.add(initialState.getValues());
+		
+		//change goals to the ShortSighted Goals
+		ArrayList<TreeMap> realGoals = listGoalStates;
+				
+		listGoalStates = new ArrayList<TreeMap>();
+		
+		for (State state : goalStates)
+			listGoalStates.add(state.getValues());		
+		
+		String initialAddPath = "add_" + System.currentTimeMillis() + ".net";
+		
+		Object vLowerAsAdd = this.convertHashMapValueFunctionToAdd(vLower);
+		context.dump(vLowerAsAdd, initialAddPath);
+		
+		this.solveLRTDPIPFac(maxDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, null, null, initialAddPath);
+		
+		//Restore the original goals and initial states
+		listInitialStates = realInitialStates;
+		listGoalStates = realGoals;
+		
+		HashMap<State,Double> result = this.convertValueFunctionAddToHashMap(VUpper);
+		
+		new java.io.File(initialAddPath).delete();
+		
+		return result;
+	}
+	
 	protected boolean checkSolved(HashMap V, HashSet<State> solvedStates, State state) {
 		return this.checkSolved(V, solvedStates, state, false);
 	}
@@ -442,8 +477,4 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		
 		return valueFunction;
 	}
-	
-	///////////////////////////////////////////////////////////////////////////////////////////////////
-	// Labeled SSiPP
-	///////////////////////////////////////////////////////////////////////////////////////////////////
 }
