@@ -31,7 +31,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 	// SSiPP aux methods
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 
-	private State executeAction(HashMap<State, Double> vLower, State state, Random randomGenNextState) {
+	private State executeAction(HashMap<State, Double> vLower, State state, Random randomGenNextState) {		
 		double max = Double.NEGATIVE_INFINITY;
 		Action actionGreedy = null;
 		
@@ -165,22 +165,15 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		for (State state : goalStates)
 			listGoalStates.add(state.getValues());		
 		
-		String initialAddPath = "add_" + System.currentTimeMillis() + ".net";
-		
 		Object vLowerAsAdd = this.convertHashMapValueFunctionToAdd(vLower);
-		context.dump(vLowerAsAdd, initialAddPath);
 		
-		this.solveLRTDPIPFac(maxDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, null, null, initialAddPath);
+		this.solveLRTDPIPFac(maxDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, null, null, vLowerAsAdd);
 		
 		//Restore the original goals and initial states
 		listInitialStates = realInitialStates;
 		listGoalStates = realGoals;
 		
-		HashMap<State,Double> result = this.convertValueFunctionAddToHashMap(VUpper);
-		
-		new java.io.File(initialAddPath).delete();
-		
-		return result;
+		return this.convertValueFunctionAddToHashMap(VUpper);
 	}
 	
 	protected boolean checkSolved(HashMap V, HashSet<State> solvedStates, State state) {
@@ -269,7 +262,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 	
 	public void executeSSiPPuntilConvergence(int t, Random randomGenInitial, Random randomGenNextState, 
 			int maxDepth, long timeOut, int stateSamplingType, SSiPP_PlannerCaller planner, String initialStateValuePath)
-	{
+	{		
 		//convert in milliseconds
 		long timeOutInMilliseconds = timeOut * 1000;
 		
@@ -345,9 +338,9 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				if (!inGoalSet(state.getValues()))
 					valueFunction.put(s, optimalValueFunction.get(s));
 			}
-				
 			
 			while (!goalStates.contains(state)) {
+				context.workingWithParameterized = true;
 				state = executeAction(valueFunction, state, randomGenNextState);
 				depth++;
 			}

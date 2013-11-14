@@ -12,7 +12,7 @@ import add.*;
 public abstract class MDP {
 	public boolean pruneAfterEachIt;//=true;
 	boolean forceNumberIt = false;//=true;
-	boolean printFinalADD = true;
+	boolean printFinalADD = false;
 	boolean dumpValue = true;
 	boolean printTrafficFormat = false;
 	boolean sampleInitialFromI = true;
@@ -3042,14 +3042,14 @@ public abstract class MDP {
 			
 			State nextState = new State(remappedVars, mName2Action.size());
 			
-			if (context.workingWithParameterized) {
+//			if (context.workingWithParameterized) {
 				Polynomial poly = (Polynomial) context.getValuePolyForStateInContext(jointProbADD, successorState.getValues(), null, null);
 				succ.getNextStatesPoly().put(nextState, poly);
-			}
-			else {
-				Double value = context.getValueForStateInContext(jointProbADD, successorState.getValues(), null, null);
-				succ.getNextStatesProbs().put(nextState, value);
-			}
+//			}
+//			else {
+//				Double value = context.getValueForStateInContext(jointProbADD, successorState.getValues(), null, null);
+//				succ.getNextStatesProbs().put(nextState, value);
+//			}
 		}
 				
 		return succ;
@@ -4012,6 +4012,32 @@ public abstract class MDP {
 	 */
 	public void solveLRTDPIPFac(int maxDepth, long timeOut, int stateSamplingType, Random randomGenInitial, Random randomGenNextState, 
 			String finalVUpperPath, String initialStateLogPath, String initVUpperPath) {
+		Object initVUpper = null;
+		
+		if (initVUpperPath == null) {
+			//Initialize Vu with admissible value function //////////////////////////////////
+			//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
+			double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
+			
+			if (this.bdDiscount.doubleValue() == 1)
+				maxUpper = Rmax * maxDepth;
+			else
+				maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
+			
+			initVUpper = context.getTerminalNode(maxUpper);
+		}
+		else {
+			context.workingWithParameterized = false;
+			initVUpper = context.readValueFunction(initVUpperPath);
+			initVUpper = context.remapIdWithPrime(initVUpper, hmPrimeRemap);
+			context.workingWithParameterized = true;			
+		}
+		
+		this.solveLRTDPIPFac(maxDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, finalVUpperPath, initialStateLogPath, initVUpper);
+	}
+
+	public void solveLRTDPIPFac(int maxDepth, long timeOut, int stateSamplingType, Random randomGenInitial, Random randomGenNextState, 
+			String finalVUpperPath, String initialStateLogPath, Object initVUpper) {
 		//Define o tipo de amostragem de estados
 		typeSampledRTDPMDPIP = stateSamplingType;
 		
@@ -4025,24 +4051,7 @@ public abstract class MDP {
 		else if (typeSampledRTDPMDPIP == 5)
 			context.probSample = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
 
-		if (initVUpperPath == null) {
-			//Initialize Vu with admissible value function //////////////////////////////////
-			//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
-			double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
-			
-			if (this.bdDiscount.doubleValue() == 1)
-				maxUpper = Rmax * maxDepth;
-			else
-				maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
-			
-			VUpper = context.getTerminalNode(maxUpper);
-		}
-		else {
-			context.workingWithParameterized = false;
-			VUpper = context.readValueFunction(initVUpperPath);
-			VUpper = context.remapIdWithPrime(this.VUpper, hmPrimeRemap);
-			context.workingWithParameterized = true;			
-		}
+		VUpper = initVUpper;
 		
 		contUpperUpdates = 0;
 
@@ -4079,5 +4088,5 @@ public abstract class MDP {
 			this.printEnumValueFunction(valueFunction);
 		}
 	}
-
+	
 }
