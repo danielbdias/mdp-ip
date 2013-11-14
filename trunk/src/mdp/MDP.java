@@ -10,10 +10,14 @@ import util.Pair;
 import add.*;
 
 public abstract class MDP {
-	public boolean pruneAfterEachIt;//=true;
-	boolean forceNumberIt = false;//=true;
+	/* DEBUG VARS*/
 	boolean printFinalADD = false;
 	boolean dumpValue = true;
+
+	protected boolean printLogs = false;
+	
+	public boolean pruneAfterEachIt;//=true;
+	boolean forceNumberIt = false;//=true;
 	boolean printTrafficFormat = false;
 	boolean sampleInitialFromI = true;
 	boolean printPolicy = false;
@@ -85,7 +89,7 @@ public abstract class MDP {
 	  
 	protected double maxUpper;
 	private double minLower;
-	private double maxUpperUpdated,maxLowerUpdated;
+	protected double maxUpperUpdated, maxLowerUpdated;
 	public static long timeTrials;  
 	double gapInitial;
   
@@ -976,7 +980,7 @@ public abstract class MDP {
 		return state;
 	}
 	
-	private TreeMap<Integer, Boolean> remapWithPrimes(TreeMap<Integer, Boolean> nextState) {
+	protected TreeMap<Integer, Boolean> remapWithPrimes(TreeMap<Integer, Boolean> nextState) {
 		TreeMap<Integer, Boolean> state=new TreeMap <Integer, Boolean>();
 		Iterator it=nextState.keySet().iterator();
 		while (it.hasNext()){
@@ -1460,7 +1464,7 @@ public abstract class MDP {
 	/**
 	 * Update VUpper and return the action greedy
 	 */
-	private Action updateVUpper(TreeMap<Integer, Boolean> state) {
+	protected Action updateVUpper(TreeMap<Integer, Boolean> state) {
 		Pair result = computeVUpper(state);
 		
 		double maxTotal = (double) result.get_o2();
@@ -1746,30 +1750,29 @@ public abstract class MDP {
 		Stack<State> visited = new Stack<State>();
 		
 	    /* BEGIN TRIAL */
-		boolean debugTrial = true;
 		
 		while (true) {
 			//Exiting conditions
 			if (state == null) {
-				if (debugTrial){ System.out.println("Exiting trial because state == null"); }
+				formattedPrintln("Exiting trial because state == null");
 				break;
 			}
 			else if (solvedStates.contains(state)) {
-				if (debugTrial){ System.out.println("Exiting trial because state is marked as solved"); }
+				formattedPrintln("Exiting trial because state is marked as solved");
 				break;
 			}
-			  else if (inGoalSet(state.getValues())) {
-			        if (debugTrial){ System.out.println("Exiting trial because state is a goal state"); }
-			        break;
-			  }
-			  else if (maxDepth > 0 && depth >= maxDepth) {
-			        if (debugTrial){ System.out.println("Exiting trial because depth >= " + maxDepth); }
-			        break;
-			  }
-			  else if (totalTrialTimeSec > timeOut){
-				  if (debugTrial){ System.out.println("Exiting  because time > " + timeOut); }
-			        break;
-			  }
+			else if (inGoalSet(state.getValues())) {
+			 	formattedPrintln("Exiting trial because state is a goal state");
+			    break;
+			}
+			else if (maxDepth > 0 && depth >= maxDepth) {
+				formattedPrintln("Exiting trial because depth >= " + maxDepth);
+				break;
+			}
+			else if (totalTrialTimeSec > timeOut){
+				formattedPrintln("Exiting  because time > " + timeOut);
+				break;
+			}
 			
 			depth++;
 			visited.push(state);
@@ -1805,7 +1808,7 @@ public abstract class MDP {
 		/* END TRIAL*/
 		
 		if (depth >= maxDepth || totalTrialTimeSec > timeOut ) {
-			System.out.println("Not trying to label states as solved because " + "depth >= " + maxDepth + " or totalTime > " + timeOut); 
+			formattedPrintln("Not trying to label states as solved because " + "depth >= " + maxDepth + " or totalTime > " + timeOut); 
 			totalTrialTime = GetElapsedTime();
 	        totalTrialTimeSec = totalTrialTime / 1000;		
 			return totalTrialTimeSec;
@@ -1825,7 +1828,7 @@ public abstract class MDP {
 		return totalTrialTimeSec;
 	}
 
-	public boolean LRTDP_IP_CheckSolved(Random randomGenNextState, State state, HashSet<State> solvedStates)
+	protected boolean LRTDP_IP_CheckSolved(Random randomGenNextState, State state, HashSet<State> solvedStates)
 	{
 		boolean rv = true;
 		
@@ -1867,7 +1870,7 @@ public abstract class MDP {
 		if (rv) {// Marking all nodes in the closed list as solved
 			while (!closed.empty()) {
 				state = closed.pop();
-				System.out.println("SOLVED: " + getStateString(state.getValues()));			
+				formattedPrintln("SOLVED: " + getStateString(state.getValues()));			
 		        solvedStates.add(state);
 		    }
 		}
@@ -1882,7 +1885,7 @@ public abstract class MDP {
 		return rv;
 	}
 
-	private String getStateString(TreeMap<Integer, Boolean> values) {
+	protected String getStateString(TreeMap<Integer, Boolean> values) {
 		String state = "( ";
 		
 		for (Integer key : values.keySet()) {
@@ -1896,7 +1899,7 @@ public abstract class MDP {
 		return state;
 	}
 
-	private List<State> getSuccessorsFromAction(State state, Action greedyAction) {	
+	protected List<State> getSuccessorsFromAction(State state, Action greedyAction) {	
 		int successorsADD = this.computeSuccessors(state, greedyAction.tmID2ADD);
 		
 		StateEnumerator enumerator = new StateEnumerator(new ArrayList<Integer>(this.hmPrimeRemap.values()));
@@ -1958,10 +1961,17 @@ public abstract class MDP {
 	}
 
 	public void flushCachesRTDP(boolean workWithEnum) {
-		if (((double)RUNTIME.freeMemory() / 
-				(double)RUNTIME.totalMemory()) > FLUSH_PERCENT_MINIMUM) {
-			return; // Still enough free mem to exceed minimum requirements
+		flushCachesRTDP(workWithEnum, false);
+	}
+	
+	public void flushCachesRTDP(boolean workWithEnum, boolean forceFlush) {
+		
+		if (!forceFlush) {
+			if (((double) RUNTIME.freeMemory() / (double) RUNTIME.totalMemory()) > FLUSH_PERCENT_MINIMUM) {
+				return; // Still enough free mem to exceed minimum requirements
+			}
 		}
+		
 		System.out.println("Before flush,freeMemory: "+RUNTIME.freeMemory());
 
 		context.clearSpecialNodes();
@@ -1980,7 +1990,7 @@ public abstract class MDP {
 		context.flushCaches();
 		System.out.println("After flush,freeMemory: "+RUNTIME.freeMemory());
 	}
-
+	
 	private TreeMap<Integer, Boolean> chooseNextStateRTDP(TreeMap<Integer, Boolean> state, Action actionGreedy, Random randomGenerator) {
 		return sampling(state, actionGreedy.tmID2ADD, randomGenerator);
 	}
@@ -3263,6 +3273,15 @@ public abstract class MDP {
 		return add;
 	}
 	
+	protected void formattedPrintln(String message, Object... args) {
+		if (!this.printLogs) return;
+		
+		if (args != null && args.length > 0)
+			message = String.format(message, args);
+		
+		System.out.println(message);
+	}
+	
 	/////////////////////////////////////////Enumerative BRTDP///////////////////////////////////////////////////////
 	public  ArrayList<ArrayList> solveBRTDPEnum(int maxDepth, long timeOut,long maxUpdates,double tau,String typeMDP,String typeSolution, int numTrials, int interval,int numTrialsSimulation, int numberInitialStates,Random randomGenInitial, Random randomGenNextState,MDP myMDPSimulator) {
 	    System.out.println("In solveBRTDPEnum");
@@ -4070,8 +4089,8 @@ public abstract class MDP {
    	    	
    	    	s = new State(sampleInitialStateFromList(randomGenInitial));
    	    	
-   	    	System.out.println("Chamadas ao solver: " + context.numCallNonLinearSolver);
-   	    	System.out.println("Número de Backups: " + contUpperUpdates);
+   	    	formattedPrintln("Chamadas ao solver: " + context.numCallNonLinearSolver);
+   	    	formattedPrintln("Número de Backups: " + contUpperUpdates);
 		}
 					
 		context.workingWithParameterized = false;

@@ -173,7 +173,9 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		listInitialStates = realInitialStates;
 		listGoalStates = realGoals;
 		
-		return this.convertValueFunctionAddToHashMap(VUpper);
+		HashMap<State,Double> result = this.convertValueFunctionAddToHashMap(VUpper);
+		
+		return result;
 	}
 	
 	protected boolean checkSolved(HashMap V, HashSet<State> solvedStates, State state) {
@@ -248,6 +250,66 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		return rv;
 	}
 
+	protected boolean LRTDP_IP_CheckSolved(Random randomGenNextState, State state, HashSet<State> solvedStates)
+	{
+		boolean rv = true;
+		
+		Stack<State> open = new Stack<State>();
+		Stack<State> closed = new Stack<State>();
+		
+		if (!solvedStates.contains(state)) open.push(state);
+		  
+	    while (!open.empty()) {
+	    	state = open.pop();
+		    closed.push(state);
+		    
+		    // The residual was too big, so will update the nodes in the open
+		    // list and not mark any node as solved
+			TreeMap<Integer, Boolean> state_prime = remapWithPrimes(state.getValues());//Because Vupper has only prime variables
+			double valueState = (Double) context.getValueForStateInContext((Integer) VUpper, state_prime, null, null);
+		      
+			Action greedyAction = updateVUpper(state.getValues()); // here it is computed maxUpperUpdated
+			contUpperUpdates++;
+			
+			Double residual = Math.abs(valueState - maxUpperUpdated);
+			if (residual == null || residual > epsilon){
+				rv = false;
+				continue;
+			}
+
+			if (listGoalStates.contains(state.getValues()))
+				continue;
+			
+			// Here we need to loop over all the states that have non-zero probability
+			// of happening when applying greedyAction. Notice that we can reuse the
+			// probability distribution P(s'|cur_s,greedyAction) computed on the call
+			// to updateVUpper (as opposed to call the non-linear solver again).
+			List<State> successors = getSuccessorsFromAction(state, greedyAction); //getSuccessors(state, greedyAction);
+			
+			for (State next_s : successors) {				
+				if (!solvedStates.contains(next_s) && !open.contains(next_s) && !closed.contains(next_s))
+					open.push(next_s);
+			}
+	    }
+
+		if (rv) {// Marking all nodes in the closed list as solved
+			while (!closed.empty()) {
+				state = closed.pop();
+				formattedPrintln("SOLVED: " + getStateString(state.getValues()));			
+		        solvedStates.add(state);
+		    }
+		}
+		else {
+			//update states with residuasl and ancestors??
+			while (!closed.empty()) {
+				state = closed.pop();
+				updateVUpper(state.getValues());
+		    }
+		}
+    
+		return rv;
+	}
+	
 	@Override
 	protected double getRewardEnum(State state) {
 //		if (inGoalSet(state.getValues()))
@@ -283,8 +345,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		while (true){
 			long elapsedTime = (System.currentTimeMillis() - initialTime);
 			
-			if (elapsedTime >= timeOutInMilliseconds) {
-				System.out.println("Finished by timeout !");
+			if (elapsedTime >= timeOutInMilliseconds) {			
+				formattedPrintln("Finished by timeout !");
 				break; //timeout		
 			}
 			
@@ -298,13 +360,13 @@ public class ShortSightedSSPIP extends MDP_Fac {
             }
 		}
 		
-		System.out.println("Done !");
+		formattedPrintln("Done !");
 	}
 	
 	public HashMap<State,Double> executeSSiPP(int t, State initialState, HashMap<State,Double> valueFunction, 
 			SSiPP_PlannerCaller planner, Random randomGenInitial, Random randomGenNextState, int maxDepth, long timeOut, int stateSamplingType)
 	{
-		System.out.println(String.format("Executing SSiPP with [%s] as initial state and [%s] as t...", initialState, t));
+		formattedPrintln("Executing SSiPP with [%s] as initial state and [%s] as t...", initialState, t);
 		
 		State state = initialState;
 		
@@ -313,21 +375,21 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		while (true)
 		{
 			if (inGoalSet(state.getValues())) {
-				System.out.println(String.format("Goal state [%s] reached.", state));
+				formattedPrintln("Goal state [%s] reached.", state);
 				break; //goal reached
 			}
 			
 			if (depth > maxDepth) {
-				System.out.println(String.format("Max depth of [%s] reached.", maxDepth));
+				formattedPrintln("Max depth of [%s] reached.", maxDepth);
 				break; //max depth reached
 			}
 			
-			System.out.println(String.format("Planning using SS-SSP with [%s] as initial state...", state));
+			formattedPrintln("Planning using SS-SSP with [%s] as initial state...", state);
 			
 			HashSet<State> goalStates = shortSightedSSPIP(state, t);
 			
 			if (goalStates.size() == 0) {
-				System.out.println("Deadend found, finishing the SSiPP.");
+				formattedPrintln("Deadend found, finishing the SSiPP.");
 				break; //deadend, end loop
 			}
 			
@@ -346,7 +408,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			}
 		}
 		
-		System.out.println("SSiPP executed.");
+		formattedPrintln("SSiPP executed.");
 		
 		return valueFunction;
 	}
