@@ -443,12 +443,12 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			long elapsedTime = (System.currentTimeMillis() - initialTime);
 			
 			if (elapsedTime >= timeOutInMilliseconds) {
-				System.out.println("Finished by timeout !");
+				formattedPrintln("Finished by timeout !");
 				break; //timeout		
 			}
 			
 			if (solvedStates.contains(initialState)) {
-				System.out.println("Finished by convergence !");
+				formattedPrintln("Finished by convergence !");
 				break; //convergence of initial state
 			}
 			
@@ -462,14 +462,14 @@ public class ShortSightedSSPIP extends MDP_Fac {
             }
 		}
 		
-		System.out.println("Done !");
+		formattedPrintln("Done !");
 	}
 	
 	public HashMap<State,Double> executeLabeledSSiPP(int t, State initialState, HashMap<State,Double> valueFunction, 
 			SSiPP_PlannerCaller planner, HashSet<State> solvedStates, Random randomGenInitial, 
 			Random randomGenNextState, int maxDepth, long timeOut, int stateSamplingType)
 	{
-		System.out.println(String.format("Executing Labeled SSiPP with [%s] as initial state and [%s] as t...", initialState, t));
+		formattedPrintln("Executing Labeled SSiPP with [%s] as initial state and [%s] as t...", initialState, t);
 		
 		Stack<State> visitedStates = new Stack<State>();
 		
@@ -481,26 +481,26 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		while (true)
 		{
 			if (inGoalSet(state.getValues())) {
-				System.out.println(String.format("Goal state [%s] reached.", state));
+				formattedPrintln("Goal state [%s] reached.", state);
 				break; //goal reached
 			}
 			
 			if (solvedStates.contains(state)) {
-				System.out.println(String.format("Solved state [%s] reached.", state));
+				formattedPrintln("Solved state [%s] reached.", state);
 				break; //state solved
 			}
 			
 			if (depth > maxDepth) {
-				System.out.println(String.format("Max depth of [%s] reached.", maxDepth));
+				formattedPrintln("Max depth of [%s] reached.", maxDepth);
 				break; //max depth reached
 			}
 			
-			System.out.println(String.format("Planning using SS-SSP with [%s] as initial state...", state));
+			formattedPrintln("Planning using SS-SSP with [%s] as initial state...", state);
 			
 			HashSet<State> goalStates = shortSightedSSPIP(state, t);
 			
 			if (goalStates.size() == 0) {
-				System.out.println("Deadend found, finishing the SSiPP.");
+				formattedPrintln("Deadend found, finishing the SSiPP.");
 				visitedStates.clear(); //do not update visited states in deadend cases
 				break; //deadend, end loop
 			}
@@ -528,7 +528,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			}
 		}
 		
-		System.out.println("Labeled SSiPP executed.");
+		formattedPrintln("Labeled SSiPP executed.");
 		
 		return valueFunction;
 	}

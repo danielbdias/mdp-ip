@@ -621,7 +621,6 @@ public abstract class MDP {
     	
         return contNumNodes;    	
 	}
-
 		
 	public void flushCaches(Object VDD) {
 		if (((double)RUNTIME.freeMemory() / 
@@ -3022,7 +3021,7 @@ public abstract class MDP {
 			for (State nextState : closed) 
 			{
 				solvedStates.add(nextState);
-				System.out.println("SOLVED: " + nextState);
+				formattedPrintln("SOLVED: " + nextState);
 			}
 		}
 		else {
@@ -3482,7 +3481,7 @@ public abstract class MDP {
 		}
 		
 		if (depth >= maxDepth || totalTrialTimeSec > timeOut ) {
-			System.out.println("Not trying to label states as solved because " + "depth >= " + maxDepth + " or totalTime > " + timeOut); 
+			formattedPrintln("Not trying to label states as solved because " + "depth >= " + maxDepth + " or totalTime > " + timeOut); 
 			totalTrialTime = GetElapsedTime();
 	        totalTrialTimeSec = totalTrialTime / 1000;		
 			return totalTrialTimeSec;
@@ -4021,9 +4020,11 @@ public abstract class MDP {
 			totalTrialTimeSec = this.lrtdpEnumTrial(state, solvedStates, maxDepth, randomGenNextState, timeOut, initialTime, initialStateLogPath);
 		}
 		
-		HashMap<State,Double> vUpperAsHashMap = (HashMap<State,Double>) VUpper;
-		
-		this.printEnumValueFunction(vUpperAsHashMap);
+		if (printFinalADD) {
+			HashMap<State,Double> vUpperAsHashMap = (HashMap<State,Double>) VUpper;
+			
+			this.printEnumValueFunction(vUpperAsHashMap);
+		}
 	}
 
 	/**
