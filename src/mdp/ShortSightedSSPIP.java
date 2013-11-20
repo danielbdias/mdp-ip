@@ -520,7 +520,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			}
 		}
 		
-		if (inGoalSet(state.getValues())) {
+		if (inGoalSet(state.getValues()) || solvedStates.contains(state)) {
 			while (!visitedStates.empty()) {
 				state = visitedStates.pop();
 				if (!checkSolved(valueFunction, solvedStates, state, true))

@@ -14,7 +14,7 @@ public abstract class MDP {
 	boolean printFinalADD = false;
 	boolean dumpValue = true;
 
-	protected boolean printLogs = false;
+	protected boolean printLogs = Config.getConfig().getVerbose();
 	
 	public boolean pruneAfterEachIt;//=true;
 	boolean forceNumberIt = false;//=true;
