@@ -136,6 +136,20 @@ public class Config {
 		return this.getConfigValue(configKey);
 	}
 	
+	public boolean getVerbose() {
+		final String configKey = "verbose";
+		
+		String resultAsString = this.getConfigValue(configKey);
+		resultAsString = resultAsString.toLowerCase().trim();
+		
+		if (resultAsString.equals("true") ||
+			resultAsString.equals("1") ||
+			resultAsString.equals("yes"))
+			return true;
+		else
+			return false;
+	}
+	
 	private String getConfigValue(String configKey) {
 		String value = this.propertiesData.getProperty(configKey);
 		
