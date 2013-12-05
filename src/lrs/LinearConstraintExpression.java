@@ -20,4 +20,14 @@ public class LinearConstraintExpression {
 	public ArrayList<RationalNumber> getVariableWeights() {
 		return variableWeights;
 	}
+	
+	@Override
+	public String toString() {
+		String result = this.constant.toString();
+		
+		for (RationalNumber number : this.variableWeights)
+			result += (" " + number.toString());
+		
+		return result;
+	}
 }

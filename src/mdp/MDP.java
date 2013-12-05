@@ -6,6 +6,9 @@ import java.io.*;
 import java.math.*;
 import java.util.*;
 
+import lrs.ConstraintsConverter;
+import lrs.LinearConstraintExpression;
+
 import util.Pair;
 import add.*;
 
@@ -202,10 +205,14 @@ public abstract class MDP {
 		  }
 		  ArrayList constraints = (ArrayList)i.next();
 		  createFileConstraints(constraints, NAME_FILE_CONTRAINTS);
-		  numOriginalConstraints=constraints.size();
+		  numOriginalConstraints = constraints.size();
 		  createFileConstraintsGreaterZero(constraints, NAME_FILE_CONTRAINTS_GREATERZERO);
-		  		  
+		
+		  LinearConstraintExpression[] parsedConstraints = ConstraintsConverter.convertConstraintsToLrsFormat(constraints);
+		  System.out.println(parsedConstraints);
 	  }
+	  
+	  
 	  // Read discount and tolerance
 	  o = i.next();
 	  if ( !(o instanceof String) || !((String)o).equalsIgnoreCase("discount")) {
