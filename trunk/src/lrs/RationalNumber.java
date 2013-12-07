@@ -4,6 +4,8 @@ public class RationalNumber {
 	
 	public static final RationalNumber ZERO = new RationalNumber(0, 1);
 	
+	public static final RationalNumber ONE = new RationalNumber(1, 1);
+	
 	public static final RationalNumber MINUS_ONE = new RationalNumber(-1, 1);
 	
 	public RationalNumber(int numerator, int denominator) {
@@ -57,5 +59,36 @@ public class RationalNumber {
 			return Integer.toString(this.numerator);
 		else
 			return String.format("%d/%d", this.numerator, this.denominator);
+	}
+	
+	public static RationalNumber fromDouble(double number) {
+		String numberAsString = Double.toString(number);
+		
+		int pointIndex = numberAsString.indexOf('.');
+		
+		String numeratorAsString = null;
+		String denominatorAsString = null;
+		
+		if (pointIndex <= 0) {
+			numeratorAsString = numberAsString;
+			denominatorAsString = "";
+		}
+		else {
+			denominatorAsString = numberAsString.substring(pointIndex + 1);
+			
+			int tempDenominator = Integer.parseInt(denominatorAsString);
+			
+			if (tempDenominator == 0) {
+				numeratorAsString = numberAsString.substring(0, pointIndex);
+				denominatorAsString = "";
+			}
+			else
+				numeratorAsString = numberAsString.replace(".", "");
+		}
+		
+		int numerator = Integer.parseInt(numeratorAsString);
+		int denominator = (int) Math.pow(10.0, denominatorAsString.length());
+		
+		return new RationalNumber(numerator, denominator);
 	}
 }
