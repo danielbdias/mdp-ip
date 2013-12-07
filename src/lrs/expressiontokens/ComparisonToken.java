@@ -18,7 +18,7 @@ public class ComparisonToken extends Token {
 
 	private ComparisonType comparison;
 
-	public ComparisonType getOperation() {
+	public ComparisonType getComparison() {
 		return comparison;
 	}
 	
