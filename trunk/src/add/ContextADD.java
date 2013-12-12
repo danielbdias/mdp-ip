@@ -965,7 +965,7 @@ public class ContextADD extends Context {
 	    }
 		
 //		 the parameter is ParADD and the result is an ADD
-	    public Object doMinCallOverNodes(Object VDD,String NAME_FILE_CONTRAINTS,boolean pruneAfterEachIt) {
+	    public Object doMinCallOverNodes(Object VDD, String NAME_FILE_CONTRAINTS, boolean pruneAfterEachIt) {
 
 	    	 if(this.isTerminalNode(VDD)){ 
 	    		 TerminalNodeKeyPar node=(TerminalNodeKeyPar)this.getInverseNodesCache().get(VDD);
