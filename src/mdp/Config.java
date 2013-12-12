@@ -102,6 +102,28 @@ public class Config {
 		return configValue;
 	}
 
+	public String getLrsInputFile() {
+		final String configKey = "lrs.inputfile";
+		
+		String configValue = this.getConfigValue(configKey);
+		
+		if (configValue.contains(ROOT_DIR_PLACEHOLDER))
+			configValue = configValue.replace(ROOT_DIR_PLACEHOLDER, this.getRootDir());
+		
+		return configValue;
+	}
+	
+	public String getLrsOutputFile() {
+		final String configKey = "lrs.outputfile";
+		
+		String configValue = this.getConfigValue(configKey);
+		
+		if (configValue.contains(ROOT_DIR_PLACEHOLDER))
+			configValue = configValue.replace(ROOT_DIR_PLACEHOLDER, this.getRootDir());
+		
+		return configValue;
+	}
+	
 	public String getProblemsDir() {
 		final String configKey = "problems.dir";
 		

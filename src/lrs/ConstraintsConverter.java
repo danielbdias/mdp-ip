@@ -77,7 +77,7 @@ public class ConstraintsConverter {
 		
 		ArrayList<RationalNumber> variableWeight = computeVariableWeights(leftSplitedExpression, rightSplitedExpression, parameters, signal);
 		
-		return new LinearConstraintExpression(constant, variableWeight);
+		return new LinearConstraintExpression(constant, variableWeight, parameters);
 	}
 
 	
