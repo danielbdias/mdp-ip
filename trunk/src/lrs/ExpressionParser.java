@@ -12,13 +12,22 @@ public class ExpressionParser {
 	private static final int COMPARISON_TOKEN = 3;
 	
 	public static List<Token> parseExpression(ArrayList constraint) {
+		Object[] constraintAsArray = new Object[constraint.size()];
+		
+		for (int i = 0; i < constraintAsArray.length; i++)
+			constraintAsArray[i] = constraint.get(i);
+		
+		return parseExpression(constraintAsArray);
+	}
+	
+	public static List<Token> parseExpression(Object[] constraint) {
 		ArrayList<Token> tokens = new ArrayList<Token>();
 		
 		int lastTokenType = -1;
 		String currentToken = "";
 		
-		for (int i = 0; i < constraint.size(); i++) {
-			Object token = constraint.get(i);
+		for (int i = 0; i < constraint.length; i++) {
+			Object token = constraint[i];
 			
 			int tokenType = getTokenType(token);
 			

@@ -42,8 +42,32 @@ public class ConstraintsConverter {
 			
 		return parsedConstraints;
 	}
-	
 
+	public static LinearConstraintExpression convertSingleConstraintToLrsFormat(ArrayList constraint) {
+		Object[] constraintAsArray = new Object[constraint.size()];
+		
+		for (int i = 0; i < constraintAsArray.length; i++)
+			constraintAsArray[i] = constraint.get(i);
+		 
+		return convertSingleConstraintToLrsFormat(constraintAsArray);
+	}
+
+	public static LinearConstraintExpression convertSingleConstraintToLrsFormat(Object[] constraint) {
+		List<Token> parsedExpression = ExpressionParser.parseExpression(constraint);
+		
+		Set<String> parametersFound = new TreeSet<String>();
+		findNewParameters(parsedExpression, parametersFound);
+		
+		String[] parameters = parametersFound.toArray(new String[0]);
+		
+		return convertExpressionToLinearConstraintExpression(parsedExpression, parameters);
+	}
+	
+	public static LinearConstraintExpression convertSingleConstraintToLrsFormat(Object[] constraint, String[] parameters) {
+		List<Token> parsedExpression = ExpressionParser.parseExpression(constraint);	
+		return convertExpressionToLinearConstraintExpression(parsedExpression, parameters);
+	}
+	
 	private static void findNewParameters(List<Token> parsedExpression, Set<String> parametersFound) {
 		for (Token token : parsedExpression) {
 			if (token instanceof ParameterToken) {

@@ -57,7 +57,7 @@ public class LRTDPIP {
 		
 		long startTime = System.currentTimeMillis();
 		
-		myMDP.solveLRTDPIPFac(maxTrialDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, finalVUpperPath, initialStateLogPath, initVUpperPath);
+		myMDP.solveLRTDPIPFac2(maxTrialDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, finalVUpperPath, initialStateLogPath, initVUpperPath);
 				   
 		long timeSeg = (System.currentTimeMillis() - startTime) / 1000;
 		
