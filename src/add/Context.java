@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
@@ -1016,6 +1017,41 @@ public abstract class Context {
          	System.exit(0);
          }
  	}
+	 
+	 public List<Polynomial> enumeratePolyInLeaves(int id) {
+		 List<Polynomial> leaves = new ArrayList<Polynomial>();
+		 
+		 this.enumeratePolyInLeaves(id, leaves, new TreeMap<Integer, Boolean>());
+		 
+		 return leaves;
+	 }
+	 
+	 private void enumeratePolyInLeaves(int id, List<Polynomial> leaves, TreeMap<Integer, Boolean> assign) {
+		 Boolean b;
+		 
+		 NodeKey cur = this.getNodeInverseCache(id);
+		
+		 if (cur instanceof InternalNodeKey) {    			
+			 InternalNodeKey ni = (InternalNodeKey) cur;    
+			 
+			 Integer var_id = ni.var;
+		
+			 assign.put(var_id, false);
+			 enumeratePolyInLeaves((Integer) ni.getLower(), leaves, assign);
+			 
+			 assign.put(var_id, true);
+			 enumeratePolyInLeaves((Integer) ni.getHigh(), leaves, assign);
+		     
+			 assign.remove(var_id);
+			 return;
+		 }
+		 
+		 //If get here, cur will be an ADDDNode, ADDBNode		 
+		 if (cur instanceof TerminalNodeKeyPar) {
+			 Polynomial poly = ((TerminalNodeKeyPar) cur).getPolynomial();  // the result is a poly 
+			 leaves.add(poly);
+		 }
+	 }
 	 
 	 public void enumeratePaths(int id, ADDLeafOperation leaf_op) {
 		 enumeratePaths(id, leaf_op, new TreeMap<Integer, Boolean>());

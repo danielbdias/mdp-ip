@@ -20,6 +20,41 @@ import lrs.expressiontokens.*;
 
 public class ConstraintsConverter {
 	
+	public static void correctConstraintsByParameters(List<LinearConstraintExpression> constraints, String[] parameters) {
+		Set<String> parametersAsSet = new TreeSet<String>();
+		for (String p : parameters) parametersAsSet.add(p);
+		
+		//add parameters with nonzero entries
+		for (LinearConstraintExpression cte : constraints) {
+			for (int i = 0; i < cte.getVariables().length; i++) {
+				if (!cte.getVariableWeights().get(i).equals(RationalNumber.ZERO))
+					parametersAsSet.add(cte.getVariables()[i]);
+			}
+		}
+		
+		//correct entry
+		for (int i = 0; i < constraints.size(); i++) {
+			LinearConstraintExpression cte = constraints.get(i);
+			
+			HashMap<String, RationalNumber> numberPerParameter = new HashMap<String, RationalNumber>();
+						
+			for (int j = 0; j < cte.getVariables().length; j++) {
+				String param = cte.getVariables()[j];
+				RationalNumber number = cte.getVariableWeights().get(j);
+				
+				if (parametersAsSet.contains(param)) 
+					numberPerParameter.put(param, number);
+			}
+			
+			ArrayList<RationalNumber> numbers = new ArrayList<RationalNumber>();
+			
+			for (int j = 0; j < parameters.length; j++) 
+				numbers.add(numberPerParameter.get(parameters[j]));
+			
+			constraints.set(i, new LinearConstraintExpression(cte.getConstant(), numbers, parameters));
+		}
+	}
+	
 	public static LinearConstraintExpression[] convertConstraintsToLrsFormat(ArrayList constraints){
 		LinearConstraintExpression[] parsedConstraints = new LinearConstraintExpression[constraints.size()];
 		
@@ -77,7 +112,6 @@ public class ConstraintsConverter {
 		}
 	}
 	
-	
 	private static LinearConstraintExpression convertExpressionToLinearConstraintExpression(List<Token> expression, String[] parameters) {
 		int comparerIndex = getComparerIndex(expression);
 		
@@ -103,7 +137,6 @@ public class ConstraintsConverter {
 		
 		return new LinearConstraintExpression(constant, variableWeight, parameters);
 	}
-
 	
 	private static RationalNumber computeConstant(List<Pair> leftSplitedExpression, List<Pair> rightSplitedExpression, int signal) {
 		RationalNumber constant = RationalNumber.ZERO;
@@ -134,7 +167,6 @@ public class ConstraintsConverter {
 		
 		return constant;
 	}
-
 	
 	private static ArrayList<RationalNumber> computeVariableWeights(List<Pair> leftSplitedExpression, List<Pair> rightSplitedExpression, String[] parameters, int signal) {
 		ArrayList<RationalNumber> variableWeight = new ArrayList<RationalNumber>();
@@ -176,7 +208,6 @@ public class ConstraintsConverter {
 		
 		return variableWeight;
 	}
-	
 	
 	private static List<Pair> splitExpression(List<Token> expression, String[] parameters) {
 		List<List<Token>> splittedExpression = splitExpressionByOperations(expression);
@@ -229,7 +260,6 @@ public class ConstraintsConverter {
 		
 		return new Pair(number, parsedPair.get_o2());
 	}
-
 
 	private static Pair parseNumberSubExpression(List<Token> subExpression, List<Token> expression, String[] parameters) {
 		if (! (subExpression.get(0) instanceof NumberToken)) throwExpressionError(expression);
@@ -323,7 +353,6 @@ public class ConstraintsConverter {
 		return comparerIndex;
 	}
 
-	
 	private static String convertExpressionToString(List<Token> expression) {
 		String expressionAsString = "";
 	
@@ -332,8 +361,7 @@ public class ConstraintsConverter {
 		
 		return expressionAsString.substring(0, expressionAsString.length() - 1);
 	}
-	
-	
+		
 	private static void throwExpressionError(List<Token> expression) {
 		throw new InvalidParameterException("The expression '" + convertExpressionToString(expression) + "' is invalid.");
 	}
