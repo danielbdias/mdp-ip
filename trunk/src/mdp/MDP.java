@@ -34,6 +34,7 @@ public abstract class MDP {
 	//3: using  the result of a problem with constraints p>= epsilon 
 	//4: add random coefficients for each constraint p
 	int typeSampledRTDPMDPIP = 4;
+	boolean useVerticesSolver = false;
 	
 	double epsilon = 0.000001;
 	
@@ -115,8 +116,11 @@ public abstract class MDP {
 	public Object valueWHDD;
    
 	//Constraints
-	protected HashMap<String, List<LinearConstraintExpression>> parsedConstraintsPerParameter = new HashMap<String, List<LinearConstraintExpression>>();
 	protected HashMap<String, List<ArrayList>> constraintsPerParameter = new HashMap<String, List<ArrayList>>();
+	protected HashMap<String, List<LinearConstraintExpression>> parsedConstraintsPerParameter = new HashMap<String, List<LinearConstraintExpression>>();
+	
+	protected HashMap<Action, HashMap<Integer, List<HashMap<String, Double>>>> verticesPerActionAndStateVariable = 
+			new HashMap<Action, HashMap<Integer, List<HashMap<String, Double>>>>();
 	
 	///////////////////////////////
 	protected HashMap<HashMap, Hashtable> stationarySimulatorProbabilities = null;
@@ -214,6 +218,7 @@ public abstract class MDP {
 		  numOriginalConstraints = constraints.size();
 		  createFileConstraintsGreaterZero(constraints, NAME_FILE_CONTRAINTS_GREATERZERO);
 		
+		  //parse all constraints to find the list of constraints per parameter
 		  LinearConstraintExpression[] parsedConstraints = ConstraintsConverter.convertConstraintsToLrsFormat(constraints);
 		  
 		  for (int j = 0; j < parsedConstraints.length; j++) {
@@ -222,23 +227,10 @@ public abstract class MDP {
 			  for (int k = 0; k < parsedConstraint.getVariables().length; k++) {
 				  String parameter = parsedConstraint.getVariables()[k];
 				  
-				  if (parsedConstraint.getVariableWeights().get(k).toDouble() != 0.0) {
-					  if (!this.parsedConstraintsPerParameter.containsKey(parameter))
-						  this.parsedConstraintsPerParameter.put(parameter, new ArrayList<LinearConstraintExpression>());
-					  
+				  if (parsedConstraint.getVariableWeights().get(k).toDouble() != 0.0) {					  
 					  if (!this.constraintsPerParameter.containsKey(parameter))
 						  this.constraintsPerParameter.put(parameter, new ArrayList<ArrayList>());
-					  
-					  this.parsedConstraintsPerParameter.get(parameter).add(parsedConstraint);
-					  
-					  LinearConstraintExpression greaterThanZeroConstraint = 
-							  ConstraintsConverter.convertSingleConstraintToLrsFormat(new Object[] { parameter, ">", "=", 0.0 }, parsedConstraint.getVariables());
-					  LinearConstraintExpression lesserThanOneConstraint = 
-							  ConstraintsConverter.convertSingleConstraintToLrsFormat(new Object[] { parameter, "<", "=", 1.0 }, parsedConstraint.getVariables());
-					  
-					  this.parsedConstraintsPerParameter.get(parameter).add(greaterThanZeroConstraint);
-					  this.parsedConstraintsPerParameter.get(parameter).add(lesserThanOneConstraint);
-					  
+
 					  this.constraintsPerParameter.get(parameter).add((ArrayList) constraints.get(j));
 				  }
 			  }
@@ -1782,12 +1774,8 @@ public abstract class MDP {
 	   * considered. Every trial that reached maxDepth also skips the labeling phase
 	   * since this could break the invariant of the solved label 
 	*/
-	
+
 	public long lrtdpTrial(int maxDepth, long timeOut, Random randomGenNextState, State state, HashSet <State> solvedStates, String initialStateLogPath, long initialTime){
-		return lrtdpTrial(maxDepth, timeOut, randomGenNextState, state, solvedStates, initialStateLogPath, initialTime, null);
-	}
-	
-	public long lrtdpTrial(int maxDepth, long timeOut, Random randomGenNextState, State state, HashSet <State> solvedStates, String initialStateLogPath, long initialTime, List<HashMap<String, Double>> vertices){
 		int depth = 0;
 		long totalTrialTime = 0;
 		long totalTrialTimeSec = 0;
@@ -1825,7 +1813,7 @@ public abstract class MDP {
 			Action greedyAction = updateVUpper(state.getValues()); // Here we fill probNature. To work with factored, it must be TreeMap, not State
 			contUpperUpdates++;
 			context.workingWithParameterized = context.workingWithParameterizedBef;
-			state = new State(chooseNextStateRTDP(state.getValues(), greedyAction, randomGenNextState, vertices));
+			state = new State(chooseNextStateRTDP(state.getValues(), greedyAction, randomGenNextState));
 			
 //			System.out.printf("action: %s, resulted state: %s", greedyAction.getName(), getStateString(state.getValues()));
 //			System.out.println();
@@ -2036,27 +2024,16 @@ public abstract class MDP {
 	}
 	
 	private TreeMap<Integer, Boolean> chooseNextStateRTDP(TreeMap<Integer, Boolean> state, Action actionGreedy, Random randomGenerator) {
-		return chooseNextStateRTDP(state, actionGreedy, randomGenerator, null);
+		return sampling(state, actionGreedy, randomGenerator);
 	}
-
-	private TreeMap<Integer, Boolean> chooseNextStateRTDP(TreeMap<Integer, Boolean> state, Action actionGreedy, Random randomGenerator, List<HashMap<String, Double>> vertices) {
-		return sampling(state, actionGreedy.tmID2ADD, randomGenerator);
-	}
-	
-	private TreeMap<Integer, Boolean> sampling(TreeMap<Integer, Boolean> state, TreeMap iD2ADD, Random randomGenerator) {
-		return sampling(state, iD2ADD, randomGenerator, null);
-	}
-	
-	private TreeMap<Integer, Boolean> sampling(TreeMap<Integer, Boolean> state, TreeMap iD2ADD, Random randomGenerator, List<HashMap<String, Double>> vertices) {
+		
+	private TreeMap<Integer, Boolean> sampling(TreeMap<Integer, Boolean> state, Action action, Random randomGenerator) {
+		TreeMap iD2ADD = action.tmID2ADD;
+		
 		TreeMap<Integer, Boolean> nextState = new TreeMap<Integer, Boolean>();
 		
-		if (typeSampledRTDPMDPIP == 4) {
-			if (vertices == null)
-				context.probSample = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
-			else
-				context.probSample = new Hashtable<String, Double>(getRandomVertexFromPolytopeVertices(vertices));
-		}
-			
+		if (typeSampledRTDPMDPIP == 4 && !useVerticesSolver)
+			context.probSample = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
 		
 		for (int i = 1; i <= this.numVars; i++){
 			
@@ -2069,6 +2046,11 @@ public abstract class MDP {
 			if (cpt_a_xiprime == null){
 				System.out.println("Prime var not found");
 				System.exit(1);
+			}
+			
+			if (typeSampledRTDPMDPIP == 4 && useVerticesSolver) {
+				List<HashMap<String, Double>> vertices = this.verticesPerActionAndStateVariable.get(action).get(varPrime);
+				context.probSample = new Hashtable<String, Double>(getRandomVertexFromPolytopeVertices(vertices));
 			}
 			
 			if (!context.workingWithParameterized) { 
@@ -2261,7 +2243,7 @@ public abstract class MDP {
 				System.out.println("Some problem finding best action");
 				System.exit(0);
 			}
-			state=sampling(state,aBest.tmID2ADD, randomGenNextState);
+			state=sampling(state,aBest, randomGenNextState);
 		
 			cur_discount *= this.bdDiscount.doubleValue();
 			RewardInitialState=RewardInitialState + cur_discount*context.getValueForStateInContext((Integer)this.rewardDD, state, null, null);
@@ -4178,6 +4160,7 @@ public abstract class MDP {
 			String finalVUpperPath, String initialStateLogPath, String initVUpperPath, Boolean checkConvergency) {
 				
 		typeSampledRTDPMDPIP = stateSamplingType;
+		useVerticesSolver = true;
 		
 		Stack<TreeMap<Integer,Boolean>> visited = new Stack<TreeMap<Integer,Boolean>>();
 		
@@ -4185,10 +4168,10 @@ public abstract class MDP {
 		long totalTrialTimeSec=0;
 		ResetTimer();
 		
-		List<HashMap<String, Double>> vertices = this.getPolytopeVertices();
+		this.verticesPerActionAndStateVariable = getVerticesPerActionAndStateVariable();
 		
 		if (typeSampledRTDPMDPIP == 5)
-			context.probSample = new Hashtable<String, Double>(getRandomVertexFromPolytopeVertices(vertices));
+			context.probSample = new Hashtable<String, Double>(this.getRandomProbsForAllParams());
 
 		if (initVUpperPath == null) {
 			//Initialize Vu with admissible value function //////////////////////////////////
@@ -4239,7 +4222,7 @@ public abstract class MDP {
 				//System.out.println("action greedy: " + greedyAction.getName());
 				
 				context.workingWithParameterized = context.workingWithParameterizedBef;
-				state = chooseNextStateRTDP(state, greedyAction, randomGenNextState, vertices);
+				state = chooseNextStateRTDP(state, greedyAction, randomGenNextState);
 				
 				//System.out.println("next state: " + state);
 				flushCachesRTDP(false);
@@ -4321,16 +4304,17 @@ public abstract class MDP {
 			String finalVUpperPath, String initialStateLogPath, Object initVUpper) {
 		//Define o tipo de amostragem de estados
 		typeSampledRTDPMDPIP = stateSamplingType;
+		useVerticesSolver = true;
 		
 		long totalTrialTime = 0;
 		long totalTrialTimeSec = 0;
 		
 		ResetTimer();
 		
-		List<HashMap<String, Double>> vertices = this.getPolytopeVertices();
+		this.verticesPerActionAndStateVariable = getVerticesPerActionAndStateVariable();
 		
 		if (typeSampledRTDPMDPIP == 5)
-			context.probSample = new Hashtable<String, Double>(getRandomVertexFromPolytopeVertices(vertices));
+			context.probSample = new Hashtable<String, Double>(this.getRandomProbsForAllParams());
 
 		VUpper = initVUpper;
 		
@@ -4346,7 +4330,7 @@ public abstract class MDP {
 		long initialTime = System.currentTimeMillis();
 		
 		while (totalTrialTimeSec <= timeOut && !solvedStates.contains(s)){
-			totalTrialTimeSec = lrtdpTrial(maxDepth, timeOut, randomGenNextState, s, solvedStates, initialStateLogPath, initialTime, vertices);
+			totalTrialTimeSec = lrtdpTrial(maxDepth, timeOut, randomGenNextState, s, solvedStates, initialStateLogPath, initialTime);
 			trialCounter++;
    	    	
    	    	s = new State(sampleInitialStateFromList(randomGenInitial));
@@ -4370,18 +4354,90 @@ public abstract class MDP {
 		}
 	}
 	
-	private List<HashMap<String, Double>> getPolytopeVertices() {
-		List<LinearConstraintExpression> constraints = new ArrayList<LinearConstraintExpression>();
+	private HashMap<Action, HashMap<Integer, List<HashMap<String, Double>>>> getVerticesPerActionAndStateVariable() {
+		HashMap<Action, HashMap<Integer, List<HashMap<String, Double>>>> verticesPerActionAndStateVariable =
+				new HashMap<Action, HashMap<Integer, List<HashMap<String, Double>>>>();
 		
-		for (String parameter : this.parsedConstraintsPerParameter.keySet())
-			constraints.addAll(this.parsedConstraintsPerParameter.get(parameter));
+		for (Object actionName : this.mName2Action.keySet()) {
+			Action action = (Action) this.mName2Action.get(actionName);
+			
+			HashMap<Integer, List<HashMap<String, Double>>> verticesPerVariable = 
+					new HashMap<Integer, List<HashMap<String,Double>>>();
+			
+			verticesPerActionAndStateVariable.put(action, verticesPerVariable);
+			
+			for (Object varId : action.tmID2ADD.keySet()) {
+				int variable = (Integer) varId;
+				
+				Object cpt_a_xiprime = action.tmID2ADD.get(variable);
+				
+				List<Polynomial> polys = context.enumeratePolyInLeaves((Integer) cpt_a_xiprime);
+				
+				Set<String> parameters = new HashSet<String>();
+				
+				for (Polynomial polynomial : polys) {				
+					Object[] vars = polynomial.getTerms().keySet().toArray();
+					for (Object var : vars) {
+						String param = context.getLabelProd((Integer) var);
+						
+						parameters.add("p" + param);
+					}
+				}
+				
+				if (!parameters.isEmpty()) {
+					verticesPerVariable.put(variable, 
+											getPolytopeVertices(getParsedConstraints(parameters.toArray(new String[0]))));
+					
+					//context.view(cpt_a_xiprime);
+				}
+				else
+					verticesPerVariable.put(variable, new ArrayList<HashMap<String,Double>>());
+			}
+		}
 		
-		return getPolytopeVertices(constraints);
+		return verticesPerActionAndStateVariable;
+	}
+
+	private LinearConstraintExpression[] getParsedConstraints(String[] parameters) {
+		ArrayList constraints = new ArrayList();
+		
+		for (String parameter : parameters) 
+			constraints.addAll(this.constraintsPerParameter.get(parameter));
+			
+		List<LinearConstraintExpression> parsedConstraints = new ArrayList<LinearConstraintExpression>();
+			  
+		LinearConstraintExpression[] constraintsArray = ConstraintsConverter.convertConstraintsToLrsFormat(constraints);
+
+		for (LinearConstraintExpression lce : constraintsArray)
+			parsedConstraints.add(lce);
+		
+		for (String parameter : parameters) {
+			parsedConstraints.add(ConstraintsConverter.convertSingleConstraintToLrsFormat(new Object[] { parameter, ">", "=", 0.0 }, constraintsArray[0].getVariables()));
+			parsedConstraints.add(ConstraintsConverter.convertSingleConstraintToLrsFormat(new Object[] { parameter, "<", "=", 1.0 }, constraintsArray[0].getVariables()));
+		}
+			
+		return parsedConstraints.toArray(new LinearConstraintExpression[0]);
 	}
 	
-	private List<HashMap<String, Double>> getPolytopeVertices(List<LinearConstraintExpression> constraints) {	
-		if (constraints != null && !constraints.isEmpty()) {						
-			LinearConstraintExpression[] constraintsAsArray = constraints.toArray(new LinearConstraintExpression[0]);
+	private HashMap<String, Double> getRandomProbsForAllParams() {
+		HashMap<String, Double> result = new HashMap<String, Double>();
+		
+		for (String parameter : this.constraintsPerParameter.keySet()) {
+			LinearConstraintExpression[] constraints = getParsedConstraints(new String[] { parameter });
+			List<HashMap<String, Double>> vertices = getPolytopeVertices(constraints);
+			
+			HashMap<String, Double> vertex = getRandomVertexFromPolytopeVertices(vertices);
+			
+			String formattedParam = parameter.substring(1);
+			result.put(formattedParam, vertex.get(formattedParam));
+		}
+		
+		return result;
+	}
+		
+	private List<HashMap<String, Double>> getPolytopeVertices(LinearConstraintExpression[] constraints) {	
+		if (constraints != null && constraints.length > 0) {						
+			LinearConstraintExpression[] constraintsAsArray = constraints;
 			String[] parameters = constraintsAsArray[0].getVariables();
 			
 			return LRSCaller.callLRSToGetVertex(constraintsAsArray, parameters);
