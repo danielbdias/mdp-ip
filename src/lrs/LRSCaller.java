@@ -156,6 +156,7 @@ public class LRSCaller {
 			
 			writer.write("temp" + LINE_BREAK);
 			writer.write("H-representation" + LINE_BREAK);
+			writer.write("digits 200" + LINE_BREAK);
 			writer.write("begin" + LINE_BREAK);
 			
 			writer.write(String.format("%d %d rational", expressions.length, variables.length + 1) + LINE_BREAK);
