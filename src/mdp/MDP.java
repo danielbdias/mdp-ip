@@ -117,10 +117,7 @@ public abstract class MDP {
    
 	//Constraints
 	protected HashMap<String, List<ArrayList>> constraintsPerParameter = new HashMap<String, List<ArrayList>>();
-	protected HashMap<String, List<LinearConstraintExpression>> parsedConstraintsPerParameter = new HashMap<String, List<LinearConstraintExpression>>();
-	
-	protected HashMap<Action, HashMap<Integer, List<HashMap<String, Double>>>> verticesPerActionAndStateVariable = 
-			new HashMap<Action, HashMap<Integer, List<HashMap<String, Double>>>>();
+	protected HashMap<String, LinearConstraintExpression[]> parsedConstraintsPerParameter = new HashMap<String, LinearConstraintExpression[]>();
 	
 	///////////////////////////////
 	protected HashMap<HashMap, Hashtable> stationarySimulatorProbabilities = null;
@@ -2048,16 +2045,26 @@ public abstract class MDP {
 				System.exit(1);
 			}
 			
-			if (typeSampledRTDPMDPIP == 4 && useVerticesSolver) {
-				List<HashMap<String, Double>> vertices = this.verticesPerActionAndStateVariable.get(action).get(varPrime);
-				context.probSample = new Hashtable<String, Double>(getRandomVertexFromPolytopeVertices(vertices));
-			}
-			
 			if (!context.workingWithParameterized) { 
 				probFalse = (Double) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, state, varPrime, false);
 			}
 			else {
-				Polynomial probFalsePol = (Polynomial) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, state, varPrime, false);			
+				Polynomial probFalsePol = (Polynomial) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, state, varPrime, false);
+				
+				if (typeSampledRTDPMDPIP == 4 && useVerticesSolver) {
+					String[] parameters = getParameterFromPolynomial(probFalsePol);
+				
+					if (parameters != null && parameters.length > 0) {
+						LinearConstraintExpression[] constraints = this.getParsedConstraints(parameters);
+						
+						List<HashMap<String, Double>> vertices = LRSCaller.callLRSToGetVertex(constraints, parameters);
+						context.probSample = new Hashtable<String, Double>(getRandomVertexFromPolytopeVertices(vertices));
+					}
+					else {
+						context.probSample = new Hashtable<String, Double>();
+					}
+				}
+				
 				probFalse = samplingOneVariableIP(probFalsePol);
 			}
 			
@@ -4168,8 +4175,6 @@ public abstract class MDP {
 		long totalTrialTimeSec=0;
 		ResetTimer();
 		
-		this.verticesPerActionAndStateVariable = getVerticesPerActionAndStateVariable();
-		
 		if (typeSampledRTDPMDPIP == 5)
 			context.probSample = new Hashtable<String, Double>(this.getRandomProbsForAllParams());
 
@@ -4311,8 +4316,6 @@ public abstract class MDP {
 		
 		ResetTimer();
 		
-		this.verticesPerActionAndStateVariable = getVerticesPerActionAndStateVariable();
-		
 		if (typeSampledRTDPMDPIP == 5)
 			context.probSample = new Hashtable<String, Double>(this.getRandomProbsForAllParams());
 
@@ -4354,48 +4357,18 @@ public abstract class MDP {
 		}
 	}
 	
-	private HashMap<Action, HashMap<Integer, List<HashMap<String, Double>>>> getVerticesPerActionAndStateVariable() {
-		HashMap<Action, HashMap<Integer, List<HashMap<String, Double>>>> verticesPerActionAndStateVariable =
-				new HashMap<Action, HashMap<Integer, List<HashMap<String, Double>>>>();
+	private String[] getParameterFromPolynomial(Polynomial polynomial) {
+		Set<String> parameters = new HashSet<String>();
 		
-		for (Object actionName : this.mName2Action.keySet()) {
-			Action action = (Action) this.mName2Action.get(actionName);
+		Object[] vars = polynomial.getTerms().keySet().toArray();
+		
+		for (Object var : vars) {
+			String param = context.getLabelProd((Integer) var);
 			
-			HashMap<Integer, List<HashMap<String, Double>>> verticesPerVariable = 
-					new HashMap<Integer, List<HashMap<String,Double>>>();
-			
-			verticesPerActionAndStateVariable.put(action, verticesPerVariable);
-			
-			for (Object varId : action.tmID2ADD.keySet()) {
-				int variable = (Integer) varId;
-				
-				Object cpt_a_xiprime = action.tmID2ADD.get(variable);
-				
-				List<Polynomial> polys = context.enumeratePolyInLeaves((Integer) cpt_a_xiprime);
-				
-				Set<String> parameters = new HashSet<String>();
-				
-				for (Polynomial polynomial : polys) {				
-					Object[] vars = polynomial.getTerms().keySet().toArray();
-					for (Object var : vars) {
-						String param = context.getLabelProd((Integer) var);
-						
-						parameters.add("p" + param);
-					}
-				}
-				
-				if (!parameters.isEmpty()) {
-					verticesPerVariable.put(variable, 
-											getPolytopeVertices(getParsedConstraints(parameters.toArray(new String[0]))));
-					
-					//context.view(cpt_a_xiprime);
-				}
-				else
-					verticesPerVariable.put(variable, new ArrayList<HashMap<String,Double>>());
-			}
+			parameters.add("p" + param);
 		}
 		
-		return verticesPerActionAndStateVariable;
+		return parameters.toArray(new String[0]);
 	}
 
 	private LinearConstraintExpression[] getParsedConstraints(String[] parameters) {
