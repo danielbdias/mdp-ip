@@ -1497,7 +1497,7 @@ public abstract class MDP {
 	protected Action updateVUpper(TreeMap<Integer, Boolean> state) {
 		Pair result = computeVUpper(state);
 		
-		double maxTotal = (double) result.get_o2();
+		double maxTotal = (Double) result.get_o2();
 		
         //update the ADD VUpper
 		updateValueBranch(state, 'u', maxTotal);

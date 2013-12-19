@@ -40,7 +40,7 @@ public class RTDPIP {
 		String initVUpperPath   = null;
 		if (args.length > 7) initVUpperPath = args[7];
 		
-		Boolean checkConvergency = false;
+		Boolean checkConvergency = false	;
 		if (args.length > 8) checkConvergency = Boolean.parseBoolean(args[8]);
 		
 		//Tipo do contexto do problema. Pode ter 3 valores possíveis:
