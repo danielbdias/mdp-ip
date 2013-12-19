@@ -18,9 +18,9 @@ public class NumberToken extends Token {
 	
 	private double convertToDouble(Object originalValue) {
 		if (originalValue instanceof Double)
-			return (double) originalValue;
+			return (Double) originalValue;
 		else if (originalValue instanceof Integer)
-			return (double) originalValue;
+			return (Double) originalValue;
 		else if (originalValue instanceof BigDecimal)
 			return ((BigDecimal) originalValue).doubleValue();
 		else if (originalValue instanceof BigInteger)
