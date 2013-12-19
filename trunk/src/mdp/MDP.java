@@ -2056,6 +2056,7 @@ public abstract class MDP {
 				
 					if (parameters != null && parameters.length > 0) {
 						LinearConstraintExpression[] constraints = this.getParsedConstraints(parameters);
+						parameters = constraints[0].getVariables();
 						
 						List<HashMap<String, Double>> vertices = LRSCaller.callLRSToGetVertex(constraints, parameters);
 						context.probSample = new Hashtable<String, Double>(getRandomVertexFromPolytopeVertices(vertices));
@@ -4381,12 +4382,14 @@ public abstract class MDP {
 			  
 		LinearConstraintExpression[] constraintsArray = ConstraintsConverter.convertConstraintsToLrsFormat(constraints);
 
+		parameters = constraintsArray[0].getVariables();
+		
 		for (LinearConstraintExpression lce : constraintsArray)
 			parsedConstraints.add(lce);
 		
 		for (String parameter : parameters) {
-			parsedConstraints.add(ConstraintsConverter.convertSingleConstraintToLrsFormat(new Object[] { parameter, ">", "=", 0.0 }, constraintsArray[0].getVariables()));
-			parsedConstraints.add(ConstraintsConverter.convertSingleConstraintToLrsFormat(new Object[] { parameter, "<", "=", 1.0 }, constraintsArray[0].getVariables()));
+			parsedConstraints.add(ConstraintsConverter.convertSingleConstraintToLrsFormat(new Object[] { parameter, ">", "=", 0.0 }, parameters));
+			parsedConstraints.add(ConstraintsConverter.convertSingleConstraintToLrsFormat(new Object[] { parameter, "<", "=", 1.0 }, parameters));
 		}
 			
 		return parsedConstraints.toArray(new LinearConstraintExpression[0]);
