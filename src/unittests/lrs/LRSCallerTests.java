@@ -12,6 +12,8 @@ import lrs.RationalNumber;
 
 import org.junit.Test;
 
+import util.PolytopePoint;
+
 public class LRSCallerTests {
 
 	final double DELTA = 0.0;
@@ -66,7 +68,7 @@ public class LRSCallerTests {
 		
 		expressions[5] = new LinearConstraintExpression(RationalNumber.ONE, weights, variables);
 		
-		List<HashMap<String, Double>> result = LRSCaller.callLRSToGetVertex(expressions, variables);
+		List<PolytopePoint> result = LRSCaller.callLRSToGetVertex(expressions, variables);
 		
 		//The number of vertices must be eight
 		assertEquals(8, result.size());
@@ -96,8 +98,8 @@ public class LRSCallerTests {
 		compareVertex(result.get(7), new double[] { -1.0, -1.0, -1.0 }, variables);
 	}
 	
-	private void compareVertex(HashMap<String, Double> result, double[] vertex, String[] variables) {
+	private void compareVertex(PolytopePoint result, double[] vertex, String[] variables) {
 		for (int i = 0; i < variables.length; i++)
-			assertEquals(vertex[i], result.get(variables[i]), DELTA);	
+			assertEquals(vertex[i], result.getVertexDimension(variables[i]), DELTA);	
 	}
 }

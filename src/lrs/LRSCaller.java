@@ -10,18 +10,20 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.*;
 
+import util.PolytopePoint;
+
 import mdp.Config;
 
 public class LRSCaller {
 	final static String LINE_BREAK = System.getProperty("line.separator");
 	
-	public static List<HashMap<String, Double>> callLRSToGetVertex(LinearConstraintExpression[] expressions, String[] variables) {
+	public static List<PolytopePoint> callLRSToGetVertex(LinearConstraintExpression[] expressions, String[] variables) {
 		String lrsInputFilePath = createTempPath(Config.getConfig().getLrsInputFile());
 		String lrsOutputFilePath = createTempPath(Config.getConfig().getLrsOutputFile());
 		
 		File lrsInputFile = null, lrsOutputFile = null;
 		
-		List<HashMap<String, Double>> result = null;
+		List<PolytopePoint> result = null;
 		
 		try {
 			lrsInputFile = new File(lrsInputFilePath);
@@ -40,12 +42,12 @@ public class LRSCaller {
 		return result;
 	}
 	
-	private static List<HashMap<String, Double>> readLrsOutputFile(
+	private static List<PolytopePoint> readLrsOutputFile(
 			File lrsOutputFile, String[] variables) {
 		
 		final Exception INVALID_FORMAT_ERROR = new Exception("Output file in invalid format !");
 		
-		List<HashMap<String, Double>> result = new ArrayList<HashMap<String,Double>>();
+		List<PolytopePoint> result = new ArrayList<PolytopePoint>();
 		
 		BufferedReader reader = null;
 		
@@ -88,7 +90,7 @@ public class LRSCaller {
 						vertex.put(variableName, variableValue.toDouble());
 					}
 					
-					result.add(vertex);
+					result.add(new PolytopePoint(vertex));
 				}
 			}
 			

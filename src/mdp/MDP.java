@@ -11,6 +11,7 @@ import lrs.LRSCaller;
 import lrs.LinearConstraintExpression;
 
 import util.Pair;
+import util.PolytopePoint;
 import add.*;
 
 public abstract class MDP {
@@ -118,6 +119,8 @@ public abstract class MDP {
 	//Constraints
 	protected HashMap<String, List<ArrayList>> constraintsPerParameter = new HashMap<String, List<ArrayList>>();
 	protected HashMap<String, LinearConstraintExpression[]> parsedConstraintsPerParameter = new HashMap<String, LinearConstraintExpression[]>();
+	protected HashMap<Action, HashMap<Integer, List<PolytopePoint>>> cachedPolytopes = new HashMap<Action, HashMap<Integer,List<PolytopePoint>>>();
+	protected HashMap<Action, HashMap<Integer, PolytopePoint>> cachedPoints = new HashMap<Action, HashMap<Integer,PolytopePoint>>();
 	
 	///////////////////////////////
 	protected HashMap<HashMap, Hashtable> stationarySimulatorProbabilities = null;
@@ -2051,20 +2054,19 @@ public abstract class MDP {
 			else {
 				Polynomial probFalsePol = (Polynomial) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, state, varPrime, false);
 				
-				if (typeSampledRTDPMDPIP == 4 && useVerticesSolver) {
-					String[] parameters = getParameterFromPolynomial(probFalsePol);
-				
-					if (parameters != null && parameters.length > 0) {
-						LinearConstraintExpression[] constraints = this.getParsedConstraints(parameters);
-						parameters = constraints[0].getVariables();
-						
-						List<HashMap<String, Double>> vertices = LRSCaller.callLRSToGetVertex(constraints, parameters);
-						context.probSample = new Hashtable<String, Double>(getRandomVertexFromPolytopeVertices(vertices));
+				if (useVerticesSolver) {
+					PolytopePoint point = null;
+					
+					if (typeSampledRTDPMDPIP == 4) {
+						List<PolytopePoint> vertices = this.cachedPolytopes.get(action).get(varPrime);
+						point = getRandomPointFromPolytopeVertices(vertices);
+					} 
+					else if (typeSampledRTDPMDPIP == 5) {
+						point = this.cachedPoints.get(action).get(varPrime);
 					}
-					else {
-						context.probSample = new Hashtable<String, Double>();
-					}
-				}
+					
+					context.probSample = new Hashtable<String, Double>(point.asHashMap());
+				} 
 				
 				probFalse = samplingOneVariableIP(probFalsePol);
 			}
@@ -4172,12 +4174,14 @@ public abstract class MDP {
 		
 		Stack<TreeMap<Integer,Boolean>> visited = new Stack<TreeMap<Integer,Boolean>>();
 		
+		this.fillPolytopeCache();
+		
 		long totalTrialTime=0;
 		long totalTrialTimeSec=0;
 		ResetTimer();
 		
 		if (typeSampledRTDPMDPIP == 5)
-			context.probSample = new Hashtable<String, Double>(this.getRandomProbsForAllParams());
+			this.fillPointsCache();
 
 		if (initVUpperPath == null) {
 			//Initialize Vu with admissible value function //////////////////////////////////
@@ -4312,13 +4316,15 @@ public abstract class MDP {
 		typeSampledRTDPMDPIP = stateSamplingType;
 		useVerticesSolver = true;
 		
+		this.fillPolytopeCache();
+		
 		long totalTrialTime = 0;
 		long totalTrialTimeSec = 0;
 		
 		ResetTimer();
 		
 		if (typeSampledRTDPMDPIP == 5)
-			context.probSample = new Hashtable<String, Double>(this.getRandomProbsForAllParams());
+			this.fillPointsCache();
 
 		VUpper = initVUpper;
 		
@@ -4394,36 +4400,8 @@ public abstract class MDP {
 			
 		return parsedConstraints.toArray(new LinearConstraintExpression[0]);
 	}
-	
-	private HashMap<String, Double> getRandomProbsForAllParams() {
-		HashMap<String, Double> result = new HashMap<String, Double>();
-		
-		for (String parameter : this.constraintsPerParameter.keySet()) {
-			LinearConstraintExpression[] constraints = getParsedConstraints(new String[] { parameter });
-			List<HashMap<String, Double>> vertices = getPolytopeVertices(constraints);
 			
-			HashMap<String, Double> vertex = getRandomVertexFromPolytopeVertices(vertices);
-			
-			String formattedParam = parameter.substring(1);
-			result.put(formattedParam, vertex.get(formattedParam));
-		}
-		
-		return result;
-	}
-		
-	private List<HashMap<String, Double>> getPolytopeVertices(LinearConstraintExpression[] constraints) {	
-		if (constraints != null && constraints.length > 0) {						
-			LinearConstraintExpression[] constraintsAsArray = constraints;
-			String[] parameters = constraintsAsArray[0].getVariables();
-			
-			return LRSCaller.callLRSToGetVertex(constraintsAsArray, parameters);
-		}
-		else {
-			return new ArrayList<HashMap<String, Double>>();
-		}
-	}
-	
-	private HashMap<String, Double> getRandomVertexFromPolytopeVertices(List<HashMap<String, Double>> vertices) {
+	private PolytopePoint getRandomPointFromPolytopeVertices(List<PolytopePoint> vertices) {
 		Random rnd = new Random();
 		
 		double[] randomWeights = new double[vertices.size()];
@@ -4439,31 +4417,87 @@ public abstract class MDP {
 		for (int i = 0; i < randomWeights.length; i++)
 			randomWeights[i] = randomWeights[i] / sum;	
 			
-		HashMap<String, Double> randomVertex = new HashMap<String, Double>();
+		PolytopePoint randomPoint = new PolytopePoint();
 		
 		for (int i = 0; i < vertices.size(); i++) {
-			HashMap<String, Double> vertex = vertices.get(i);
+			PolytopePoint vertex = vertices.get(i);
 			
 			for (String parameter : vertex.keySet()) {
-				if (!randomVertex.containsKey(parameter))
-					randomVertex.put(parameter, 0.0);
+				if (!randomPoint.containsParameter(parameter))
+					randomPoint.setVertexDimension(parameter, 0.0);
 				
-				double parameterValue = randomVertex.get(parameter);
+				double parameterValue = randomPoint.getVertexDimension(parameter);
 				
-				parameterValue += vertex.get(parameter) * randomWeights[i];
+				parameterValue += vertex.getVertexDimension(parameter) * randomWeights[i];
 				
-				randomVertex.put(parameter, parameterValue);
+				randomPoint.setVertexDimension(parameter, parameterValue);
 			}
 		}
 		
 		//change parameter format from "p1" to "1"
-		HashMap<String, Double> anotherRandomVertex = new HashMap<String, Double>();
+		PolytopePoint anotherRandomVertex = new PolytopePoint();
 		
-		for (String parameter : randomVertex.keySet()) {
+		for (String parameter : randomPoint.keySet()) {
 			String formattedParam = parameter.substring(1);
-			anotherRandomVertex.put(formattedParam, randomVertex.get(parameter));
+			anotherRandomVertex.setVertexDimension(formattedParam, randomPoint.getVertexDimension(parameter));
 		}
 		
 		return anotherRandomVertex;
+	}
+
+	private void fillPointsCache() {
+		for (Object actionName : this.mName2Action.keySet()) {
+			Action action = (Action) this.mName2Action.get(actionName);
+			
+			HashMap<Integer, PolytopePoint> pointsPerVariable = new HashMap<Integer, PolytopePoint>();
+			this.cachedPoints.put(action, pointsPerVariable);
+					
+			for (int i = 1; i <= this.numVars; i++) {
+				Integer varPrime = Integer.valueOf(i);
+				
+				List<PolytopePoint> polytopeVertices = this.cachedPolytopes.get(action).get(varPrime);
+				pointsPerVariable.put(varPrime, this.getRandomPointFromPolytopeVertices(polytopeVertices));
+			}
+		}
+	}
+	
+	private void fillPolytopeCache() {
+		for (Object actionName : this.mName2Action.keySet()) {
+			Action action = (Action) this.mName2Action.get(actionName);
+
+			HashMap<Integer, List<PolytopePoint>> polytopesPerVariable = new HashMap<Integer, List<PolytopePoint>>();
+			this.cachedPolytopes.put(action, polytopesPerVariable);
+			
+			TreeMap iD2ADD = action.tmID2ADD;
+			
+			for (int i = 1; i <= this.numVars; i++) {
+				Integer varPrime = Integer.valueOf(i);
+				Integer var = Integer.valueOf(varPrime + this.numVars);
+				Object cpt_a_xiprime = iD2ADD.get(varPrime);
+				
+				if (cpt_a_xiprime == null){
+					System.out.println("Prime var not found");
+					System.exit(1);
+				}
+				
+				TreeMap<Integer, Boolean> pseudoState = new TreeMap<Integer, Boolean>();
+				pseudoState.put(var, true);
+				
+				Polynomial probFalsePol = (Polynomial) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, pseudoState, varPrime, false);
+				
+				String[] parameters = getParameterFromPolynomial(probFalsePol);
+				
+				List<PolytopePoint> vertices = null;
+				
+				if (parameters != null && parameters.length > 0) {
+					LinearConstraintExpression[] constraints = this.getParsedConstraints(parameters);
+					parameters = constraints[0].getVariables();
+					
+					vertices = LRSCaller.callLRSToGetVertex(constraints, parameters);
+				}
+				
+				polytopesPerVariable.put(varPrime, vertices);
+			}
+		}
 	}
 }
