@@ -31,6 +31,6 @@ public class PolytopePoint {
 	}
 	
 	public boolean containsParameter(String parameter) {
-		return this.containsParameter(parameter);
+		return this.internalVertex.containsKey(parameter);
 	}
 }

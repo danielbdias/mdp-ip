@@ -9,7 +9,6 @@ import java.util.*;
 import lrs.ConstraintsConverter;
 import lrs.LRSCaller;
 import lrs.LinearConstraintExpression;
-
 import util.Pair;
 import util.PolytopePoint;
 import add.*;
@@ -4480,20 +4479,26 @@ public abstract class MDP {
 					System.exit(1);
 				}
 				
-				TreeMap<Integer, Boolean> pseudoState = new TreeMap<Integer, Boolean>();
-				pseudoState.put(var, true);
+				List<Polynomial> polyList = context.enumeratePolyInLeaves((Integer) cpt_a_xiprime);
 				
-				Polynomial probFalsePol = (Polynomial) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, pseudoState, varPrime, false);
+				Set<String> parameters = new TreeSet<String>();
 				
-				String[] parameters = getParameterFromPolynomial(probFalsePol);
+				for (Polynomial polynomial : polyList) {
+					String[] p = getParameterFromPolynomial(polynomial);	
+					for (int j = 0; j < p.length; j++)
+						parameters.add(p[j]);
+				}
 				
 				List<PolytopePoint> vertices = null;
 				
-				if (parameters != null && parameters.length > 0) {
-					LinearConstraintExpression[] constraints = this.getParsedConstraints(parameters);
-					parameters = constraints[0].getVariables();
+				if (parameters != null && parameters.size() > 0) {
+					LinearConstraintExpression[] constraints = this.getParsedConstraints(parameters.toArray(new String[0]));
+					String[] params = constraints[0].getVariables();
 					
-					vertices = LRSCaller.callLRSToGetVertex(constraints, parameters);
+					vertices = LRSCaller.callLRSToGetVertex(constraints, params);
+				}
+				else {
+					vertices = new ArrayList<PolytopePoint>();
 				}
 				
 				polytopesPerVariable.put(varPrime, vertices);
