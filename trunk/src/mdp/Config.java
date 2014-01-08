@@ -176,7 +176,7 @@ public class Config {
 		String value = this.propertiesData.getProperty(configKey);
 		
 		if (value == null) {
-			System.err.printf("Config [%s] not found in properties file.", value);
+			System.err.printf("Config [%s] not found in properties file for key [%s].", value, configKey);
 			System.err.println();
 			
 			System.exit(-1);
