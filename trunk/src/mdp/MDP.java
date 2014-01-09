@@ -118,8 +118,9 @@ public abstract class MDP {
 	//Constraints
 	protected HashMap<String, List<ArrayList>> constraintsPerParameter = new HashMap<String, List<ArrayList>>();
 	protected HashMap<String, LinearConstraintExpression[]> parsedConstraintsPerParameter = new HashMap<String, LinearConstraintExpression[]>();
-	protected HashMap<Action, HashMap<Integer, List<PolytopePoint>>> cachedPolytopes = new HashMap<Action, HashMap<Integer,List<PolytopePoint>>>();
-	protected HashMap<Action, HashMap<Integer, PolytopePoint>> cachedPoints = new HashMap<Action, HashMap<Integer,PolytopePoint>>();
+	
+	protected HashMap<String, List<PolytopePoint>> cachedPolytopes = new HashMap<String, List<PolytopePoint>>();
+	protected HashMap<String, PolytopePoint> cachedPoints = new HashMap<String, PolytopePoint>();
 	
 	///////////////////////////////
 	protected HashMap<HashMap, Hashtable> stationarySimulatorProbabilities = null;
@@ -2054,17 +2055,26 @@ public abstract class MDP {
 				Polynomial probFalsePol = (Polynomial) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, state, varPrime, false);
 				
 				if (useVerticesSolver) {
-					PolytopePoint point = null;
+					String[] parameters = this.getParameterFromPolynomial(probFalsePol);
 					
-					if (typeSampledRTDPMDPIP == 4) {
-						List<PolytopePoint> vertices = this.cachedPolytopes.get(action).get(varPrime);
-						point = getRandomPointFromPolytopeVertices(vertices);
-					} 
-					else if (typeSampledRTDPMDPIP == 5) {
-						point = this.cachedPoints.get(action).get(varPrime);
+					if (parameters != null && parameters.length > 0) {
+						String polytopeCacheKey = this.getPolytopeCacheKey(this.getParameterFromPolynomial(probFalsePol));
+						
+						PolytopePoint point = null;
+						
+						if (typeSampledRTDPMDPIP == 4) {
+							List<PolytopePoint> vertices = this.cachedPolytopes.get(polytopeCacheKey);
+							point = getRandomPointFromPolytopeVertices(vertices);
+						} 
+						else if (typeSampledRTDPMDPIP == 5) {
+							point = this.cachedPoints.get(polytopeCacheKey);
+						}
+						
+						context.probSample = new Hashtable<String, Double>(point.asHashMap());
 					}
-					
-					context.probSample = new Hashtable<String, Double>(point.asHashMap());
+					else {
+						context.probSample = new Hashtable<String, Double>();
+					}
 				} 
 				
 				probFalse = samplingOneVariableIP(probFalsePol);
@@ -4377,6 +4387,18 @@ public abstract class MDP {
 		return parameters.toArray(new String[0]);
 	}
 
+	private String getPolytopeCacheKey(String[] parameters) {
+		if (parameters == null || parameters.length == 0)
+			return "";
+		
+		String key = parameters[0];
+		
+		for (int i = 1; i < parameters.length; i++)
+			key += ("|" + parameters[i]);
+		
+		return key;
+	}
+	
 	private LinearConstraintExpression[] getParsedConstraints(String[] parameters) {
 		ArrayList constraints = new ArrayList();
 		
@@ -4445,28 +4467,16 @@ public abstract class MDP {
 	}
 
 	private void fillPointsCache() {
-		for (Object actionName : this.mName2Action.keySet()) {
-			Action action = (Action) this.mName2Action.get(actionName);
-			
-			HashMap<Integer, PolytopePoint> pointsPerVariable = new HashMap<Integer, PolytopePoint>();
-			this.cachedPoints.put(action, pointsPerVariable);
-					
-			for (int i = 1; i <= this.numVars; i++) {
-				Integer varPrime = Integer.valueOf(i);
-				
-				List<PolytopePoint> polytopeVertices = this.cachedPolytopes.get(action).get(varPrime);
-				pointsPerVariable.put(varPrime, this.getRandomPointFromPolytopeVertices(polytopeVertices));
-			}
+		for (String polytopeCacheKey : this.cachedPolytopes.keySet()) {
+			List<PolytopePoint> polytopeVertices = this.cachedPolytopes.get(polytopeCacheKey);
+			this.cachedPoints.put(polytopeCacheKey, this.getRandomPointFromPolytopeVertices(polytopeVertices));
 		}
 	}
 	
 	private void fillPolytopeCache() {
 		for (Object actionName : this.mName2Action.keySet()) {
 			Action action = (Action) this.mName2Action.get(actionName);
-
-			HashMap<Integer, List<PolytopePoint>> polytopesPerVariable = new HashMap<Integer, List<PolytopePoint>>();
-			this.cachedPolytopes.put(action, polytopesPerVariable);
-			
+					
 			TreeMap iD2ADD = action.tmID2ADD;
 			
 			for (int i = 1; i <= this.numVars; i++) {
@@ -4479,29 +4489,30 @@ public abstract class MDP {
 					System.exit(1);
 				}
 				
-				List<Polynomial> polyList = context.enumeratePolyInLeaves((Integer) cpt_a_xiprime);
+				List<Pair> polyList = context.enumeratePolyInLeaves((Integer) cpt_a_xiprime);
 				
-				Set<String> parameters = new TreeSet<String>();
+				Integer padd = null;
 				
-				for (Polynomial polynomial : polyList) {
-					String[] p = getParameterFromPolynomial(polynomial);	
-					for (int j = 0; j < p.length; j++)
-						parameters.add(p[j]);
-				}
-				
-				List<PolytopePoint> vertices = null;
-				
-				if (parameters != null && parameters.size() > 0) {
-					LinearConstraintExpression[] constraints = this.getParsedConstraints(parameters.toArray(new String[0]));
-					String[] params = constraints[0].getVariables();
+				if (polyList != null && polyList.size() > 0) {
+					padd = (Integer) context.getTerminalNode(0.0);
 					
-					vertices = LRSCaller.callLRSToGetVertex(constraints, params);
+					for (Pair pair : polyList) {
+						TreeMap<Integer, Boolean> partialState = (TreeMap<Integer, Boolean>) pair.get_o1();
+						Polynomial poly = (Polynomial) pair.get_o2();
+						
+						String[] parameters = this.getParameterFromPolynomial(poly);
+
+						if (parameters.length > 0) {
+							String polytopeCacheKey = this.getPolytopeCacheKey(parameters);
+							
+							if (!this.cachedPolytopes.containsKey(polytopeCacheKey)) {
+								LinearConstraintExpression[] constraints = this.getParsedConstraints(parameters);
+								List<PolytopePoint> vertices = LRSCaller.callLRSToGetVertex(constraints, constraints[0].getVariables());
+								this.cachedPolytopes.put(polytopeCacheKey, vertices);
+							}	
+						}
+					}	
 				}
-				else {
-					vertices = new ArrayList<PolytopePoint>();
-				}
-				
-				polytopesPerVariable.put(varPrime, vertices);
 			}
 		}
 	}
