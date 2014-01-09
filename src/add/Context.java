@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Iterator;
 
+import util.Pair;
 import logic.lattice.Lattice;
 import mdp.Action;
 import mdp.Config;
@@ -1018,15 +1019,21 @@ public abstract class Context {
          }
  	}
 	 
-	 public List<Polynomial> enumeratePolyInLeaves(int id) {
-		 List<Polynomial> leaves = new ArrayList<Polynomial>();
+	 /**
+	  * Enumerate PADD leaves building a list of pairs, where the first item is a partial state 
+	  * and the second item is a polynomial
+	  * @param id PADD id
+	  * @return List of leaves in a PADD
+	  */
+	 public List<Pair> enumeratePolyInLeaves(int id) {
+		 List<Pair> leaves = new ArrayList<Pair>();
 		 
 		 this.enumeratePolyInLeaves(id, leaves, new TreeMap<Integer, Boolean>());
 		 
 		 return leaves;
 	 }
 	 
-	 private void enumeratePolyInLeaves(int id, List<Polynomial> leaves, TreeMap<Integer, Boolean> assign) {
+	 private void enumeratePolyInLeaves(int id, List<Pair> leaves, TreeMap<Integer, Boolean> assign) {
 		 Boolean b;
 		 
 		 NodeKey cur = this.getNodeInverseCache(id);
@@ -1049,7 +1056,9 @@ public abstract class Context {
 		 //If get here, cur will be an ADDDNode, ADDBNode		 
 		 if (cur instanceof TerminalNodeKeyPar) {
 			 Polynomial poly = ((TerminalNodeKeyPar) cur).getPolynomial();  // the result is a poly 
-			 leaves.add(poly);
+			 
+			 TreeMap<Integer, Boolean> partialState = new TreeMap<Integer, Boolean>(assign);
+			 leaves.add(new Pair(partialState, poly));
 		 }
 	 }
 	 
