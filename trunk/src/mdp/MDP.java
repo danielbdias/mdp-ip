@@ -2070,7 +2070,10 @@ public abstract class MDP {
 							point = this.cachedPoints.get(polytopeCacheKey);
 						}
 						
-						context.probSample = new Hashtable<String, Double>(point.asHashMap());
+						if (point != null)
+							context.probSample = new Hashtable<String, Double>(point.asHashMap());
+						else
+							context.probSample = new Hashtable<String, Double>();
 					}
 					else {
 						context.probSample = new Hashtable<String, Double>();
@@ -4183,7 +4186,8 @@ public abstract class MDP {
 		
 		Stack<TreeMap<Integer,Boolean>> visited = new Stack<TreeMap<Integer,Boolean>>();
 		
-		this.fillPolytopeCache();
+		if (typeSampledRTDPMDPIP != 1)
+			this.fillPolytopeCache();
 		
 		long totalTrialTime=0;
 		long totalTrialTimeSec=0;
@@ -4325,7 +4329,8 @@ public abstract class MDP {
 		typeSampledRTDPMDPIP = stateSamplingType;
 		useVerticesSolver = true;
 		
-		this.fillPolytopeCache();
+		if (typeSampledRTDPMDPIP != 1)
+			this.fillPolytopeCache();
 		
 		long totalTrialTime = 0;
 		long totalTrialTimeSec = 0;
