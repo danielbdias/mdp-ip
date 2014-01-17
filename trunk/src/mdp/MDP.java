@@ -2054,7 +2054,7 @@ public abstract class MDP {
 			else {
 				Polynomial probFalsePol = (Polynomial) context.getValuePolyForStateInContext((Integer) cpt_a_xiprime, state, varPrime, false);
 				
-				if (useVerticesSolver) {
+				if (useVerticesSolver && typeSampledRTDPMDPIP != 1) {
 					String[] parameters = this.getParameterFromPolynomial(probFalsePol);
 					
 					if (parameters != null && parameters.length > 0) {
