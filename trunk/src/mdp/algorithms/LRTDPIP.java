@@ -64,12 +64,12 @@ public class LRTDPIP {
 		int numVariables = myMDP.hmPrime2IdRemap.keySet().size();
 		
 		printReport(problemFilename, typeContext, timeSeg, outputFilename, 
-				   myMDP.context.numCallNonLinearSolver + myMDP.context.numCallLinearSolver, myMDP.contUpperUpdates, 
+				   myMDP.context.numCallNonLinearSolver + myMDP.context.numCallLinearSolver, myMDP.lrsCalls, myMDP.contUpperUpdates, 
 				   typeSolution, numVariables);
 	}
 	
 	private static void printReport(String filename, int typeContext, long timeSeg, 
-									String fileNameReport, int numCallSolver, int numBackups, 
+									String fileNameReport, int numCallSolver, int lrsCalls, int numBackups, 
 									String typeSolution, int numVariables) {
 		
 		String typeCon = "ADD";
@@ -88,6 +88,7 @@ public class LRTDPIP {
 				out.write("Aproximação\t");
 				out.write("Tempo de execução\t");
 				out.write("Chamadas ao Solver\t");
+				out.write("Chamadas ao LRS\t");
 				out.write("Número de Backups\t");
 				out.write("Algoritmo\t");
 				out.write("Número de variáveis\t");
@@ -99,6 +100,7 @@ public class LRTDPIP {
 			out.write(typeAprox + "\t");
 			out.write(timeSeg + "\t");
 			out.write(numCallSolver + "\t");
+			out.write(lrsCalls + "\t");
 			out.write(numBackups + "\t");
 			out.write(typeSolution + "\t");
 			out.write(numVariables + "\t");
