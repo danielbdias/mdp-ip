@@ -122,6 +122,8 @@ public abstract class MDP {
 	protected HashMap<String, List<PolytopePoint>> cachedPolytopes = new HashMap<String, List<PolytopePoint>>();
 	protected HashMap<String, PolytopePoint> cachedPoints = new HashMap<String, PolytopePoint>();
 	
+	public int lrsCalls = 0;
+	
 	///////////////////////////////
 	protected HashMap<HashMap, Hashtable> stationarySimulatorProbabilities = null;
 	
@@ -1614,8 +1616,12 @@ public abstract class MDP {
 			//context.view(VPrime);
 		}
 		
-		if (context.workingWithParameterized) // the parameter is a ParADD and the result is an ADD
-			VPrime = context.doMinCallOverNodes(VPrime,NAME_FILE_CONTRAINTS,this.pruneAfterEachIt); 
+		if (context.workingWithParameterized) { // the parameter is a ParADD and the result is an ADD
+			if (useVerticesSolver)
+				VPrime = context.doMinCallOverNodes(VPrime, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt, this.constraintsPerParameter);
+			else
+				VPrime = context.doMinCallOverNodes(VPrime, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt);
+		}
 
 		context.workingWithParameterized = false;
 
@@ -1624,10 +1630,6 @@ public abstract class MDP {
 	
 	protected boolean inGoalSet(TreeMap<Integer, Boolean> state) {
 		return listGoalStates.contains(state); 
-	}
-
-	private boolean inGoalSetEnum(State state) {
-		return listGoalStatesEnum.contains(state); 
 	}
 	
 	public static void ResetTimer() {
@@ -2063,6 +2065,9 @@ public abstract class MDP {
 						PolytopePoint point = null;
 						
 						if (typeSampledRTDPMDPIP == 4) {
+							if (!this.cachedPolytopes.containsKey(polytopeCacheKey))
+								this.addToPolytopeCache(iD2ADD, varPrime);
+							
 							List<PolytopePoint> vertices = this.cachedPolytopes.get(polytopeCacheKey);
 							point = getRandomPointFromPolytopeVertices(vertices);
 						} 
@@ -4181,20 +4186,21 @@ public abstract class MDP {
 	public void solveRTDPIPFac2(int maxDepth, long timeOut, int stateSamplingType, Random randomGenInitial, Random randomGenNextState, 
 			String finalVUpperPath, String initialStateLogPath, String initVUpperPath, Boolean checkConvergency) {
 				
+		this.lrsCalls = 0;
+		
 		typeSampledRTDPMDPIP = stateSamplingType;
 		useVerticesSolver = true;
 		
 		Stack<TreeMap<Integer,Boolean>> visited = new Stack<TreeMap<Integer,Boolean>>();
 		
-		if (typeSampledRTDPMDPIP != 1)
-			this.fillPolytopeCache();
-		
 		long totalTrialTime=0;
 		long totalTrialTimeSec=0;
 		ResetTimer();
 		
-		if (typeSampledRTDPMDPIP == 5)
+		if (typeSampledRTDPMDPIP == 5) {
+			this.fillPolytopeCache();
 			this.fillPointsCache();
+		}		
 
 		if (initVUpperPath == null) {
 			//Initialize Vu with admissible value function //////////////////////////////////
@@ -4329,16 +4335,17 @@ public abstract class MDP {
 		typeSampledRTDPMDPIP = stateSamplingType;
 		useVerticesSolver = true;
 		
-		if (typeSampledRTDPMDPIP != 1)
-			this.fillPolytopeCache();
+		this.lrsCalls = 0;
 		
-		long totalTrialTime = 0;
 		long totalTrialTimeSec = 0;
 		
 		ResetTimer();
 		
-		if (typeSampledRTDPMDPIP == 5)
+		if (typeSampledRTDPMDPIP == 5) {
+			this.fillPolytopeCache();
 			this.fillPointsCache();
+		}
+			
 
 		VUpper = initVUpper;
 		
@@ -4350,12 +4357,10 @@ public abstract class MDP {
 		
 		State s = new State(sampleInitialStateFromList(randomGenInitial));
 		
-		int trialCounter = 0;		
 		long initialTime = System.currentTimeMillis();
 		
 		while (totalTrialTimeSec <= timeOut && !solvedStates.contains(s)){
 			totalTrialTimeSec = lrtdpTrial(maxDepth, timeOut, randomGenNextState, s, solvedStates, initialStateLogPath, initialTime);
-			trialCounter++;
    	    	
    	    	s = new State(sampleInitialStateFromList(randomGenInitial));
    	    	
@@ -4481,44 +4486,42 @@ public abstract class MDP {
 	private void fillPolytopeCache() {
 		for (Object actionName : this.mName2Action.keySet()) {
 			Action action = (Action) this.mName2Action.get(actionName);
-					
-			TreeMap iD2ADD = action.tmID2ADD;
 			
 			for (int i = 1; i <= this.numVars; i++) {
 				Integer varPrime = Integer.valueOf(i);
-				Integer var = Integer.valueOf(varPrime + this.numVars);
-				Object cpt_a_xiprime = iD2ADD.get(varPrime);
 				
-				if (cpt_a_xiprime == null){
-					System.out.println("Prime var not found");
-					System.exit(1);
-				}
+				addToPolytopeCache(action.tmID2ADD, varPrime);
+			}
+		}
+	}
+	private void addToPolytopeCache(TreeMap iD2ADD, Integer varPrime) {
+		Object cpt_a_xiprime = iD2ADD.get(varPrime);
+		
+		if (cpt_a_xiprime == null){
+			System.out.println("Prime var not found");
+			System.exit(1);
+		}
+		
+		List<Pair> polyList = context.enumeratePolyInLeaves((Integer) cpt_a_xiprime);
+			
+		if (polyList != null && polyList.size() > 0) {			
+			for (Pair pair : polyList) {
+				Polynomial poly = (Polynomial) pair.get_o2();
 				
-				List<Pair> polyList = context.enumeratePolyInLeaves((Integer) cpt_a_xiprime);
-				
-				Integer padd = null;
-				
-				if (polyList != null && polyList.size() > 0) {
-					padd = (Integer) context.getTerminalNode(0.0);
-					
-					for (Pair pair : polyList) {
-						TreeMap<Integer, Boolean> partialState = (TreeMap<Integer, Boolean>) pair.get_o1();
-						Polynomial poly = (Polynomial) pair.get_o2();
-						
-						String[] parameters = this.getParameterFromPolynomial(poly);
+				String[] parameters = this.getParameterFromPolynomial(poly);
 
-						if (parameters.length > 0) {
-							String polytopeCacheKey = this.getPolytopeCacheKey(parameters);
-							
-							if (!this.cachedPolytopes.containsKey(polytopeCacheKey)) {
-								LinearConstraintExpression[] constraints = this.getParsedConstraints(parameters);
-								List<PolytopePoint> vertices = LRSCaller.callLRSToGetVertex(constraints, constraints[0].getVariables());
-								this.cachedPolytopes.put(polytopeCacheKey, vertices);
-							}	
-						}
+				if (parameters.length > 0) {
+					String polytopeCacheKey = this.getPolytopeCacheKey(parameters);
+					
+					if (!this.cachedPolytopes.containsKey(polytopeCacheKey)) {
+						this.lrsCalls++;
+						
+						LinearConstraintExpression[] constraints = this.getParsedConstraints(parameters);
+						List<PolytopePoint> vertices = LRSCaller.callLRSToGetVertex(constraints, constraints[0].getVariables());
+						this.cachedPolytopes.put(polytopeCacheKey, vertices);
 					}	
 				}
-			}
+			}	
 		}
 	}
 }

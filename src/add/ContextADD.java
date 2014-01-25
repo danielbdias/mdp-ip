@@ -1005,45 +1005,6 @@ public class ContextADD extends Context {
 	    	 ///////////////////////////////////////////////////////////////////////////////////////////////////
 	    	 return Fr;//could be integer or AditArc
 	     }
-	
-	    private Object callNonLinearSolverObjectiveIP(TerminalNodeKeyPar node, String name_file_contraints) {
-	    	return this.callNonLinearSolverObjectiveIP(node, name_file_contraints, "min");
-	    }
-	    
-		private Object callNonLinearSolverObjectiveIP(TerminalNodeKeyPar node, String name_file_contraints, String optimization) {
-//			 construct a hashtable from the polynomial
-			 ArrayList currentIdsClash=new ArrayList();
-			 currentDirectionList=node.getPolynomial().constructDirectionList(listVarProb,this,currentIdsClash);//it is necessary to calculate currentIdsClash
-			 //System.out.println(node.getPolynomial().toString(this));
-			 /////////// record how much of the error budget this consumed
-			 Polynomial newPolAprox=null;
-			 if(this.typeAproxPol==1){
-				 newPolAprox=node.getPolynomial().aproxPol_Upper_Lower_OnlyProbClash(listVarProb, this, currentIdsClash, mergeError/2d);
-			 }
-			 else{
-				 newPolAprox=node.getPolynomial().aproxPol(listVarProb, this, currentIdsClash, mergeError/2d);	
-			 }
-			 if(newPolAprox.getTerms().size()==0){
-				 numberReducedToValue++;
-				 return this.getTerminalNode(newPolAprox.getC());
-			 }
-			 if(newPolAprox.currentError>mergeError/2d){
-				 System.out.println("Error:   "+newPolAprox.currentError+mergeError/2d);
-				 System.out.println("IT MUST NOT HAPPEN: doMinCallOverNodes");
-				 System.exit(0);
-			 }
-			 createFileAMPL(newPolAprox.toString(this,"p"),name_file_contraints, optimization);
-			 //createFileAMPL(node.getPolynomial().toString(this),NAME_FILE_CONTRAINTS);
-
-			 Double obj=callNonLinearSolver();  			 //after this we have the currentValuesProb
-			 contNoReuse++;
-			 if (obj==null){
-				 System.out.println("doMinCallOverNodes: Problems with the solver it return null");
-				 System.exit(0);
-			 }
-			 return this.getTerminalNode(obj);
-			
-		}
 
 		private ArrayList getArrayDiff(String currDir, String name) {
 			ArrayList arrayDiff=new ArrayList();

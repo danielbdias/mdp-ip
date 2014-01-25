@@ -10,6 +10,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.io.BufferedReader;
@@ -370,10 +371,19 @@ public abstract class Context {
 		//for parameterized
 	
 		protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS) {
-			this.createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min");
+			this.createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min", null);
 		}
 		
-	    protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS, String optimizationType) {
+		protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS, HashMap<String, List<String>> constraintsPerParameter) {
+			this.createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min", constraintsPerParameter);
+		}
+		
+		protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS, String optimizationType) {
+			this.createFileAMPL(objective, NAME_FILE_CONTRAINTS, optimizationType, null);
+		}
+		
+	    protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS, String optimizationType, 
+	    		HashMap<String, List<String>> constraintsPerParameter) {
 	    	BufferedWriter out = null;
 	    	BufferedReader input = null;
 	    	
@@ -388,17 +398,30 @@ public abstract class Context {
 	     		
 				out = new BufferedWriter(new FileWriter(NAME_FILE_AMPL));
 				writeVarObjective(objective, out, optimizationType);
-				input = new BufferedReader(new FileReader(NAME_FILE_CONTRAINTS));
-				String line = null;
-	            while (( line = input.readLine()) != null){
-	            	out.append(line);
-	                out.append(System.getProperty("line.separator"));
-	            }
+				
+				//constraints print
+				if (constraintsPerParameter == null) {
+					input = new BufferedReader(new FileReader(NAME_FILE_CONTRAINTS));
+					String line = null;
+		            while (( line = input.readLine()) != null){
+		            	out.append(line);
+		                out.append(System.getProperty("line.separator"));
+		            }	
+				}
+				else {
+					int restrictionCount = 1;
+					
+					for (String parameter : constraintsPerParameter.keySet()) {						
+						for (String line : constraintsPerParameter.get(parameter)) {
+							out.append("subject to r" + restrictionCount + ":  " + line);
+			                out.append(System.getProperty("line.separator"));
+			                restrictionCount++;
+						}
+					}
+				}
 	             
 	            //print the probabilities founded by the solver
 	            writeProbFounded(out);
-	            input.close();
-	            out.close();
 	     	} catch (IOException e) {
 	     		System.out.println("Problem with the creation AMPL file.");
 	         	System.err.println("Error: " + e);
@@ -558,8 +581,126 @@ public abstract class Context {
 	    	return callSolver(false);
 		}
 	    
+	    public String[] getParameterFromPolynomial(Polynomial polynomial) {
+			Set<String> parameters = new HashSet<String>();
+			
+			Object[] vars = polynomial.getTerms().keySet().toArray();
+			
+			for (Object var : vars) {
+				String paramsWithComma = this.getLabelProd((Integer) var);
+				
+				String[] params = paramsWithComma.split(",");
+				
+				for (String param : params)
+					parameters.add("p" + param);			
+			}
+			
+			return parameters.toArray(new String[0]);
+		}
+	    
 	    //the parameter is ParADD and the result is an ADD
 	    public abstract Object doMinCallOverNodes(Object VDD, String NAME_FILE_CONTRAINTS, boolean pruneAfterEachIt);
+	    
+	    public Object doMinCallOverNodes(Object VDD, String NAME_FILE_CONTRAINTS, boolean pruneAfterEachIt, 
+	    		HashMap<String, List<ArrayList>> constraintsPerParameter) {
+
+	    	 if(this.isTerminalNode(VDD)){ 
+	    		 TerminalNodeKeyPar node=(TerminalNodeKeyPar)this.getInverseNodesCache().get(VDD);
+	    		 if(node.getPolynomial().getTerms().size()==0){ //if the node does not have probabilities then we do not call the nonlinear solver
+	    			 return this.getTerminalNode(node.getPolynomial().getC());
+	    		 }
+	    		 /////////////////////OBJECTIVE-IP PRUNE/////////////////////////////////////////////
+	    		 if (pruneAfterEachIt){
+	    			 return callNonLinearSolverObjectiveIP(node, NAME_FILE_CONTRAINTS);
+	    		 }
+	    		 //////////////////////////////////////////////////////////////////////////////////////
+	    		 else{ //////Call solver with the polynomial//////////////////////////////////////////
+	    			 //filter params
+	    			 HashMap<String, List<String>> constraints = new HashMap<String, List<String>>();
+	    			 
+	    			 for (String parameter : getParameterFromPolynomial(node.getPolynomial())) {
+	    				 List<String> lines = new ArrayList<String>();
+	    				 
+	    				 for (ArrayList item : constraintsPerParameter.get(parameter)) {
+	    					 String line = "";
+	    					 
+	    					 for (int i=0;i< item.size();i++)
+	    						 line += item.get(i);
+	    					 
+	    					 line += ";";
+		    				 
+		    				 lines.add(line);
+						 }
+	    				 
+	    				 constraints.put(parameter, lines);
+					 }
+	    			 
+	    			 createFileAMPL(node.getPolynomial().toString(this,"p"),NAME_FILE_CONTRAINTS, constraints);
+	    			 Double obj=callNonLinearSolver();
+	    			 //after this I have the currentValuesProb
+	    			 contNoReuse++;
+	    			 if (obj==null){
+	    				 System.out.println("doMinCallOverNodes: Problems with the solver it return null");
+	    				 System.exit(0);
+	    			 }
+	    			 return this.getTerminalNode(obj);
+	    		 }
+	    	 }
+	    	 /////////////////////recursive call for each ADD branch////////////////////////////////////////////
+	    	 Integer Fr = (Integer) reduceCacheMinPar.get(VDD);
+	    	 if (Fr == null){
+	    		 InternalNodeKey intNodeKey = (InternalNodeKey) this.getInverseNodesCache().get(VDD);
+	    		 Object Fh = doMinCallOverNodes(intNodeKey.getHigh(),NAME_FILE_CONTRAINTS,pruneAfterEachIt);
+	    		 Object Fl = doMinCallOverNodes(intNodeKey.getLower(),NAME_FILE_CONTRAINTS,pruneAfterEachIt);
+	    		 Integer Fvar= intNodeKey.getVar();
+	    		 Fr=(Integer)this.GetNode(Fvar,Fh,Fl);
+	    		 reduceCacheMinPar.put(VDD, Fr);
+	    	 } else	{
+	    		 reuseCacheIntNode++;
+	    	 }
+	    	 
+	    	 ///////////////////////////////////////////////////////////////////////////////////////////////////
+	    	 return Fr;//could be integer or AditArc
+	     }
+	    
+	    protected Object callNonLinearSolverObjectiveIP(TerminalNodeKeyPar node, String name_file_contraints) {
+	    	return this.callNonLinearSolverObjectiveIP(node, name_file_contraints, "min");
+	    }
+	    
+		private Object callNonLinearSolverObjectiveIP(TerminalNodeKeyPar node, String name_file_contraints, String optimization) {
+//			 construct a hashtable from the polynomial
+			 ArrayList currentIdsClash=new ArrayList();
+			 currentDirectionList=node.getPolynomial().constructDirectionList(listVarProb,this,currentIdsClash);//it is necessary to calculate currentIdsClash
+			 //System.out.println(node.getPolynomial().toString(this));
+			 /////////// record how much of the error budget this consumed
+			 Polynomial newPolAprox=null;
+			 if(this.typeAproxPol==1){
+				 newPolAprox=node.getPolynomial().aproxPol_Upper_Lower_OnlyProbClash(listVarProb, this, currentIdsClash, mergeError/2d);
+			 }
+			 else{
+				 newPolAprox=node.getPolynomial().aproxPol(listVarProb, this, currentIdsClash, mergeError/2d);	
+			 }
+			 if(newPolAprox.getTerms().size()==0){
+				 numberReducedToValue++;
+				 return this.getTerminalNode(newPolAprox.getC());
+			 }
+			 if(newPolAprox.currentError>mergeError/2d){
+				 System.out.println("Error:   "+newPolAprox.currentError+mergeError/2d);
+				 System.out.println("IT MUST NOT HAPPEN: doMinCallOverNodes");
+				 System.exit(0);
+			 }
+			 createFileAMPL(newPolAprox.toString(this,"p"),name_file_contraints, optimization);
+			 //createFileAMPL(node.getPolynomial().toString(this),NAME_FILE_CONTRAINTS);
+
+			 Double obj=callNonLinearSolver();  			 //after this we have the currentValuesProb
+			 contNoReuse++;
+			 if (obj==null){
+				 System.out.println("doMinCallOverNodes: Problems with the solver it return null");
+				 System.exit(0);
+			 }
+			 return this.getTerminalNode(obj);
+			
+		}
 	    
 	    public abstract Object doMaxCallOverNodes(Object VDD, String NAME_FILE_CONTRAINTS, boolean pruneAfterEachIt);
 	     
