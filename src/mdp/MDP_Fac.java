@@ -139,8 +139,12 @@ public class MDP_Fac  extends MDP{
 			
 			if (optimization == OptimizationType.Maximization)
 				VDD = context.doMaxCallOverNodes(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt);
-			else
-				VDD = context.doMinCallOverNodes(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt); // the parameter is ParADD and the result is an ADD
+			else {
+				if (useVerticesSolver)
+					VDD = context.doMinCallOverNodes(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt, this.constraintsPerParameter); // the parameter is ParADD and the result is an ADD
+				else
+					VDD = context.doMinCallOverNodes(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt); // the parameter is ParADD and the result is an ADD
+			}
 		}
 		
 		context.workingWithParameterized = false;
