@@ -4476,14 +4476,14 @@ public abstract class MDP {
 		return anotherRandomVertex;
 	}
 
-	private void fillPointsCache() {
+	protected void fillPointsCache() {
 		for (String polytopeCacheKey : this.cachedPolytopes.keySet()) {
 			List<PolytopePoint> polytopeVertices = this.cachedPolytopes.get(polytopeCacheKey);
 			this.cachedPoints.put(polytopeCacheKey, this.getRandomPointFromPolytopeVertices(polytopeVertices));
 		}
 	}
 	
-	private void fillPolytopeCache() {
+	protected void fillPolytopeCache() {
 		for (Object actionName : this.mName2Action.keySet()) {
 			Action action = (Action) this.mName2Action.get(actionName);
 			
@@ -4494,7 +4494,8 @@ public abstract class MDP {
 			}
 		}
 	}
-	private void addToPolytopeCache(TreeMap iD2ADD, Integer varPrime) {
+	
+	protected void addToPolytopeCache(TreeMap iD2ADD, Integer varPrime) {
 		Object cpt_a_xiprime = iD2ADD.get(varPrime);
 		
 		if (cpt_a_xiprime == null){
