@@ -2912,12 +2912,22 @@ public abstract class MDP {
 		State nextState = null;
 		
 		Double value, sum = 0d;
-		
+			
 		if (context.workingWithParameterized) {
-			if (typeSampledRTDPMDPIP == 4)
-				probNature = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
-			else if (typeSampledRTDPMDPIP == 5)
-				probNature = context.probSample;
+			if (!useVerticesSolver) {
+				if (typeSampledRTDPMDPIP == 4)
+					probNature = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
+				else if (typeSampledRTDPMDPIP == 5)
+					probNature = context.probSample;	
+			}
+			else {
+//				Iterator i = succState.getNextStatesPoly().keySet().iterator();
+//							
+//				while (i.hasNext()) {
+//					State s = (State) i.next();
+//					succState.getNextStatesPoly().get(s).
+//				}
+			}
 		}
 		
 		double ran = randomGenerator.nextDouble();
@@ -4052,16 +4062,19 @@ public abstract class MDP {
 			Random randomGenInitial, Random randomGenNextState, String initialStateLogPath, HashMap<State,Double> vUpper) {		
 		typeSampledRTDPMDPIP = stateSamplingType;
 		
+		useVerticesSolver = true;
+		
+		this.lrsCalls = 0;
+		
 		HashSet<State> solvedStates = new HashSet<State>(); 
 		
-		long totalTrialTime=0;
 		long totalTrialTimeSec=0;
 		ResetTimer();
 		
-		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
-			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
-		else if (typeSampledRTDPMDPIP == 5)
-			context.probSample = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
+//		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
+//			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
+//		else if (typeSampledRTDPMDPIP == 5)
+//			context.probSample = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
 	
 		//Initialize Vu with admissible value function //////////////////////////////////
 		//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
