@@ -1,11 +1,16 @@
 package generator;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 import util.Pair;
 
-public class TriangleTireWorldGen {
+public class RelaxedTriangleTireWorldGen {
 	private static final String NUMBER_REGEX = "^[0-9]+$";
 	private static final String DOUBLE_REGEX = "^[0-9]+\\.[0-9]+$";
 	private static final String VARIABLE_MASK = "x%dy%d"; //e.g. x1y1
@@ -420,37 +425,33 @@ public class TriangleTireWorldGen {
 	}
 
 	private static List<String> getLoadTireActionADDs(Integer numberOfLines, Integer numberOfColumns) {
-
-		//Find cells with free tires
-		Set<String> cellsWithFreeTire = new TreeSet<String>();
-		
-		//columns with odd coordinates
-		for (int x = 2; x < numberOfColumns; x+=2)
-			for (int y = x; y <= numberOfLines - x + 1; y+=2) 
-				cellsWithFreeTire.add(String.format(VARIABLE_MASK, x, y));
-		
-		//bottom and upper cells
-		for (int x = 2; x < numberOfColumns; x++) {
-			//bottom cell
-			cellsWithFreeTire.add(String.format(VARIABLE_MASK, x, x));
-			
-			//upper cell
-			cellsWithFreeTire.add(String.format(VARIABLE_MASK, x, numberOfLines - x + 1));
-		}
-		
-		//last cell
-		cellsWithFreeTire.add(String.format(VARIABLE_MASK, numberOfColumns, numberOfColumns));
-		
-		//Write adds
 		List<String> adds = new ArrayList<String>();
 			
 		String addStart = "hasspare ";
 		String addEnd = "";
 		
-		for (String cell : cellsWithFreeTire) {
-			addStart += String.format("(%s ([1.00]) ", cell);
-			addEnd += " )";
+		for (int x = 2; x < numberOfColumns; x+=2)
+			for (int y = x; y <= numberOfLines - x + 1; y+=2) {
+				String cell = String.format(VARIABLE_MASK, x, y);
+				addStart += String.format("(%s ([1.00]) ", cell);
+				addEnd += " )";
+			}
+
+		if (numberOfColumns > 3) {
+			//Add the first and the last cell in the column
+			for (int x = 3; x < numberOfColumns; x+=2) {
+				String cell = String.format(VARIABLE_MASK, x, x);
+				addStart += String.format("(%s ([1.00]) ", cell);
+				addEnd += " )";
+				
+				cell = String.format(VARIABLE_MASK, x, numberOfLines - x + 1);
+				addStart += String.format("(%s ([1.00]) ", cell);
+				addEnd += " )";
+			}
 		}
+
+		addStart += String.format("(%s ([1.00]) ", String.format(VARIABLE_MASK, numberOfColumns, numberOfColumns));
+		addEnd += " )";
 		
 		adds.add(addStart + "(hasspare ([1.0]) ([0.0]) )" + addEnd);
 		
