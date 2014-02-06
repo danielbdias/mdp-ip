@@ -292,6 +292,9 @@ public class TriangleTireWorldGen {
 			x = (Integer) cell.get_o1();
 			y = (Integer) cell.get_o2();
 			
+			int previousCell_x = x - 1;
+			int previousCell_y = y - 1;
+			
 			String currentCell = String.format(VARIABLE_MASK, x, y);
 			
 			if (x == 1 && y != numberOfLines) {
@@ -300,16 +303,26 @@ public class TriangleTireWorldGen {
 			}
 			else if (x == 1 && y == numberOfLines)
 				adds.add(String.format(NO_CHANGE_TRANSITION, currentCell));
-			else if (y != numberOfLines - x + 1){			
-				String previousCell = String.format(VARIABLE_MASK, x - 1, y - 1);
+			else {		
+				if (x % 2 == 0) { //if is an odd column
+					int t = y - x - 2;
+					
+					if (y >= (x + 2) //greater than the first cell in column 
+							&& y <= (numberOfLines - x - 2)  //lower than the last cell in column
+							&& t % 4 == 0) {
+						adds.add(String.format(NO_CHANGE_TRANSITION, currentCell));
+						continue; //ignore this transition
+					}
+				}
 				
-				String mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
-				adds.add(String.format(mask, currentCell, previousCell));
-			}
-			else {			
-				String previousCell = String.format(VARIABLE_MASK, x - 1, y - 1);
+				String previousCell = String.format(VARIABLE_MASK, previousCell_x, previousCell_y);
+				String mask = null;
 				
-				String mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
+				if (y != numberOfLines - x + 1)
+					mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
+				else
+					mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
+				
 				adds.add(String.format(mask, currentCell, previousCell));
 			}
 		}
@@ -343,6 +356,9 @@ public class TriangleTireWorldGen {
 			x = (Integer) cell.get_o1();
 			y = (Integer) cell.get_o2();
 			
+			int previousCell_x = x + 1;
+			int previousCell_y = y - 1;
+			
 			String currentCell = String.format(VARIABLE_MASK, x, y);
 			
 			if (x == 1 && y == 1) 
@@ -351,16 +367,27 @@ public class TriangleTireWorldGen {
 				String mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) ([0.00]))";
 				adds.add(String.format(mask, currentCell));
 			}
-			else if (x == 1){			
-				String previousCell = String.format(VARIABLE_MASK, x + 1, y - 1);
+			else {
+				if (x % 2 == 1) { //if is an even column
+					int t = y - x - 2;
+					
+					if (y >= (x + 2) //greater than the first cell in column 
+							&& y <= (numberOfLines - x - 2)  //lower than the last cell in column
+							&& t % 4 == 0)
+					{
+						adds.add(String.format(NO_CHANGE_TRANSITION, currentCell));
+						continue; //ignore this transition
+					}
+				}
 				
-				String mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
-				adds.add(String.format(mask, currentCell, previousCell));
-			}
-			else {			
-				String previousCell = String.format(VARIABLE_MASK, x + 1, y - 1);
+				String previousCell = String.format(VARIABLE_MASK, previousCell_x, previousCell_y);
+				String mask = null;
 				
-				String mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
+				if (x == 1)
+					mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
+				else
+					mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
+				
 				adds.add(String.format(mask, currentCell, previousCell));
 			}
 		}
@@ -425,9 +452,9 @@ public class TriangleTireWorldGen {
 		Set<String> cellsWithFreeTire = new TreeSet<String>();
 		
 		//columns with odd coordinates
-		for (int x = 2; x < numberOfColumns; x+=2)
-			for (int y = x; y <= numberOfLines - x + 1; y+=2) 
-				cellsWithFreeTire.add(String.format(VARIABLE_MASK, x, y));
+//		for (int x = 2; x < numberOfColumns; x+=2)
+//			for (int y = x; y <= numberOfLines - x + 1; y+=2) 
+//				cellsWithFreeTire.add(String.format(VARIABLE_MASK, x, y));
 		
 		//bottom and upper cells
 		for (int x = 2; x < numberOfColumns; x++) {
