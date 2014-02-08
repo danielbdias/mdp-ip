@@ -1,16 +1,13 @@
 package mdp.algorithms;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Random;
+import java.io.*;
+import java.util.*;
 
-import mdp.MDP_Fac;
+import mdp.*;
 
-public class RTDPIP {
-	public static void main(String[] args) {	
+public class LRTDPIPEnumWithSSPIP {
+
+	public static void main(String[] args) {
 		//Nome do arquivo com a descrição do domínio e do problema a ser resolvido
 		String problemFilename 	= args[0];
 		
@@ -31,21 +28,12 @@ public class RTDPIP {
 		//4: sorteio random, sorteando aleatoriamente as os parâmetros de probabilidades do conjunto credal 
 		int stateSamplingType   = Integer.parseInt(args[4]);
 		
-		String finalVUpperPath  = null;
-		if (args.length > 5) finalVUpperPath = args[5];
-		
 		String initialStateLogPath   = null;
-		if (args.length > 6) initialStateLogPath = args[6];
-		
-		String initVUpperPath   = null;
-		if (args.length > 7) initVUpperPath = args[7];
-		
-		Boolean checkConvergency = true	;
-		if (args.length > 8) checkConvergency = Boolean.parseBoolean(args[8]);
+		if (args.length > 5) initialStateLogPath = args[5];
 		
 		//Tipo do contexto do problema. Pode ter 3 valores possíveis:
 		//1:ADD 2:AditADD 3: Tables
-		int typeContext			= 1; //ADDs, significando que sempre resolveremos problemas fatorados
+		int typeContext			= 1;
 		
 		//Tipo da aproximação utilizada. Pode ter 2 valores: 
 		//0:normal 1:with lattice
@@ -56,35 +44,35 @@ public class RTDPIP {
 		
 		Random randomGenInitial = new Random(19580434);
 		Random randomGenNextState = new Random(19580807);
-		   
-		MDP_Fac myMDP = new MDP_Fac(problemFilename, typeContext, typeAproxPol, typeSolution);
+		
+		ShortSightedSSPIP myMDP = new ShortSightedSSPIP(problemFilename, typeContext, typeAproxPol, typeSolution);
 		
 		long startTime = System.currentTimeMillis();
 		
-		myMDP.solveRTDPIPFac2(maxTrialDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, finalVUpperPath, initialStateLogPath, initVUpperPath, checkConvergency);
-		   
-		long timeSeg = (System.currentTimeMillis() - startTime) / 1000;
+		myMDP.solveLRTDPIPEnum(maxTrialDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, initialStateLogPath);
 		
+		long timeSeg = (System.currentTimeMillis() - startTime) / 1000;
+		 
 		int numVariables = myMDP.hmPrime2IdRemap.keySet().size();
 		
 		printReport(problemFilename, typeContext, timeSeg, outputFilename, 
-				   myMDP.context.numCallNonLinearSolver + myMDP.context.numCallLinearSolver, myMDP.lrsCalls, myMDP.contUpperUpdates, 
-				   typeSolution, numVariables);	
+				   myMDP.context.numCallNonLinearSolver, myMDP.contUpperUpdates, 
+				   typeSolution, numVariables);
 	}
 	
 	private static void printReport(String filename, int typeContext, long timeSeg, 
-			String fileNameReport, int numCallSolver, int lrsCalls, int numBackups, 
+			String fileNameReport, int numCallSolver, int numBackups, 
 			String typeSolution, int numVariables) {
 
-		String typeCon = "ADD";
+		String typeCon = "Table";
 		String typeAprox = "REGR";
-
+		
 		try {
 			File reportFile = new File(fileNameReport);
 			boolean reportExists = reportFile.exists();
-
+			
 			BufferedWriter out = new BufferedWriter(new FileWriter(reportFile.getAbsolutePath(), true));
-
+			
 			if (!reportExists) {
 				//imprime header do arquivo			
 				out.write("Problema\t");
@@ -92,27 +80,25 @@ public class RTDPIP {
 				out.write("Aproximação\t");
 				out.write("Tempo de execução\t");
 				out.write("Chamadas ao Solver\t");
-				out.write("Chamadas ao LRS\t");
 				out.write("Número de Backups\t");
 				out.write("Algoritmo\t");
 				out.write("Número de variáveis\t");
 				out.write(System.getProperty("line.separator"));
 			}
-
+			
 			out.write(filename + "\t");
 			out.write(typeCon + "\t");
 			out.write(typeAprox + "\t");
 			out.write(timeSeg + "\t");
 			out.write(numCallSolver + "\t");
-			out.write(lrsCalls + "\t");
 			out.write(numBackups + "\t");
 			out.write(typeSolution + "\t");
 			out.write(numVariables + "\t");
 			out.write(System.getProperty("line.separator"));
-
+			
 			out.close();
 		} catch (IOException e) {
-			System.out.println("Problem with the creation of the RTDP-IP report");
+			System.out.println("Problem with the creation of the report");
 			System.exit(0);
 		}
 	}

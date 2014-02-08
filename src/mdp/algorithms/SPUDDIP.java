@@ -77,6 +77,7 @@ public class SPUDDIP {
 				out.write("Aproximação\t");
 				out.write("Tempo de execução\t");
 				out.write("Chamadas ao Solver\t");
+				out.write("Chamadas ao LRS\t");
 				out.write("Número de Backups\t");
 				out.write("Algoritmo\t");
 				out.write("Número de variáveis\t");
@@ -88,6 +89,7 @@ public class SPUDDIP {
 			out.write(typeAprox + "\t");
 			out.write(timeSeg + "\t");
 			out.write(numCallSolver + "\t");
+			out.write(0 + "\t");
 			out.write(numBackups + "\t");
 			out.write(typeSolution + "\t");
 			out.write(numVariables + "\t");

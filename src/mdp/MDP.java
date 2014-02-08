@@ -538,9 +538,11 @@ public abstract class MDP {
 
 	protected void logValueInFile(String logFile, double value, long time) {
 		try {		
+			double timeInSeconds = time / 1000.0;
+			
 			java.io.FileWriter writer = new FileWriter(logFile, true);
 			
-			writer.write(time + " " + value + "\n");
+			writer.write(timeInSeconds + " " + value + "\n");
 			
 			writer.close();
 		} catch (IOException e) {
