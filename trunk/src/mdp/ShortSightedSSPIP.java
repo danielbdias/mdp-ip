@@ -11,7 +11,7 @@ import util.Pair;
 
 public class ShortSightedSSPIP extends MDP_Fac {
 
-	private static final double NEGATIVE_INFINITY = -1e10;
+	private static final double NEGATIVE_INFINITY = -100; //-1e10;
 	
 	public ShortSightedSSPIP(String filename, int typeContext, int typeAproxPol, String typeSolution) {
 		super(filename, typeContext, typeAproxPol, typeSolution, false);
@@ -354,17 +354,18 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			
 			contUpperUpdates++;
 			
-			//System.out.println("action greedy: " + greedyAction.getName());
+			System.out.println("action greedy: " + greedyAction.getName());
 			
 			context.workingWithParameterized = context.workingWithParameterizedBef;
 			state = chooseNextStateRTDPEnum(state, greedyAction, randomGenNextState, posActionGreedy);
 			
 			if (isDeadEnd(state)) {
+				System.out.println("Reached a deadend at state: " + state);
 				((HashMap<State,Double>) this.VUpper).put(state, NEGATIVE_INFINITY);
 				break;
 			}
 			
-			//System.out.println("next state: " + state);
+			System.out.println("next state: " + state);
 			flushCachesRTDP(false);       
 			
 			totalTrialTime = GetElapsedTime();
@@ -382,17 +383,20 @@ public class ShortSightedSSPIP extends MDP_Fac {
             }
 		}
 		
-		while (!visited.empty()) {
-			state = visited.pop();
-			if (!checkSolved((HashMap) VUpper, solvedStates, state))
-				break;
+		if (solvedStates.contains(state) || inGoalSet(state.getValues())) {
+			while (!visited.empty()) {
+				state = visited.pop();
+				if (!checkSolved((HashMap) VUpper, solvedStates, state))
+					break;
+			}	
 		}
+		
+		this.printEnumValueFunction((HashMap<State,Double>) this.VUpper);
 		
 		totalTrialTime = GetElapsedTime();
         totalTrialTimeSec = totalTrialTime / 1000;		
 		return totalTrialTimeSec;
-	}
-	
+	}	
 
 	/**
 	 * Labeled Real-time dynamic programming for Enumerative MDP-IPs
