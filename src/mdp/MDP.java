@@ -3320,8 +3320,13 @@ public abstract class MDP {
 	protected void printEnumValueFunction(HashMap<State, Double> valueFunction) {
 		System.out.println("Value function:");
 		
+		TreeMap<Long, Double> orderedValueFunction = new TreeMap<Long, Double>();
+		
 		for (State state : valueFunction.keySet())
-			System.out.println(String.format("%s = %.16f", state.getIdentifier().longValue(), valueFunction.get(state)));
+			orderedValueFunction.put(state.getIdentifier().longValue(), valueFunction.get(state));
+		
+		for (Long state : orderedValueFunction.keySet())
+			System.out.println(String.format("%s\t%.16f", state, orderedValueFunction.get(state)));
 	}
 	
 	protected HashMap<State, Double> convertValueFunctionAddToHashMap(Object vUpper) {

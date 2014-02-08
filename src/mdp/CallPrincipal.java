@@ -1,7 +1,6 @@
 package mdp;
 
-import generator.NavigationGen;
-import generator.RelaxedTriangleTireWorldGen;
+import generator.*;
 
 public class CallPrincipal {
 
@@ -44,7 +43,7 @@ public class CallPrincipal {
 					"0.01"
 				};
 			
-			RelaxedTriangleTireWorldGen.main(anotherArgs);
+			TriangleTireWorldGen.main(anotherArgs);
 		}
 	}
 }
