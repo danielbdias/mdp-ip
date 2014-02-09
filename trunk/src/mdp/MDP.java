@@ -2923,12 +2923,28 @@ public abstract class MDP {
 					probNature = context.probSample;	
 			}
 			else {
-//				Iterator i = succState.getNextStatesPoly().keySet().iterator();
-//							
-//				while (i.hasNext()) {
-//					State s = (State) i.next();
-//					succState.getNextStatesPoly().get(s).
-//				}
+				if (typeSampledRTDPMDPIP == 4) {
+					Iterator i = succState.getNextStatesPoly().keySet().iterator();
+					
+					Set<String> parameters = new HashSet<String>();
+					
+					while (i.hasNext()) {
+						State s = (State) i.next();
+						
+						String[] tmp = this.getParameterFromPolynomial(succState.getNextStatesPoly().get(s));
+						for (String p : tmp) parameters.add(p);
+					}
+					
+//					String polytopeCacheKey = this.getPolytopeCacheKey(parameters.toArray(new String[0]));
+//					
+//					PolytopePoint point = null;
+//					
+//					if (!this.cachedPolytopes.containsKey(polytopeCacheKey))
+//						this.addToPolytopeCache(iD2ADD, varPrime);
+//					
+//					List<PolytopePoint> vertices = this.cachedPolytopes.get(polytopeCacheKey);
+//					point = getRandomPointFromPolytopeVertices(vertices);
+				} 
 			}
 		}
 		

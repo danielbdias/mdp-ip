@@ -11,7 +11,7 @@ import util.Pair;
 
 public class ShortSightedSSPIP extends MDP_Fac {
 
-	private static final double NEGATIVE_INFINITY = -100; //-1e10;
+	private static final double NEGATIVE_INFINITY = -1e6; //-1e10;
 	
 	public ShortSightedSSPIP(String filename, int typeContext, int typeAproxPol, String typeSolution) {
 		super(filename, typeContext, typeAproxPol, typeSolution, false);
@@ -198,6 +198,11 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			state = open.pop();
 			closed.push(state);
 			
+			if (isDeadEnd(state)) {
+				V.put(state, NEGATIVE_INFINITY); //update to negative infinity
+				continue;
+			}
+			
 			double previousValue = Double.NaN;
 			
 			if (V.containsKey(state))
@@ -343,29 +348,35 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		long totalTrialTimeSec = 0;
 		
 		while (true) {
-			if (solvedStates.contains(state)) break; //ended because reached a solved state
+			if (solvedStates.contains(state)) { 
+				//System.out.println("Found solved state: " + state);
+				break; //ended because reached a solved state
+			}
 			
 			visited.push(state);
 			
-			if (inGoalSet(state.getValues())) break;
+			if (inGoalSet(state.getValues())) {
+				//System.out.println("Found goal state: " + state);
+				break;
+			}
 			
 			//this compute maxUpperUpdated and actionGreedy
 			Action greedyAction = updateVUpper(state); // Here we fill probNature
 			
 			contUpperUpdates++;
 			
-			System.out.println("action greedy: " + greedyAction.getName());
+			//System.out.println("action greedy: " + greedyAction.getName());
 			
 			context.workingWithParameterized = context.workingWithParameterizedBef;
 			state = chooseNextStateRTDPEnum(state, greedyAction, randomGenNextState, posActionGreedy);
 			
 			if (isDeadEnd(state)) {
-				System.out.println("Reached a deadend at state: " + state);
+				//System.out.println("Reached a deadend at state: " + state);
 				((HashMap<State,Double>) this.VUpper).put(state, NEGATIVE_INFINITY);
 				break;
 			}
 			
-			System.out.println("next state: " + state);
+			//System.out.println("next state: " + state);
 			flushCachesRTDP(false);       
 			
 			totalTrialTime = GetElapsedTime();
@@ -391,7 +402,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			}	
 		}
 		
-		this.printEnumValueFunction((HashMap<State,Double>) this.VUpper);
+		//this.printEnumValueFunction((HashMap<State,Double>) this.VUpper);
 		
 		totalTrialTime = GetElapsedTime();
         totalTrialTimeSec = totalTrialTime / 1000;		
