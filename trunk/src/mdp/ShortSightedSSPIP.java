@@ -11,7 +11,7 @@ import util.Pair;
 
 public class ShortSightedSSPIP extends MDP_Fac {
 
-	private static final double NEGATIVE_INFINITY = -1e6; //-1e10;
+	private static final double NEGATIVE_INFINITY = -1e3; //-1e10;
 	
 	public ShortSightedSSPIP(String filename, int typeContext, int typeAproxPol, String typeSolution) {
 		super(filename, typeContext, typeAproxPol, typeSolution, false);
