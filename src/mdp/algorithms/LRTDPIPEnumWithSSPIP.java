@@ -98,7 +98,9 @@ public class LRTDPIPEnumWithSSPIP {
 			
 			out.close();
 		} catch (IOException e) {
-			System.out.println("Problem with the creation of the report");
+			System.out.println("Problem with the creation of the report.");
+			System.err.println(e.getMessage());
+			e.printStackTrace(System.err);
 			System.exit(0);
 		}
 	}
