@@ -9,6 +9,7 @@ public class TriangleTireWorldGen {
 	private static final String NUMBER_REGEX = "^[0-9]+$";
 	private static final String DOUBLE_REGEX = "^[0-9]+\\.[0-9]+$";
 	private static final String VARIABLE_MASK = "x%dy%d"; //e.g. x1y1
+	private static final String SPARE_VARIABLE_MASK = "sparex%dy%d"; //e.g. x1y1
 	
 	private static final String NO_CHANGE_TRANSITION = "%1$s (%1$s ([1.00]) ([0.00]))";
 	
@@ -153,17 +154,59 @@ public class TriangleTireWorldGen {
 		
 		String goalCell = getGoalCell(numberOfLines);
 		
-		goals.add(String.format("(hasspare flattired %s)", goalCell));
-		goals.add(String.format("(hasspare %s)", goalCell));
-		goals.add(String.format("(flattired %s)", goalCell));
-		goals.add(String.format("(%s)", goalCell));
+		for (List<String> combination : getCellSparePositionCombinations(numberOfLines, numberOfColumns)) {
 		
+			String combinationAsString = "";
+			
+			for (int i = 0; i < combination.size(); i++)
+				combinationAsString += (" " + combination.get(i));
+			
+			goals.add(String.format("(hasspare flattired %s%s)", goalCell, combinationAsString));
+			goals.add(String.format("(hasspare %s%s)", goalCell, combinationAsString));
+			goals.add(String.format("(flattired %s%s)", goalCell, combinationAsString));
+			goals.add(String.format("(%s%s)", goalCell, combinationAsString));
+		}
+
 		return goals;
 	}
 
+	private static List<List<String>> getCellSparePositionCombinations(Integer numberOfLines, Integer numberOfColumns) {
+		List<String> cells = getCellSpareVariables(numberOfLines, numberOfColumns);
+		
+		List<List<String>> result = new ArrayList<List<String>>();
+		
+		getCellPositionStateCombinationsRecursive(result, cells, new HashMap<String, Boolean>(), 0);
+		
+		return result;
+	}
+	
+	private static void getCellPositionStateCombinationsRecursive(List<List<String>> result, List<String> cells, HashMap<String, Boolean> composition, int cellIndex) {	
+		if (cellIndex == cells.size())
+		{
+			List<String> cellsToAdd = new ArrayList<String>();
+			
+			for (String key : composition.keySet()) {
+				if (composition.get(key))
+					cellsToAdd.add(key);
+			}
+			
+			result.add(cellsToAdd);
+		}
+		else {
+		
+			String cell = cells.get(cellIndex);
+			
+			composition.put(cell, true);
+			getCellPositionStateCombinationsRecursive(result, cells, composition, cellIndex + 1);
+			
+			composition.put(cell, false);
+			getCellPositionStateCombinationsRecursive(result, cells, composition, cellIndex + 1);
+		}
+	}
+	
 	private static String generateInitialState(Integer numberOfLines) {
 		String initialCell = String.format(VARIABLE_MASK, 1, 1);
-		return String.format("(hasspare %s)", initialCell);
+		return String.format("(%s)", initialCell);
 	}
 
 	private static List<String> generateConstraints(Integer numberOfLines) {
@@ -233,6 +276,43 @@ public class TriangleTireWorldGen {
 			int y = (Integer) position.get_o2();
 			
 			variables.add(String.format(VARIABLE_MASK, x, y));
+		}
+		
+		return variables;
+	}
+	
+	private static List<Pair> getCellSparePositions(Integer numberOfLines, Integer numberOfColumns) {
+		//Find cells with free tires
+		Set<Pair> cellsWithFreeTire = new TreeSet<Pair>();
+		
+		//columns with odd coordinates
+		for (int x = 2; x < numberOfColumns; x+=2)
+			for (int y = x; y <= numberOfLines - x + 1; y+=2) 
+				cellsWithFreeTire.add(new Pair(x, y));
+		
+		//bottom and upper cells
+		for (int x = 2; x < numberOfColumns; x++) {
+			//bottom cell
+			cellsWithFreeTire.add(new Pair(x, x));
+			
+			//upper cell
+			cellsWithFreeTire.add(new Pair(x, numberOfLines - x + 1));
+		}
+		
+		//last cell
+		cellsWithFreeTire.add(new Pair(numberOfColumns, numberOfColumns));
+			
+		return new ArrayList<Pair>(cellsWithFreeTire);
+	}
+	
+	private static List<String> getCellSpareVariables(Integer numberOfLines, Integer numberOfColumns) {
+		List<String> variables = new ArrayList<String>();
+				
+		for (Pair position : getCellSparePositions(numberOfLines, numberOfColumns)) {
+			int x = (Integer) position.get_o1();
+			int y = (Integer) position.get_o2();
+			
+			variables.add(String.format(SPARE_VARIABLE_MASK, x, y));
 		}
 		
 		return variables;
@@ -327,6 +407,9 @@ public class TriangleTireWorldGen {
 			}
 		}
 		
+		for (String cell : getCellSpareVariables(numberOfLines, numberOfColumns))
+			adds.add(String.format(NO_CHANGE_TRANSITION, cell));	
+		
 		return adds;
 	}
 	
@@ -392,6 +475,9 @@ public class TriangleTireWorldGen {
 			}
 		}
 		
+		for (String cell : getCellSpareVariables(numberOfLines, numberOfColumns))
+			adds.add(String.format(NO_CHANGE_TRANSITION, cell));	
+		
 		return adds;		
 	}
 
@@ -443,39 +529,28 @@ public class TriangleTireWorldGen {
 				adds.add(String.format(NO_CHANGE_TRANSITION, currentCell));
 		}
 		
+		for (String cell : getCellSpareVariables(numberOfLines, numberOfColumns))
+			adds.add(String.format(NO_CHANGE_TRANSITION, cell));	
+		
 		return adds;
 	}
 
 	private static List<String> getLoadTireActionADDs(Integer numberOfLines, Integer numberOfColumns) {
 
-		//Find cells with free tires
-		Set<String> cellsWithFreeTire = new TreeSet<String>();
-		
-		//columns with odd coordinates
-//		for (int x = 2; x < numberOfColumns; x+=2)
-//			for (int y = x; y <= numberOfLines - x + 1; y+=2) 
-//				cellsWithFreeTire.add(String.format(VARIABLE_MASK, x, y));
-		
-		//bottom and upper cells
-		for (int x = 2; x < numberOfColumns; x++) {
-			//bottom cell
-			cellsWithFreeTire.add(String.format(VARIABLE_MASK, x, x));
-			
-			//upper cell
-			cellsWithFreeTire.add(String.format(VARIABLE_MASK, x, numberOfLines - x + 1));
-		}
-		
-		//last cell
-		cellsWithFreeTire.add(String.format(VARIABLE_MASK, numberOfColumns, numberOfColumns));
-		
 		//Write adds
 		List<String> adds = new ArrayList<String>();
 			
 		String addStart = "hasspare ";
 		String addEnd = "";
 		
-		for (String cell : cellsWithFreeTire) {
-			addStart += String.format("(%s ([1.00]) ", cell);
+		for (Pair pair : getCellSparePositions(numberOfLines, numberOfColumns)) {
+			int x = (Integer) pair.get_o1();
+			int y = (Integer) pair.get_o2();
+			
+			String cellPosition = String.format(VARIABLE_MASK, x, y);
+			String cellSparePosition = String.format(SPARE_VARIABLE_MASK, x, y);
+			
+			addStart += String.format("(%s (%s ([1.00]) ([0.00]) ) ", cellPosition, cellSparePosition);
 			addEnd += " )";
 		}
 		
@@ -497,6 +572,9 @@ public class TriangleTireWorldGen {
 		
 		for (String cell : getCellVariables(numberOfLines, numberOfColumns))
 			adds.add(String.format(NO_CHANGE_TRANSITION, cell));
+		
+		for (String cell : getCellSpareVariables(numberOfLines, numberOfColumns))
+			adds.add(String.format(NO_CHANGE_TRANSITION, cell));	
 		
 		return adds;
 	}

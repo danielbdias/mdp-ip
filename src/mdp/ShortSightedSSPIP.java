@@ -11,7 +11,7 @@ import util.Pair;
 
 public class ShortSightedSSPIP extends MDP_Fac {
 
-	private static final double NEGATIVE_INFINITY = -1e3; //-1e10;
+	private static final double NEGATIVE_INFINITY = -5e2; //-1e10;
 	
 	public ShortSightedSSPIP(String filename, int typeContext, int typeAproxPol, String typeSolution) {
 		super(filename, typeContext, typeAproxPol, typeSolution, false);
@@ -582,10 +582,10 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		while (true){
 			long elapsedTime = (System.currentTimeMillis() - initialTime);
 			
-			if (elapsedTime >= timeOutInMilliseconds) {
-				formattedPrintln("Finished by timeout !");
-				break; //timeout		
-			}
+//			if (elapsedTime >= timeOutInMilliseconds) {
+//				formattedPrintln("Finished by timeout !");
+//				break; //timeout		
+//			}
 			
 			if (solvedStates.contains(initialState)) {
 				formattedPrintln("Finished by convergence !");
@@ -647,7 +647,10 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			for (State s : optimalValueFunction.keySet()) 
 				valueFunction.put(s, optimalValueFunction.get(s));
 			
-			while (!goalStates.contains(state)) {
+			for (int i = 0; i <= t; i++) {
+			//while (!goalStates.contains(state)) {
+				if (goalStates.contains(state)) break;
+				
 				state = executeAction(valueFunction, state, randomGenNextState);
 				visitedStates.add(state);
 			}
