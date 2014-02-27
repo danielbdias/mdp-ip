@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 
 public class Polynomial {
@@ -792,10 +793,19 @@ public Hashtable constructDirectionList(TreeSet listVarProb,Context context, Arr
 	
 }
 
-
- 
-
-
+	public String[] getParameterFromPolynomial(String parameterPrefix) {
+		Set<String> parameters = new HashSet<String>();
+		
+		Object[] vars = this.getTerms().keySet().toArray();
+		
+		for (Object var : vars) {
+			String param = this.contextPol.getLabelProd((Integer) var);
+			
+			parameters.add(parameterPrefix + param);
+		}
+		
+		return parameters.toArray(new String[0]);
+	}
 
 }
 
