@@ -122,6 +122,8 @@ public abstract class MDP {
 	protected HashMap<String, List<PolytopePoint>> cachedPolytopes = new HashMap<String, List<PolytopePoint>>();
 	protected HashMap<String, PolytopePoint> cachedPoints = new HashMap<String, PolytopePoint>();
 	
+	public HashMap<String, List<ArrayList>> constraintsPerPoly = new HashMap<String, List<ArrayList>>();
+	
 	public int lrsCalls = 0;
 	
 	///////////////////////////////
@@ -4213,7 +4215,7 @@ public abstract class MDP {
 	}
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Experimental
+	// Experimental (factLRTDP-IP e factRTDP-IP)
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	/**
@@ -4381,7 +4383,6 @@ public abstract class MDP {
 			this.fillPolytopeCache();
 			this.fillPointsCache();
 		}
-			
 
 		VUpper = initVUpper;
 		
@@ -4433,7 +4434,7 @@ public abstract class MDP {
 		return parameters.toArray(new String[0]);
 	}
 
-	private String getPolytopeCacheKey(String[] parameters) {
+	public String getPolytopeCacheKey(String[] parameters) {
 		if (parameters == null || parameters.length == 0)
 			return "";
 		
@@ -4445,7 +4446,7 @@ public abstract class MDP {
 		return key;
 	}
 	
-	private LinearConstraintExpression[] getParsedConstraints(String[] parameters) {
+	public LinearConstraintExpression[] getParsedConstraints(String[] parameters) {
 		ArrayList constraints = new ArrayList();
 		
 		for (String parameter : parameters) 
@@ -4560,5 +4561,205 @@ public abstract class MDP {
 				}
 			}	
 		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Experimental (SPUDD-IP)
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	/**
+	 * Value Iteration for Factored MDP-IPs
+	 */
+	public int solveSPUDDIP2(int maxNumberIterations, String finalVUpperPath, String initialStateLogPath, String initVUpperPath) {
+				
+		useVerticesSolver = true;
+		
+		this.lrsCalls = 0;
+		
+		this.fillPolytopeCache();
+		this.replaceParameters();
+		
+		int numIterations = 0;   
+        Object QiPlus1DD, DiffDD;
+        
+        double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
+        
+        if (initVUpperPath == null) {
+			//Initialize Vu with admissible value function //////////////////////////////////
+			//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
+			maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
+			
+			valueiDD = context.getTerminalNode(maxUpper);
+		}
+		else {
+			context.workingWithParameterized = false;
+			valueiDD = context.readValueFunction(initVUpperPath);
+			valueiDD = context.remapIdWithPrime(this.valueiDD, hmPrimeRemap);
+			context.workingWithParameterized = true;			
+		}
+		
+    	double Vmax = Rmax; 
+    	context.workingWithParameterizedBef = context.workingWithParameterized;
+    	//context.createBoundsProb(NAME_FILE_CONTRAINTS);
+    	
+    	long initialTime = System.currentTimeMillis();
+    	boolean keepIterating = true;
+    	
+    	while (keepIterating && numIterations < maxNumberIterations) {
+    		valueiPlus1DD = context.getTerminalNode(Double.NEGATIVE_INFINITY);
+   		
+    		for (Object actionAsObject : mName2Action.values()) {
+    			Action action = (Action) actionAsObject;
+    			//System.out.println("  - Regress action " + action.getName());
+
+      			context.workingWithParameterized = context.workingWithParameterizedBef;
+    			QiPlus1DD = this.regress2(valueiDD, action, 0.0, action.tmID2ADD, OptimizationType.Minimization, false, false);
+    			    			
+   				valueiPlus1DD = context.apply(valueiPlus1DD, QiPlus1DD, Context.MAX);
+     			
+        	    flushCaches(null);		
+    		}   	
+
+    		valueiPlus1DD = context.apply(valueiPlus1DD, context.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
+    		valueiPlus1DD = context.apply(valueiPlus1DD, this.rewardDD, Context.SUM);
+    				
+    		DiffDD = context.apply(valueiPlus1DD, valueiDD, Context.SUB);
+    		Double maxDiff = (Double) context.apply(DiffDD, Context.MAXVALUE);
+    		Double minDiff = (Double) context.apply(DiffDD, Context.MINVALUE);
+    		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
+ 
+    		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
+    			 System.out.println("Terminate after " + numIterations + " iterations");
+    			 keepIterating = false;
+    		}
+    		
+    		valueiDD = valueiPlus1DD;
+    		
+//    		System.out.println("Iteration: " + numIterations + " NumCallSolver:  " + context.numCallSolver 
+//    				+ " Reuse Cache Internal Node instead of  Call Solver: " + context.reuseCacheIntNode 
+//    				+ " reuse: " + context.contReuse + " no reuse: " + context.contNoReuse + " reduced to value:  " + context.numberReducedToValue 
+//    				+ " reuse using lattice " + context.contReuseUsingLattice);    		
+    		
+    		numIterations = numIterations + 1;
+
+    		Vmax = Rmax + this.bdDiscount.doubleValue() * Vmax;
+    		
+    		long elapsedTime = (System.currentTimeMillis() - initialTime);
+    	    
+	    	TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
+	    	Double value = context.getValueForStateInContext((Integer) valueiPlus1DD, initialState, null, null);
+	    	
+	    	if (initialStateLogPath != null)
+	    		this.logValueInFile(initialStateLogPath, value, elapsedTime);
+    	}
+    	
+    	//SPUDD-IP execute one mass update in all states per iteration
+    	//so, the number of updates is the number of iterations
+    	contUpperUpdates = numIterations;
+    	
+    	if (printFinalADD)
+    		context.view(valueiDD);
+    	    	
+// 		System.out.println("dumping VUpper in" + finalVUpperPath);
+   		context.dump(valueiDD, finalVUpperPath);
+    	
+        int contNumNodes = this.context.contNumberNodes(valueiDD);
+    	flushCaches(null);
+    	
+        return contNumNodes;
+	}
+
+	private void replaceParameters() {
+		ReplaceByAlphaPolyTransform transform = new ReplaceByAlphaPolyTransform(this);
+		
+		//replace parameters
+		for (Object actionName : this.mName2Action.keySet()) {
+			Action action = (Action) this.mName2Action.get(actionName);
+			
+			for (int i = 1; i <= this.numVars; i++) {
+				Integer varPrime = Integer.valueOf(i);
+				
+				Object cpt_a_xiprime = action.tmID2ADD.get(varPrime);
+				
+				if (cpt_a_xiprime == null){
+					System.out.println("Prime var not found");
+					System.exit(1);
+				}
+				
+				context.changePolyInLeaves((Integer) cpt_a_xiprime, transform);
+			}
+		}
+	}
+	
+	public Object regress2(Object VDD, Action action, double mergeError, TreeMap iD2ADD, OptimizationType optimization, boolean simulating, boolean firsTimeSimulating){
+		ArrayList primeIdsProd = new ArrayList(); //list of primes ids that was multiplied
+
+		VDD = context.remapIdWithPrime(VDD, this.hmPrimeRemap);
+
+		Integer xiprime;
+		Iterator x = this.hmPrimeRemap.entrySet().iterator();
+		
+		while (x.hasNext()) {
+
+			Map.Entry xiprimeme = (Map.Entry) x.next();
+			xiprime = (Integer) xiprimeme.getValue();
+			
+			Object cpt_a_xiprime = iD2ADD.get(xiprime);
+			
+			if (!primeIdsProd.contains(xiprime)){			
+				VDD = context.apply(VDD, cpt_a_xiprime, Context.PROD);
+				primeIdsProd.add(xiprime);
+			}
+
+			//			 TODO: For asyncronic arcs Make a set of all CPTs to multiply (before loop)
+			//       Then when summing out xi', remove any CPTs from set
+			//       that involve xi' and multiply them in.
+			ArrayList dependPrimeList = getIdVarPrimeDependOn2(xiprime,action.varId2DependPrimeList);
+			
+            for (int i = 0; i < dependPrimeList.size(); i++){
+            	Integer xiprimeSyn = (Integer) dependPrimeList.get(i);
+            	Object cpt_a_xiprimeSyn = iD2ADD.get(xiprimeSyn);
+            	if (!primeIdsProd.contains(xiprimeSyn)){//this cpt was not multiplied before
+            		VDD = context.apply(VDD, cpt_a_xiprimeSyn, Context.PROD);
+            		primeIdsProd.add(xiprimeSyn);
+            	}
+            }
+            
+			VDD = context.apply(xiprime, Context.SUMOUT, VDD);
+		} 
+	
+		// Reduce memory if neededs
+//		if (!simulating) 
+//			flushCaches(VDD);
+
+		if (context.workingWithParameterized){
+			context.mergeError = mergeError;
+			
+			if (optimization == OptimizationType.Maximization)
+				VDD = context.doMaxCallOverNodes(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt);
+			else {
+				if (useVerticesSolver)
+					VDD = context.doMinCallOverNodes2(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt, this.constraintsPerPoly); // the parameter is ParADD and the result is an ADD
+				else
+					VDD = context.doMinCallOverNodes(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt); // the parameter is ParADD and the result is an ADD
+			}
+		}
+		
+		context.workingWithParameterized = false;
+		
+		return VDD;
+	}
+	
+	private ArrayList getIdVarPrimeDependOn2(Integer xiprime, HashMap varId2DependPrimeList) {
+		ArrayList dependPrimeList=new ArrayList();
+		Iterator it=varId2DependPrimeList.keySet().iterator();
+		while (it.hasNext()){
+			  Integer prime=(Integer)it.next();
+              ArrayList list=(ArrayList)varId2DependPrimeList.get(prime);
+              if (list.contains(xiprime)){
+            	  dependPrimeList.add(prime);
+              }
+		}
+		return dependPrimeList;
 	}
 }

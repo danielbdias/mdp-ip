@@ -4,6 +4,7 @@ import graph.Graph;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -29,6 +30,7 @@ import util.Pair;
 import logic.lattice.Lattice;
 import mdp.Action;
 import mdp.Config;
+import mdp.PolynomialTransform;
 import mdp.State;
 
 public abstract class Context {
@@ -378,12 +380,21 @@ public abstract class Context {
 			this.createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min", constraintsPerParameter);
 		}
 		
+		protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS, HashMap<String, List<String>> constraintsPerParameter, String[] params) {
+			this.createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min", constraintsPerParameter, params);
+		}
+		
 		protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS, String optimizationType) {
 			this.createFileAMPL(objective, NAME_FILE_CONTRAINTS, optimizationType, null);
 		}
 		
-	    protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS, String optimizationType, 
+		protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS, String optimizationType, 
 	    		HashMap<String, List<String>> constraintsPerParameter) {
+			
+		}
+		
+	    protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS, String optimizationType, 
+	    		HashMap<String, List<String>> constraintsPerParameter, String[] params) {
 	    	BufferedWriter out = null;
 	    	BufferedReader input = null;
 	    	
@@ -397,7 +408,11 @@ public abstract class Context {
 	     		NAME_FILE_AMPL = fileWithoutExtension + "_" + System.currentTimeMillis() + extension;
 	     		
 				out = new BufferedWriter(new FileWriter(NAME_FILE_AMPL));
-				writeVarObjective(objective, out, optimizationType);
+				
+				if (params == null)
+					writeVarObjective(objective, out, optimizationType);
+				else
+					writeVarObjective(objective, out, optimizationType, params);
 				
 				//constraints print
 				if (constraintsPerParameter == null) {
@@ -419,9 +434,12 @@ public abstract class Context {
 						}
 					}
 				}
-	             
-	            //print the probabilities founded by the solver
-	            writeProbFounded(out);
+	            
+				if (params == null)
+					writeProbFounded(out);
+				else
+					writeProbFounded(out, params);
+				
 	     	} catch (IOException e) {
 	     		System.out.println("Problem with the creation AMPL file.");
 	         	System.err.println("Error: " + e);
@@ -461,7 +479,36 @@ public abstract class Context {
             out.append(System.getProperty("line.separator"));
 			
 		}
+		
+		private void writeVarObjective(String objective, BufferedWriter out, String optimizationType, String[] parameters) throws IOException {
+			String optimization = "minimize";
+			if (optimizationType.equals("max"))
+				optimization = "maximize";
+			
+	    	out.write(SOLVER);
+            out.append(System.getProperty("line.separator"));
+            
+            for (String param : parameters) {
+            	out.append("var " + param + ">=0, <=1;");
+              	out.append(System.getProperty("line.separator"));	
+			}
+            
+            out.append(optimization + " obj: " + objective + ";");
+            out.append(System.getProperty("line.separator"));
+			
+		}
 
+		private void writeProbFounded(BufferedWriter out, String[] parameters) throws IOException {
+	    	out.append("solve;");
+            out.append(System.getProperty("line.separator"));
+            
+            for (String param : parameters) {
+           	 	out.append("print '" + param + "',"+ param+";");
+           	 	out.append(System.getProperty("line.separator"));
+            }
+			
+		}
+		
 	    private void writeProbFounded(BufferedWriter out) throws IOException {
 	    	out.append("solve;");
             out.append(System.getProperty("line.separator"));
@@ -650,8 +697,77 @@ public abstract class Context {
 	    	 Integer Fr = (Integer) reduceCacheMinPar.get(VDD);
 	    	 if (Fr == null){
 	    		 InternalNodeKey intNodeKey = (InternalNodeKey) this.getInverseNodesCache().get(VDD);
-	    		 Object Fh = doMinCallOverNodes(intNodeKey.getHigh(),NAME_FILE_CONTRAINTS,pruneAfterEachIt);
-	    		 Object Fl = doMinCallOverNodes(intNodeKey.getLower(),NAME_FILE_CONTRAINTS,pruneAfterEachIt);
+	    		 Object Fh = doMinCallOverNodes(intNodeKey.getHigh(),NAME_FILE_CONTRAINTS,pruneAfterEachIt, constraintsPerParameter);
+	    		 Object Fl = doMinCallOverNodes(intNodeKey.getLower(),NAME_FILE_CONTRAINTS,pruneAfterEachIt, constraintsPerParameter);
+	    		 Integer Fvar= intNodeKey.getVar();
+	    		 Fr=(Integer)this.GetNode(Fvar,Fh,Fl);
+	    		 reduceCacheMinPar.put(VDD, Fr);
+	    	 } else	{
+	    		 reuseCacheIntNode++;
+	    	 }
+	    	 
+	    	 ///////////////////////////////////////////////////////////////////////////////////////////////////
+	    	 return Fr;//could be integer or AditArc
+	     }
+	    
+	    //test for modified spudd
+	    public Object doMinCallOverNodes2(Object VDD, String NAME_FILE_CONTRAINTS, boolean pruneAfterEachIt, 
+	    		HashMap<String, List<ArrayList>> constraintsPerPolytope) {
+
+	    	 if(this.isTerminalNode(VDD)){ 
+	    		 TerminalNodeKeyPar node=(TerminalNodeKeyPar)this.getInverseNodesCache().get(VDD);
+	    		 if(node.getPolynomial().getTerms().size()==0){ //if the node does not have probabilities then we do not call the nonlinear solver
+	    			 return this.getTerminalNode(node.getPolynomial().getC());
+	    		 }
+	    		 /////////////////////OBJECTIVE-IP PRUNE/////////////////////////////////////////////
+	    		 if (pruneAfterEachIt){
+	    			 return callNonLinearSolverObjectiveIP(node, NAME_FILE_CONTRAINTS);
+	    		 }
+	    		 //////////////////////////////////////////////////////////////////////////////////////
+	    		 else{ //////Call solver with the polynomial//////////////////////////////////////////
+	    			 //filter params
+	    			 HashMap<String, List<String>> constraints = new HashMap<String, List<String>>();
+	    			 
+	    			 String cacheKey = "";
+	    			 
+	    			 String[] params = getParameterFromPolynomial(node.getPolynomial());
+	    			 Arrays.sort(params);
+	    			 
+	    			 for (String parameter : params)
+	    				 cacheKey += (parameter + ".");
+	    			 
+	    			 List<String> lines = new ArrayList<String>();
+    				 
+    				 for (ArrayList item : constraintsPerPolytope.get(cacheKey)) {
+    					 String line = "";
+    					 
+    					 for (int i=0;i< item.size();i++)
+    						 line += item.get(i);
+    					 
+    					 line += ";";
+	    				 
+	    				 lines.add(line);
+					 }
+    				 
+    				 constraints.put("", lines);
+	    			 
+	    			 createFileAMPL(node.getPolynomial().toString(this,"p"),NAME_FILE_CONTRAINTS, constraints, params);
+	    			 Double obj=callNonLinearSolver();
+	    			 //after this I have the currentValuesProb
+	    			 contNoReuse++;
+	    			 if (obj==null){
+	    				 System.out.println("doMinCallOverNodes: Problems with the solver it return null");
+	    				 System.exit(0);
+	    			 }
+	    			 return this.getTerminalNode(obj);
+	    		 }
+	    	 }
+	    	 /////////////////////recursive call for each ADD branch////////////////////////////////////////////
+	    	 Integer Fr = (Integer) reduceCacheMinPar.get(VDD);
+	    	 if (Fr == null){
+	    		 InternalNodeKey intNodeKey = (InternalNodeKey) this.getInverseNodesCache().get(VDD);
+	    		 Object Fh = doMinCallOverNodes2(intNodeKey.getHigh(),NAME_FILE_CONTRAINTS,pruneAfterEachIt, constraintsPerPolytope);
+	    		 Object Fl = doMinCallOverNodes2(intNodeKey.getLower(),NAME_FILE_CONTRAINTS,pruneAfterEachIt, constraintsPerPolytope);
 	    		 Integer Fvar= intNodeKey.getVar();
 	    		 Fr=(Integer)this.GetNode(Fvar,Fh,Fl);
 	    		 reduceCacheMinPar.put(VDD, Fr);
@@ -1200,6 +1316,38 @@ public abstract class Context {
 			 
 			 TreeMap<Integer, Boolean> partialState = new TreeMap<Integer, Boolean>(assign);
 			 leaves.add(new Pair(partialState, poly));
+		 }
+	 }
+	 
+	 public void changePolyInLeaves(int id, PolynomialTransform transformFunction) {		 
+		 this.changePolyInLeaves(id, new TreeMap<Integer, Boolean>(), transformFunction);
+	 }
+	 
+	 private void changePolyInLeaves(int id, TreeMap<Integer, Boolean> assign, PolynomialTransform transformFunction) {
+		 Boolean b;
+		 
+		 NodeKey cur = this.getNodeInverseCache(id);
+		
+		 if (cur instanceof InternalNodeKey) {    			
+			 InternalNodeKey ni = (InternalNodeKey) cur;    
+			 
+			 Integer var_id = ni.var;
+		
+			 assign.put(var_id, false);
+			 changePolyInLeaves((Integer) ni.getLower(), assign, transformFunction);
+			 
+			 assign.put(var_id, true);
+			 changePolyInLeaves((Integer) ni.getHigh(), assign, transformFunction);
+		     
+			 assign.remove(var_id);
+			 return;
+		 }
+		 
+		 //If get here, cur will be an ADDDNode, ADDBNode		 
+		 if (cur instanceof TerminalNodeKeyPar) {
+			 Polynomial poly = ((TerminalNodeKeyPar) cur).getPolynomial();  // the result is a poly 
+			 
+			 ((TerminalNodeKeyPar) cur).setPolynomial(transformFunction.transform(poly));
 		 }
 	 }
 	 

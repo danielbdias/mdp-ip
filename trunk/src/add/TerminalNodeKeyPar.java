@@ -43,6 +43,9 @@ public class TerminalNodeKeyPar extends TerminalNodeKey {
 			return polynomial;
 		}
 
+		public void setPolynomial(Polynomial poly) {
+			this.polynomial= poly;
+		}
 	
 
 }
