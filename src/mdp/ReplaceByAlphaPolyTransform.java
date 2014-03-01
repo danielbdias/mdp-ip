@@ -23,7 +23,7 @@ public class ReplaceByAlphaPolyTransform implements PolynomialTransform {
 	public Polynomial transform(Polynomial poly) {
 		//note: this does not work in sysadmin domain
 		
-		String[] parameters = poly.getParameterFromPolynomial("p");
+		String[] parameters = this.mdp.getParameterFromPolynomial(poly);
 		
 		boolean changePoly = (parameters.length > 0);
 		
