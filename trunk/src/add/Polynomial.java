@@ -274,7 +274,7 @@ private String createOrderedLabelProd(String label, String label2) {
 	j=lengthRes-1;
 	
 	for(k = 0; k < lengthRes; ++k){
-		if(Integer.parseInt(B[i])<=Integer.parseInt(B[j])){
+		if(B[i].compareTo(B[j]) >= 0){
 			A[k]=B[i];
 			i++;
 		}
