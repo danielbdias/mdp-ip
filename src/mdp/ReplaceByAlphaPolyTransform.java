@@ -90,27 +90,23 @@ public class ReplaceByAlphaPolyTransform implements PolynomialTransform {
 					constraint.add(new BigInteger("0"));
 
 					constraints.add(constraint);
-				}
-				
-				String cacheKey = "";
-				
-				constraint = new ArrayList();
-				
-				for (String alpha : alphas) {
-					constraint.add("+");
-					constraint.add(alpha);
 					
-					cacheKey += (alpha + ".");
-				}
-				
-				constraint.remove(0);
-				
-				constraint.add("=");
-				constraint.add(new BigInteger("1"));
+					constraint = new ArrayList();
+					
+					for (String anotherAlpha : alphas) {
+						constraint.add("+");
+						constraint.add(anotherAlpha);
+					}
+					
+					constraint.remove(0);
+					
+					constraint.add("=");
+					constraint.add(new BigInteger("1"));
 
-				constraints.add(constraint);
-				
-				mdp.constraintsPerPoly.put(cacheKey, constraints);
+					constraints.add(constraint);
+					
+					mdp.constraintsPerParameter.put(alpha, constraints);
+				}
 			}
 			
 			return new Polynomial(poly.getC(), terms, this.mdp.context);

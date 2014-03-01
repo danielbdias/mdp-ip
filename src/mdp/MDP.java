@@ -122,8 +122,6 @@ public abstract class MDP {
 	protected HashMap<String, List<PolytopePoint>> cachedPolytopes = new HashMap<String, List<PolytopePoint>>();
 	protected HashMap<String, PolytopePoint> cachedPoints = new HashMap<String, PolytopePoint>();
 	
-	public HashMap<String, List<ArrayList>> constraintsPerPoly = new HashMap<String, List<ArrayList>>();
-	
 	public int lrsCalls = 0;
 	
 	///////////////////////////////
@@ -3699,7 +3697,7 @@ public abstract class MDP {
 		
     	double Vmax = Rmax; 
     	context.workingWithParameterizedBef = context.workingWithParameterized;
-    	context.createBoundsProb(NAME_FILE_CONTRAINTS);
+    	//context.createBoundsProb(NAME_FILE_CONTRAINTS);
     	
     	long initialTime = System.currentTimeMillis();
     	boolean keepIterating = true;
@@ -3743,12 +3741,15 @@ public abstract class MDP {
 
     		Vmax = Rmax + this.bdDiscount.doubleValue() * Vmax;
     		
-    		long elapsedTime = (System.currentTimeMillis() - initialTime);
-    	    
-	    	TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
-	    	Double value = context.getValueForStateInContext((Integer) valueiPlus1DD, initialState, null, null);
-	    	
-	    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
+    		if (initialStateLogPath != null) {
+    		
+	    		long elapsedTime = (System.currentTimeMillis() - initialTime);
+	    	    
+		    	TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
+		    	Double value = context.getValueForStateInContext((Integer) valueiPlus1DD, initialState, null, null);
+		    	
+		    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
+    		}
     	}
     	
     	//SPUDD-IP execute one mass update in all states per iteration
@@ -4739,7 +4740,7 @@ public abstract class MDP {
 				VDD = context.doMaxCallOverNodes(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt);
 			else {
 				if (useVerticesSolver)
-					VDD = context.doMinCallOverNodes2(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt, this.constraintsPerPoly); // the parameter is ParADD and the result is an ADD
+					VDD = context.doMinCallOverNodes2(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt, this.constraintsPerParameter); // the parameter is ParADD and the result is an ADD
 				else
 					VDD = context.doMinCallOverNodes(VDD, NAME_FILE_CONTRAINTS, this.pruneAfterEachIt); // the parameter is ParADD and the result is an ADD
 			}

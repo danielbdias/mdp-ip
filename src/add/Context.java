@@ -712,7 +712,7 @@ public abstract class Context {
 	    
 	    //test for modified spudd
 	    public Object doMinCallOverNodes2(Object VDD, String NAME_FILE_CONTRAINTS, boolean pruneAfterEachIt, 
-	    		HashMap<String, List<ArrayList>> constraintsPerPolytope) {
+	    		HashMap<String, List<ArrayList>> constraintsPerParameters) {
 
 	    	 if(this.isTerminalNode(VDD)){ 
 	    		 TerminalNodeKeyPar node=(TerminalNodeKeyPar)this.getInverseNodesCache().get(VDD);
@@ -727,29 +727,25 @@ public abstract class Context {
 	    		 else{ //////Call solver with the polynomial//////////////////////////////////////////
 	    			 //filter params
 	    			 HashMap<String, List<String>> constraints = new HashMap<String, List<String>>();
-	    			 
-	    			 String cacheKey = "";
-	    			 
+	    			     			 
 	    			 String[] params = getParameterFromPolynomial(node.getPolynomial());
-	    			 Arrays.sort(params);
-	    			 
-	    			 for (String parameter : params)
-	    				 cacheKey += (parameter + ".");
 	    			 
 	    			 List<String> lines = new ArrayList<String>();
-    				 
-    				 for (ArrayList item : constraintsPerPolytope.get(cacheKey)) {
-    					 String line = "";
-    					 
-    					 for (int i=0;i< item.size();i++)
-    						 line += item.get(i);
-    					 
-    					 line += ";";
+	    			 
+	    			 for (String parameter : params) {
+	    				 for (ArrayList item : constraintsPerParameters.get(parameter)) {
+	    					 String line = "";
+	    					 
+	    					 for (int i=0;i< item.size();i++)
+	    						 line += item.get(i);
+	    					 
+	    					 line += ";";
+		    				 
+		    				 lines.add(line);
+						 }
 	    				 
-	    				 lines.add(line);
-					 }
-    				 
-    				 constraints.put("", lines);
+	    				 constraints.put(parameter, lines);
+	    			 }
 	    			 
 	    			 createFileAMPL(node.getPolynomial().toString(this,"p"),NAME_FILE_CONTRAINTS, constraints, params);
 	    			 Double obj=callNonLinearSolver();
@@ -766,8 +762,8 @@ public abstract class Context {
 	    	 Integer Fr = (Integer) reduceCacheMinPar.get(VDD);
 	    	 if (Fr == null){
 	    		 InternalNodeKey intNodeKey = (InternalNodeKey) this.getInverseNodesCache().get(VDD);
-	    		 Object Fh = doMinCallOverNodes2(intNodeKey.getHigh(),NAME_FILE_CONTRAINTS,pruneAfterEachIt, constraintsPerPolytope);
-	    		 Object Fl = doMinCallOverNodes2(intNodeKey.getLower(),NAME_FILE_CONTRAINTS,pruneAfterEachIt, constraintsPerPolytope);
+	    		 Object Fh = doMinCallOverNodes2(intNodeKey.getHigh(),NAME_FILE_CONTRAINTS,pruneAfterEachIt, constraintsPerParameters);
+	    		 Object Fl = doMinCallOverNodes2(intNodeKey.getLower(),NAME_FILE_CONTRAINTS,pruneAfterEachIt, constraintsPerParameters);
 	    		 Integer Fvar= intNodeKey.getVar();
 	    		 Fr=(Integer)this.GetNode(Fvar,Fh,Fl);
 	    		 reduceCacheMinPar.put(VDD, Fr);
