@@ -4421,7 +4421,7 @@ public abstract class MDP {
 		}
 	}
 	
-	private String[] getParameterFromPolynomial(Polynomial polynomial) {
+	public String[] getParameterFromPolynomial(Polynomial polynomial) {
 		Set<String> parameters = new HashSet<String>();
 		
 		Object[] vars = polynomial.getTerms().keySet().toArray();
