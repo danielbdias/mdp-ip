@@ -36,16 +36,18 @@ public class ReplaceByAlphaPolyTransform implements PolynomialTransform {
 					changePoly = false;
 					break;
 				}
-					
 			}
 		}
 		
 		if (changePoly) {
+			if (parameters.length != 1) {
+				System.err.println("transform only works for problems with one parameter per state variable !");
+				System.exit(-1);
+			}
+			
 			String polytopeCacheKey = this.mdp.getPolytopeCacheKey(parameters);
 			
 			List<PolytopePoint> vertices = this.mdp.cachedPolytopes.get(polytopeCacheKey);
-			
-			TreeSet<String> alphas = new TreeSet<String>();
 			
 			Hashtable terms = new Hashtable();
 			
@@ -54,62 +56,25 @@ public class ReplaceByAlphaPolyTransform implements PolynomialTransform {
 				String label = this.mdp.context.getLabelProd(id);
 				String param = "p" + label;
 				
+				List<String> paramAlphas = mdp.alphasPerPolytope.get(param);
+				
+				Double oldWeight = (Double) poly.getTerms().get(id);
+				
 				for (int i = 0; i < vertices.size(); i++) {
 					PolytopePoint vertex = vertices.get(i);
+					String alphaName = paramAlphas.get(i);
 					
-					Integer tempId = id * 100 + i;
-					terms.put(tempId, vertex.getVertexDimension(param));
-					
-					String alphaName = "alpha_"+ i + "_" + label;
-					
-					mdp.context.putLabelsProdId(alphaName, tempId);
-					
-					alphas.add("p" + alphaName);
+					Integer tempId = mdp.context.getIdLabelProd(alphaName);
+					terms.put(tempId, oldWeight * vertex.getVertexDimension(param));
 				}
 			}
 			
-			if (alphas.size() > 0) {
+			Polynomial newPoly = new Polynomial(poly.getC(), terms, this.mdp.context);
 			
-				ArrayList constraints = new ArrayList();
-
-				ArrayList constraint = null;
-				
-				for (String alpha : alphas) {
-					constraint = new ArrayList();
-					constraint.add(alpha);
-					constraint.add("<");
-					constraint.add("=");
-					constraint.add(new BigInteger("1"));
-
-					constraints.add(constraint);
-
-					constraint = new ArrayList();
-					constraint.add(alpha);
-					constraint.add(">");
-					constraint.add("=");
-					constraint.add(new BigInteger("0"));
-
-					constraints.add(constraint);
-					
-					constraint = new ArrayList();
-					
-					for (String anotherAlpha : alphas) {
-						constraint.add("+");
-						constraint.add(anotherAlpha);
-					}
-					
-					constraint.remove(0);
-					
-					constraint.add("=");
-					constraint.add(new BigInteger("1"));
-
-					constraints.add(constraint);
-					
-					mdp.constraintsPerParameter.put(alpha, constraints);
-				}
-			}
+//			System.out.println(poly);
+//			System.out.println(newPoly);
 			
-			return new Polynomial(poly.getC(), terms, this.mdp.context);
+			return newPoly;
 		}
 		
 		return poly;

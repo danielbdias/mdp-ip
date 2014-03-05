@@ -122,6 +122,8 @@ public abstract class MDP {
 	protected HashMap<String, List<PolytopePoint>> cachedPolytopes = new HashMap<String, List<PolytopePoint>>();
 	protected HashMap<String, PolytopePoint> cachedPoints = new HashMap<String, PolytopePoint>();
 	
+	public HashMap<String, List<String>> alphasPerPolytope = new HashMap<String, List<String>>();
+	
 	public int lrsCalls = 0;
 	
 	///////////////////////////////
@@ -3760,7 +3762,8 @@ public abstract class MDP {
     		context.view(valueiDD);
     	    	
 // 		System.out.println("dumping VUpper in" + finalVUpperPath);
-   		context.dump(valueiDD, finalVUpperPath);
+   		if (finalVUpperPath != null)
+   			context.dump(valueiDD, finalVUpperPath);
     	
         int contNumNodes = this.context.contNumberNodes(valueiDD);
     	flushCaches(null);
@@ -4578,6 +4581,7 @@ public abstract class MDP {
 		this.lrsCalls = 0;
 		
 		this.fillPolytopeCache();
+		this.fillAlphaPolytopeCache();
 		this.replaceParameters();
 		
 		int numIterations = 0;   
@@ -4733,6 +4737,11 @@ public abstract class MDP {
 //		if (!simulating) 
 //			flushCaches(VDD);
 
+//		List<Pair> nodes = context.enumeratePolyInLeaves((Integer) VDD);
+		
+//		for (Pair pair : nodes)
+//			System.out.println(pair.get_o2());
+		
 		if (context.workingWithParameterized){
 			context.mergeError = mergeError;
 			
@@ -4763,4 +4772,112 @@ public abstract class MDP {
 		}
 		return dependPrimeList;
 	}
+	
+
+	protected void fillAlphaPolytopeCache() {
+		for (Object actionName : this.mName2Action.keySet()) {
+			Action action = (Action) this.mName2Action.get(actionName);
+			
+			for (int i = 1; i <= this.numVars; i++) {
+				Integer varPrime = Integer.valueOf(i);
+				
+				addToAlphaPolytopeCache(action.tmID2ADD, varPrime);
+			}
+		}
+	}
+	
+	protected void addToAlphaPolytopeCache(TreeMap iD2ADD, Integer varPrime) {
+		Object cpt_a_xiprime = iD2ADD.get(varPrime);
+		
+		if (cpt_a_xiprime == null){
+			System.out.println("Prime var not found");
+			System.exit(1);
+		}
+		
+		List<Pair> polyList = context.enumeratePolyInLeaves((Integer) cpt_a_xiprime);
+			
+		if (polyList != null && polyList.size() > 0) {			
+			for (Pair pair : polyList) {
+				Polynomial poly = (Polynomial) pair.get_o2();
+				
+				String[] parameters = this.getParameterFromPolynomial(poly);
+
+				if (parameters.length > 0) {
+					if (parameters.length != 1) {
+						System.err.println("addToAlphaPolytopeCache only works for problems with one parameter per state variable !");
+						System.exit(-1);
+					}
+					
+					String polytopeCacheKey = this.getPolytopeCacheKey(parameters);
+					
+					if (!this.alphasPerPolytope.containsKey(polytopeCacheKey)) {
+						//add alphas to cache
+						List<String> alphas = new ArrayList<String>();
+						
+						List<PolytopePoint> vertices = this.cachedPolytopes.get(polytopeCacheKey);
+						
+						String parameter = polytopeCacheKey;
+						String label = parameter.substring(1); //remove the "p"
+						Integer id = this.context.getIdLabelProd(label); 
+						
+						for (int i = 0; i < vertices.size(); i++) {						
+							Integer tempId = id * 100 + i;						
+							String alphaName = "alpha_"+ label + "_" + i;
+							
+							this.context.putLabelsProdId(alphaName, tempId);
+							
+							alphas.add(alphaName);
+						}
+						
+						this.alphasPerPolytope.put(polytopeCacheKey, alphas);
+						
+						//add constraints
+
+						for (String alpha : alphas) {
+							alpha = "p" + alpha;
+							
+							ArrayList constraints = new ArrayList();
+							
+							ArrayList constraint = null;
+							
+//							constraint = new ArrayList();
+//							constraint.add(alpha);
+//							constraint.add("<");
+//							constraint.add("=");
+//							constraint.add(new BigInteger("1"));
+//		
+//							constraints.add(constraint);
+//		
+//							constraint = new ArrayList();
+//							constraint.add(alpha);
+//							constraint.add(">");
+//							constraint.add("=");
+//							constraint.add(new BigInteger("0"));
+//		
+//							constraints.add(constraint);
+							
+							constraint = new ArrayList();
+							
+							for (String anotherAlpha : alphas) {
+								anotherAlpha = "p" + anotherAlpha;
+								
+								constraint.add("+");
+								constraint.add(anotherAlpha);
+							}
+							
+							constraint.remove(0);
+							
+							constraint.add("=");
+							constraint.add(new BigInteger("1"));
+		
+							constraints.add(constraint);
+							
+							this.constraintsPerParameter.put(alpha, constraints);
+						}
+					}	
+				}
+			}	
+		}
+	}
+
 }

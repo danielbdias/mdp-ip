@@ -15,11 +15,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import logic.lattice.Lattice;
-
 import add.AditArc;
 import add.ContextADD;
 import add.ContextAditADD;
@@ -28,8 +28,8 @@ import add.ContextTable;
 import add.InternalNodeKeyADD;
 import add.Table;
 import add.TerminalNodeKeyPar;
-
 import prob.mdp.HierarchicalParser;
+import util.Pair;
 
 public class MDP_Fac  extends MDP{
 	
@@ -134,6 +134,12 @@ public class MDP_Fac  extends MDP{
 //		if (!simulating) 
 //			flushCaches(VDD);
 
+//		List<Pair> nodes = context.enumeratePolyInLeaves((Integer) VDD);
+//		
+//		for (Pair pair : nodes) {
+//			System.out.println(pair.get_o2());
+//		}
+		
 		if (context.workingWithParameterized){
 			context.mergeError = mergeError;
 			

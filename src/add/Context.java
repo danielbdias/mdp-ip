@@ -390,7 +390,7 @@ public abstract class Context {
 		
 		protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS, String optimizationType, 
 	    		HashMap<String, List<String>> constraintsPerParameter) {
-			
+			this.createFileAMPL(objective, NAME_FILE_CONTRAINTS, optimizationType, constraintsPerParameter, null);
 		}
 		
 	    protected void createFileAMPL(String objective, String NAME_FILE_CONTRAINTS, String optimizationType, 
