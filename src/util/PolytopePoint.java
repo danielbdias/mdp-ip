@@ -33,4 +33,17 @@ public class PolytopePoint {
 	public boolean containsParameter(String parameter) {
 		return this.internalVertex.containsKey(parameter);
 	}
+	
+	@Override
+	public String toString() {
+		String representation = "";
+		
+		for (String parameter : this.internalVertex.keySet())
+			representation += ("; " + parameter + " = " + this.internalVertex.get(parameter));
+		
+		if (representation.length() > 2)
+			representation = representation.substring(2);
+		
+		return "{ " + representation + " }";
+	}
 }

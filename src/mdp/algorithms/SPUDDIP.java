@@ -44,7 +44,7 @@ public class SPUDDIP {
 		
 		long startTime = System.currentTimeMillis();
 		
-		myMDP.solveSPUDDIP(maxNumberIterations, finalVUpperPath, initialStateLogPath, initVUpperPath);
+		myMDP.solveSPUDDIP2(maxNumberIterations, finalVUpperPath, initialStateLogPath, initVUpperPath);
 		
 		//int contNumNodes = myMDP.context.contNumberNodes(myMDP.valueiDD);
 		   
