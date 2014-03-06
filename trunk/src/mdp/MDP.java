@@ -4773,7 +4773,6 @@ public abstract class MDP {
 		return dependPrimeList;
 	}
 	
-
 	protected void fillAlphaPolytopeCache() {
 		for (Object actionName : this.mName2Action.keySet()) {
 			Action action = (Action) this.mName2Action.get(actionName);

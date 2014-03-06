@@ -53,7 +53,16 @@ public class TriangleTireWorldGen {
 		System.out.println("output-file instance-number discount-factor tolerance");
 	}
 	
-	private static void generateDomainFile(File outputFile, Integer instanceNumber, Double discount, Double tolerance) {
+	public static int getNumberOfVariablesForInstance(Integer instanceNumber) {
+		Integer numberOfColumns = (3 + (instanceNumber - 1));
+		Integer numberOfLines = (numberOfColumns * 2) - 1;
+		
+		List<String> variables = getVariables(numberOfLines, numberOfColumns);
+		
+		return variables.size();
+	}
+	
+ 	private static void generateDomainFile(File outputFile, Integer instanceNumber, Double discount, Double tolerance) {
 		Integer numberOfColumns = (3 + (instanceNumber - 1));
 		Integer numberOfLines = (numberOfColumns * 2) - 1;
 		
@@ -242,13 +251,20 @@ public class TriangleTireWorldGen {
 		return reward;
 	}
 	
-	private static String generateVariables(Integer numberOfLines, Integer numberOfColumns) {
+	private static List<String> getVariables(Integer numberOfLines, Integer numberOfColumns) {
 		List<String> variables = new ArrayList<String>();
 		
 		variables.add("hasspare");
 		variables.add("flattired");
 		
 		variables.addAll(getCellVariables(numberOfLines, numberOfColumns));
+		variables.addAll(getCellSpareVariables(numberOfLines, numberOfColumns));
+		
+		return variables;
+	}
+	
+	private static String generateVariables(Integer numberOfLines, Integer numberOfColumns) {
+		List<String> variables = getVariables(numberOfLines, numberOfColumns);
 		
 		String variablesList = variables.get(0);
 		
@@ -559,6 +575,9 @@ public class TriangleTireWorldGen {
 		adds.add(String.format(NO_CHANGE_TRANSITION, "flattired"));
 		
 		for (String cell : getCellVariables(numberOfLines, numberOfColumns))
+			adds.add(String.format(NO_CHANGE_TRANSITION, cell));
+		
+		for (String cell : getCellSpareVariables(numberOfLines, numberOfColumns))
 			adds.add(String.format(NO_CHANGE_TRANSITION, cell));
 		
 		return adds;
