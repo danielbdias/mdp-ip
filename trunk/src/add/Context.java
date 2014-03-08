@@ -728,16 +728,24 @@ public abstract class Context {
 	    			 //filter params
 	    			 HashMap<String, List<String>> constraints = new HashMap<String, List<String>>();
 	    			     			 
-	    			 String[] params = getParameterFromPolynomial(node.getPolynomial());
+	    			 Set<String> paramsAsSet = new HashSet<String>();
 	    			 
 	    			 List<String> lines = new ArrayList<String>();
 	    			 
-	    			 for (String parameter : params) {
+	    			 for (String parameter : getParameterFromPolynomial(node.getPolynomial())) {
+	    				 paramsAsSet.add(parameter);
+	    				 
 	    				 for (ArrayList item : constraintsPerParameters.get(parameter)) {
 	    					 String line = "";
 	    					 
-	    					 for (int i=0;i< item.size();i++)
-	    						 line += item.get(i);
+	    					 for (int i=0;i< item.size();i++) {
+	    						 String itemAsString = item.get(i).toString(); 
+	    						 
+	    						 line += itemAsString;
+	    						 
+	    						 if (itemAsString.startsWith("p"))
+	    							 paramsAsSet.add(itemAsString);
+	    					 }
 	    					 
 	    					 line += ";";
 		    				 
@@ -746,6 +754,8 @@ public abstract class Context {
 	    				 
 	    				 constraints.put(parameter, lines);
 	    			 }
+	    			 
+	    			 String[] params = paramsAsSet.toArray(new String[0]);
 	    			 
 	    			 createFileAMPL(node.getPolynomial().toString(this,"p"),NAME_FILE_CONTRAINTS, constraints, params);
 	    			 Double obj=callNonLinearSolver();
