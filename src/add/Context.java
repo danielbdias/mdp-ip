@@ -730,7 +730,7 @@ public abstract class Context {
 	    			     			 
 	    			 Set<String> paramsAsSet = new HashSet<String>();
 	    			 
-	    			 List<String> lines = new ArrayList<String>();
+	    			 Set<String> lines = new HashSet<String>();
 	    			 
 	    			 for (String parameter : getParameterFromPolynomial(node.getPolynomial())) {
 	    				 paramsAsSet.add(parameter);
@@ -752,7 +752,7 @@ public abstract class Context {
 		    				 lines.add(line);
 						 }
 	    				 
-	    				 constraints.put(parameter, lines);
+	    				 constraints.put(parameter, new ArrayList<String>(lines));
 	    			 }
 	    			 
 	    			 String[] params = paramsAsSet.toArray(new String[0]);
