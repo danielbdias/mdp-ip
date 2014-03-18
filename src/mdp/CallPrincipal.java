@@ -38,7 +38,7 @@ public class CallPrincipal {
 			int numberOfVariables = TriangleTireWorldGen.getNumberOfVariablesForInstance(i);
 			
 			String[] anotherArgs = {
-					"D://Users//Daniel//workspace//mdp-ip//problemsMDPIP//ssp_triangle_tireworld_" + numberOfVariables  + ".net",
+					"D://Usuários//Daniel//Documents//Pessoal//Facul//workspace//mdp-ip//problemsMDPIP//ssp_triangle_tireworld_" + numberOfVariables  + ".net",
 					Integer.toString(i),
 					"1.0",
 					"0.01"
