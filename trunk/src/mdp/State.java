@@ -76,8 +76,24 @@ public class State {
 	}
 
 	public String toString() {
-		String part = "state: " + identifier;
+		String part = "state: ";
 
+		if (this.values != null) {
+			ArrayList<String> vars = new ArrayList<String>();
+			
+			for (Integer key : values.keySet()) {
+				Boolean value = values.get(key);
+				
+				if (value)
+					vars.add(Integer.toString(key - this.values.keySet().size()));
+			}
+			
+			part += vars;
+		}
+		else {
+			part += identifier;
+		}
+		
 		return part;
 	}
 

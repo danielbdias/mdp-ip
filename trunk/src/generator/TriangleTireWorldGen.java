@@ -74,7 +74,7 @@ public class TriangleTireWorldGen {
 		
 		List<String> constraints = generateConstraints(numberOfLines);
 		
-		String initialState = generateInitialState(numberOfColumns);
+		String initialState = generateInitialState(numberOfLines, numberOfColumns);
 		
 		List<String> goalStates = generateGoalStates(numberOfLines, numberOfColumns);
 		
@@ -213,9 +213,17 @@ public class TriangleTireWorldGen {
 		}
 	}
 	
-	private static String generateInitialState(Integer numberOfLines) {
+	private static String generateInitialState(Integer numberOfLines, Integer numberOfColumns) {
 		String initialCell = String.format(VARIABLE_MASK, 1, 1);
-		return String.format("(%s)", initialCell);
+		
+		String var = "(" + initialCell;
+		
+		for (String spareCell : getCellSpareVariables(numberOfLines, numberOfColumns))
+			var += (" " + spareCell);
+		
+		var += ")";
+		
+		return var;
 	}
 
 	private static List<String> generateConstraints(Integer numberOfLines) {
