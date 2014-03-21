@@ -3559,7 +3559,7 @@ public abstract class MDP {
 			
 			contUpperUpdates++;
 			
-			//System.out.println("action greedy: " + greedyAction.getName());
+			System.out.println("action greedy: " + greedyAction.getName());
 			
 			context.workingWithParameterized = context.workingWithParameterizedBef;
 			state = chooseNextStateRTDPEnum(state, greedyAction, randomGenNextState, posActionGreedy);
