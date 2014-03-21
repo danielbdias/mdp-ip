@@ -574,7 +574,7 @@ public class TriangleTireWorldGen {
 			String cellPosition = String.format(VARIABLE_MASK, x, y);
 			String cellSparePosition = String.format(SPARE_VARIABLE_MASK, x, y);
 			
-			addStart += String.format("(%s (%s ([1.00]) ([0.00]) ) ", cellPosition, cellSparePosition);
+			addStart += String.format("(%s (%s ([1.00]) (hasspare ([1.0]) ([0.0]) ) ) ", cellPosition, cellSparePosition);
 			addEnd += " )";
 		}
 		
@@ -585,8 +585,11 @@ public class TriangleTireWorldGen {
 		for (String cell : getCellVariables(numberOfLines, numberOfColumns))
 			adds.add(String.format(NO_CHANGE_TRANSITION, cell));
 		
-		for (String cell : getCellSpareVariables(numberOfLines, numberOfColumns))
-			adds.add(String.format(NO_CHANGE_TRANSITION, cell));
+		for (String cell : getCellSpareVariables(numberOfLines, numberOfColumns)) {
+			String cellPos = cell.replace("spare", "");
+			//	sparex2y2 (x2y2 ([0.00]) (sparex2y2 ([1.00]) ([0.00])))
+			adds.add(String.format("%s (%s ([0.00]) (%s ([1.00]) ([0.00])))", cell, cellPos, cell));
+		}
 		
 		return adds;
 	}

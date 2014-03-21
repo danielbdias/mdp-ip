@@ -198,7 +198,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			state = open.pop();
 			closed.push(state);
 			
-			if (isDeadEnd(state)) {
+			if (isDeadEnd(state) && !listGoalStates.contains(state.getValues())) {
 				V.put(state, NEGATIVE_INFINITY); //update to negative infinity
 				continue;
 			}
@@ -245,7 +245,10 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			for (State nextState : closed) 
 			{
 				solvedStates.add(nextState);
-				if (verbose) System.out.println("SOLVED: " + nextState);
+				if (verbose) { 
+					System.out.println("SOLVED: " + nextState);
+					System.out.println("SOLVED VALUE: " + V.get(nextState));
+				}
 			}
 		}
 		else {
@@ -357,6 +360,13 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			
 			if (inGoalSet(state.getValues())) {
 				//System.out.println("Found goal state: " + state);
+				((HashMap<State,Double>) this.VUpper).put(state, 0.0);
+				break;
+			}
+			
+			if (isDeadEnd(state)) {
+				System.out.println("Reached a deadend at state: " + state);
+				((HashMap<State,Double>) this.VUpper).put(state, NEGATIVE_INFINITY);
 				break;
 			}
 			
@@ -365,18 +375,12 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			
 			contUpperUpdates++;
 			
-			//System.out.println("action greedy: " + greedyAction.getName());
+			System.out.println("action greedy: " + greedyAction.getName());
 			
 			context.workingWithParameterized = context.workingWithParameterizedBef;
 			state = chooseNextStateRTDPEnum(state, greedyAction, randomGenNextState, posActionGreedy);
 			
-			if (isDeadEnd(state)) {
-				//System.out.println("Reached a deadend at state: " + state);
-				((HashMap<State,Double>) this.VUpper).put(state, NEGATIVE_INFINITY);
-				break;
-			}
-			
-			//System.out.println("next state: " + state);
+			System.out.println("next state: " + state);
 			flushCachesRTDP(false);       
 			
 			totalTrialTime = GetElapsedTime();
@@ -397,11 +401,14 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		if (solvedStates.contains(state) || inGoalSet(state.getValues())) {
 			while (!visited.empty()) {
 				state = visited.pop();
-				if (!checkSolved((HashMap) VUpper, solvedStates, state))
+				if (!checkSolved((HashMap) VUpper, solvedStates, state, true))
 					break;
 			}	
 		}
 		
+		System.out.println("***************************************************");
+		System.out.println(" TRIAL END ");
+		System.out.println("***************************************************");
 		//this.printEnumValueFunction((HashMap<State,Double>) this.VUpper);
 		
 		totalTrialTime = GetElapsedTime();
