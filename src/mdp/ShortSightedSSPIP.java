@@ -60,6 +60,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			posAction++;
 		}
 		
+		formattedPrintln("Executing action [%s]...", actionGreedy.getName());
+		
 		return chooseNextStateRTDPEnum(state, actionGreedy, randomGenNextState, bestActionIndex);
 	}
 
@@ -649,7 +651,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				break; //state solved
 			}
 						
-			//formattedPrintln("Planning using SS-SSP with [%s] as initial state...", state);
+			formattedPrintln("Planning using SS-SSP with [%s] as initial state...", state);
 			
 			HashSet<State> goalStates = shortSightedSSPIP(state, t);
 			
@@ -676,6 +678,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				
 				state = executeAction(valueFunction, state, randomGenNextState);
 				visitedStates.add(state);
+				
+				//formattedPrintln("State [%s] reached...", state);
 			}
 		}
 		

@@ -408,21 +408,19 @@ public class TriangleTireWorldGen {
 			else if (x == 1 && y == numberOfLines)
 				adds.add(String.format(NO_CHANGE_TRANSITION, currentCell));
 			else {		
-				if (x % 2 == 0) { //if is an odd column
-					int t = y - x - 2;
-					
-					if (y >= (x + 2) //greater than the first cell in column 
-							&& y <= (numberOfLines - x - 2)  //lower than the last cell in column
-							&& t % 4 == 0) {
-						adds.add(String.format(NO_CHANGE_TRANSITION, currentCell));
-						continue; //ignore this transition
-					}
-				}
-				
 				String previousCell = String.format(VARIABLE_MASK, previousCell_x, previousCell_y);
 				String mask = null;
 				
-				if (y != numberOfLines - x + 1)
+				int t = y - x;
+				
+				if (x % 2 == 0 && t >= 0 && (t + 2) % 4 == 0)
+					mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
+				else if (x != 1 && t >= 0 && (t + 2) % 4 == 0) {
+					mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) ([0.00]))";
+					adds.add(String.format(mask, currentCell));
+					continue;
+				}
+				else if (y != numberOfLines - x + 1)
 					mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
 				else
 					mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
@@ -475,22 +473,19 @@ public class TriangleTireWorldGen {
 				adds.add(String.format(mask, currentCell));
 			}
 			else {
-				if (x % 2 == 1) { //if is an even column
-					int t = y - x - 2;
-					
-					if (y >= (x + 2) //greater than the first cell in column 
-							&& y <= (numberOfLines - x - 2)  //lower than the last cell in column
-							&& t % 4 == 0)
-					{
-						adds.add(String.format(NO_CHANGE_TRANSITION, currentCell));
-						continue; //ignore this transition
-					}
-				}
-				
 				String previousCell = String.format(VARIABLE_MASK, previousCell_x, previousCell_y);
 				String mask = null;
 				
-				if (x == 1)
+				int t = y - x;
+				
+				if (x % 2 == 0 && t >= 0 && t <= numberOfLines - x  && t % 4 == 0) {
+					mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) ([0.00]))";
+					adds.add(String.format(mask, currentCell));
+					continue;
+				}
+				else if (x != 1 && t >= 0 && (t + 2) % 4 == 0)
+					mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
+				else if (x == 1)
 					mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
 				else
 					mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
