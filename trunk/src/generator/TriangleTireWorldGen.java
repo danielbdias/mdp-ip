@@ -407,20 +407,30 @@ public class TriangleTireWorldGen {
 			}
 			else if (x == 1 && y == numberOfLines)
 				adds.add(String.format(NO_CHANGE_TRANSITION, currentCell));
-			else {		
+			else {
+				//MoveNortheast
+				
 				String previousCell = String.format(VARIABLE_MASK, previousCell_x, previousCell_y);
 				String mask = null;
 				
-				int t = y - x;
+				int upperBoundForColumn = numberOfLines - x + 1;	//max line in this column
+				int lowerBoundForColumn = x; 						//min line in this column
 				
-				if (x % 2 == 0 && t >= 0 && (t + 2) % 4 == 0)
-					mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
-				else if (x != 1 && t >= 0 && (t + 2) % 4 == 0) {
-					mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) ([0.00]))";
-					adds.add(String.format(mask, currentCell));
-					continue;
+				if (x != 1 && x != numberOfColumns
+					&& lowerBoundForColumn < y && y < upperBoundForColumn - 2) {//special condition, transition gaps in the middle of the map
+					if (x % 2 == 1 && x != 1) {
+						mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) ([0.00]))";
+						adds.add(String.format(mask, currentCell));
+						continue;
+					}
+					else if ((y - x + 2) % 4 == 0) {
+						mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
+						adds.add(String.format(mask, currentCell, previousCell));
+						continue;
+					}
 				}
-				else if (y != numberOfLines - x + 1)
+				
+				if (y != numberOfLines - x + 1)
 					mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
 				else
 					mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
@@ -473,19 +483,28 @@ public class TriangleTireWorldGen {
 				adds.add(String.format(mask, currentCell));
 			}
 			else {
+				//MoveNorthwest
 				String previousCell = String.format(VARIABLE_MASK, previousCell_x, previousCell_y);
 				String mask = null;
 				
-				int t = y - x;
+				int upperBoundForColumn = numberOfLines - x + 1;	//max line in this column
+				int lowerBoundForColumn = x; 						//min line in this column
 				
-				if (x % 2 == 0 && t >= 0 && t <= numberOfLines - x  && t % 4 == 0) {
-					mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) ([0.00]))";
-					adds.add(String.format(mask, currentCell));
-					continue;
+				if (x != 1 && x != numberOfColumns
+					&& lowerBoundForColumn < y && y < upperBoundForColumn - 2) {//special condition, transition gaps in the middle of the map					
+					if (x % 2 == 1) {
+						mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
+						adds.add(String.format(mask, currentCell, previousCell));
+						continue;
+					}
+					else if ((y - x) % 4 == 0) {
+						mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) ([0.00]))";
+						adds.add(String.format(mask, currentCell));
+						continue;
+					}
 				}
-				else if (x != 1 && t >= 0 && (t + 2) % 4 == 0)
-					mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
-				else if (x == 1)
+				
+				if (x == 1)
 					mask = "%1$s (%1$s ([1.00]) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
 				else
 					mask = "%1$s (%1$s (flattired ([1.00]) ([0.00])) (%2$s (flattired ([0.00]) ([1.00])) ([0.00]) ) )";
