@@ -1031,7 +1031,10 @@ public abstract class Context {
 		String objective = poly.toString(this, "p");
 		
 		createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min");
-  		callNonLinearSolver();
+  		Double result = callNonLinearSolver();
+  		
+  		if (result == null && objective.equals("-1+1*p2"))
+  			createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min");
   		
 		return currentValuesProb;
 	}
