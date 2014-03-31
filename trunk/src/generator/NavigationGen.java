@@ -17,7 +17,7 @@ public class NavigationGen {
 	private static final String NO_TRANSITION = "%1$s ([0.00])"; //e.g. x1y3 ([0.00])
 		
 	public static void main(String[] args) {
-		if (args == null || args.length != 5) {
+		if (args == null || args.length != 7) {
 			System.out.println("Invalid parameters.");
 			help();
 			return;
@@ -28,6 +28,10 @@ public class NavigationGen {
 		String numberOfColumnsAsString = args[2];
 		String discountAsString = args[3];
 		String toleranceAsString = args[4];
+		String minProbOfDisappearAsString = "0.1";
+		if (args.length > 5) minProbOfDisappearAsString = args[5];
+		String maxProbOfDisappearAsString = "0.9";
+		if (args.length > 6) maxProbOfDisappearAsString = args[6];
 		
 		if (!numberOfColumnsAsString.matches(NUMBER_REGEX) || !numberOfLinesAsString.matches(NUMBER_REGEX)) {
 			System.out.println("The number of rows and columns must be numbers !");
@@ -39,11 +43,19 @@ public class NavigationGen {
 			return;
 		}
 		
+		if (!minProbOfDisappearAsString.matches(DOUBLE_REGEX) || !maxProbOfDisappearAsString.matches(DOUBLE_REGEX)) {
+			System.out.println("The robot disappear probabilities must be decimal numbers !");
+			return;
+		}
+		
 		Integer numberOfColumns = Integer.parseInt(numberOfColumnsAsString);
 		Integer numberOfLines = Integer.parseInt(numberOfLinesAsString);
 		
 		Double discount = Double.parseDouble(discountAsString);
 		Double tolerance = Double.parseDouble(toleranceAsString);
+		
+		Double minProbOfDisappear = Double.parseDouble(minProbOfDisappearAsString);
+		Double maxProbOfDisappear = Double.parseDouble(maxProbOfDisappearAsString);
 		
 		if (numberOfColumns < 2) {
 			System.out.println("The number of columns must be greater or equal to 2.");
@@ -60,7 +72,7 @@ public class NavigationGen {
 		if (outputFile.exists())
 			System.out.println("The output file exists. The file will be overrided.");
 		
-		generateDomainFile(outputFile, numberOfLines, numberOfColumns, discount, tolerance);
+		generateDomainFile(outputFile, numberOfLines, numberOfColumns, discount, tolerance, minProbOfDisappear, maxProbOfDisappear);
 	}
 	
 	static void help() {
@@ -68,14 +80,14 @@ public class NavigationGen {
 		System.out.println("output-file number-of-rows number-of-columns discount-factor tolerance");
 	}
 	
-	private static void generateDomainFile(File outputFile, Integer numberOfLines, Integer numberOfColumns, Double discount, Double tolerance) {
+	private static void generateDomainFile(File outputFile, Integer numberOfLines, Integer numberOfColumns, Double discount, Double tolerance, Double minProbOfDisappear, Double maxProbOfDisappear) {
 		String variables = generateVariables(numberOfLines, numberOfColumns);
 		
-		HashMap<String, List<String>> actions = generateActions(numberOfLines, numberOfColumns);
+		HashMap<String, List<String>> actions = generateActions(numberOfLines, numberOfColumns, minProbOfDisappear, maxProbOfDisappear);
 		
 		String reward = generateReward(numberOfLines, numberOfColumns);
 		
-		List<String> constraints = generateConstraints(numberOfColumns);
+		List<String> constraints = generateConstraints(numberOfColumns, minProbOfDisappear, maxProbOfDisappear);
 		
 		String initialState = generateInitialState(numberOfColumns);
 		
@@ -167,19 +179,19 @@ public class NavigationGen {
 		return String.format("(%s)", variable);
 	}
 
-	private static List<String> generateConstraints(Integer numberOfColumns) {
+	private static List<String> generateConstraints(Integer numberOfColumns, Double minProbOfDisappear, Double maxProbOfDisappear) {
 		
 		List<String> constraints = new ArrayList<String>();
 		
 		int constraint = 1;
 		
-		constraints.add(String.format("(p%1$d > = %2$f)", constraint, getExistenceProbability(1, numberOfColumns)));
+		constraints.add(String.format("(p%1$d > = %2$f)", constraint, getExistenceProbability(1, numberOfColumns, minProbOfDisappear, maxProbOfDisappear)));
 		
 		for (int column = 2; column <= numberOfColumns; column++) {
 			constraint = column;
 			
-			constraints.add(String.format("(p%1$d < = %2$f)", constraint, getExistenceProbability(column - 1, numberOfColumns) + 0.1));
-			constraints.add(String.format("(p%1$d > = %2$f)", constraint, getExistenceProbability(column, numberOfColumns)));
+			constraints.add(String.format("(p%1$d < = %2$f)", constraint, Math.min(getExistenceProbability(column - 1, numberOfColumns, minProbOfDisappear, maxProbOfDisappear) + 0.1, 1.0)));
+			constraints.add(String.format("(p%1$d > = %2$f)", constraint, getExistenceProbability(column, numberOfColumns, minProbOfDisappear, maxProbOfDisappear)));
 		}
 		
 		return constraints;
@@ -200,28 +212,28 @@ public class NavigationGen {
 		return reward;
 	}
 
-	private static HashMap<String, List<String>> generateActions(Integer numberOfLines, Integer numberOfColumns) {
+	private static HashMap<String, List<String>> generateActions(Integer numberOfLines, Integer numberOfColumns, Double minProbOfDisappear, Double maxProbOfDisappear) {
 		HashMap<String, List<String>> actions = new HashMap<String, List<String>>();
 		
-		List<String> moveNorthADDs = getMoveNorthADDs(numberOfLines, numberOfColumns);
+		List<String> moveNorthADDs = getMoveNorthADDs(numberOfLines, numberOfColumns, minProbOfDisappear, maxProbOfDisappear);
 		actions.put("movenorth", moveNorthADDs);
 		
-		List<String> moveSouthADDs = getMoveSouthADDs(numberOfLines, numberOfColumns);
+		List<String> moveSouthADDs = getMoveSouthADDs(numberOfLines, numberOfColumns, minProbOfDisappear, maxProbOfDisappear);
 		actions.put("movesouth", moveSouthADDs);
 		
-		List<String> moveEastADDs = getMoveEastADDs(numberOfLines, numberOfColumns);
+		List<String> moveEastADDs = getMoveEastADDs(numberOfLines, numberOfColumns, minProbOfDisappear, maxProbOfDisappear);
 		actions.put("moveeast", moveEastADDs);
 		
-		List<String> moveWestADDs = getMoveWestADDs(numberOfLines, numberOfColumns);
+		List<String> moveWestADDs = getMoveWestADDs(numberOfLines, numberOfColumns, minProbOfDisappear, maxProbOfDisappear);
 		actions.put("movewest", moveWestADDs);
 		
-		List<String> noopADDs = getNoopADDs(numberOfLines, numberOfColumns);
+		List<String> noopADDs = getNoopADDs(numberOfLines, numberOfColumns, minProbOfDisappear, maxProbOfDisappear);
 		actions.put("noop", noopADDs);
 		
 		return actions;
 	}
 
-	private static List<String> getNoopADDs(Integer numberOfLines, Integer numberOfColumns) {
+	private static List<String> getNoopADDs(Integer numberOfLines, Integer numberOfColumns, Double minProbOfDisappear, Double maxProbOfDisappear) {
 		List<String> adds = new ArrayList<String>();
 		
 		for (int x = 1; x <= numberOfColumns; x++) 
@@ -245,7 +257,7 @@ public class NavigationGen {
 		return adds;
 	}
 
-	private static List<String> getMoveNorthADDs(Integer numberOfLines, Integer numberOfColumns) {
+	private static List<String> getMoveNorthADDs(Integer numberOfLines, Integer numberOfColumns, Double minProbOfDisappear, Double maxProbOfDisappear) {
 		List<String> adds = new ArrayList<String>();
 		
 		for (int x = 1; x <= numberOfColumns; x++) 
@@ -260,9 +272,9 @@ public class NavigationGen {
 				if (y == 1) //first line
 					transition = getNoTransitionString(currentVariable);
 				else if (y == numberOfLines && !currentVariable.equals(goalVariable)) //last line
-					transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, false);
+					transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, false, minProbOfDisappear, maxProbOfDisappear);
 				else if (y != 1 && y != numberOfLines) //middle lines
-					transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, true);
+					transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, true, minProbOfDisappear, maxProbOfDisappear);
 				else if (currentVariable.equals(goalVariable)) //goal state
 					transition = getMovementTransitionString(currentVariable, previousVariable);
 				
@@ -272,7 +284,7 @@ public class NavigationGen {
 		return adds;
 	}
 
-	private static List<String> getMoveSouthADDs(Integer numberOfLines, Integer numberOfColumns) {
+	private static List<String> getMoveSouthADDs(Integer numberOfLines, Integer numberOfColumns, Double minProbOfDisappear, Double maxProbOfDisappear) {
 		List<String> adds = new ArrayList<String>();
 		
 		for (int x = 1; x <= numberOfColumns; x++) 
@@ -287,11 +299,11 @@ public class NavigationGen {
 				if (y == numberOfLines && !currentVariable.equals(goalVariable)) // last line
 					transition = getNoTransitionString(currentVariable);
 				else if (y == 1) //first line
-					transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, false);
+					transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, false, minProbOfDisappear, maxProbOfDisappear);
 				else if (y == numberOfLines - 1 && x == numberOfColumns) //cell above the goal
 					transition = getNoTransitionString(currentVariable);
 				else if (y != 1 && y != numberOfLines) //middle lines
-					transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, true);
+					transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, true, minProbOfDisappear, maxProbOfDisappear);
 				else if (currentVariable.equals(goalVariable)) //goal state
 					transition = getAbsorventTransitionString(currentVariable);
 				
@@ -301,7 +313,7 @@ public class NavigationGen {
 		return adds;
 	}
 	
-	private static List<String> getMoveEastADDs(Integer numberOfLines, Integer numberOfColumns) {
+	private static List<String> getMoveEastADDs(Integer numberOfLines, Integer numberOfColumns, Double minProbOfDisappear, Double maxProbOfDisappear) {
 		List<String> adds = new ArrayList<String>();
 		
 		for (int x = 1; x <= numberOfColumns; x++) 
@@ -317,14 +329,14 @@ public class NavigationGen {
 					transition = getNoTransitionString(currentVariable);
 				else if (x == numberOfColumns && !currentVariable.equals(goalVariable)) //last column
 					if (y == 1 || y == numberOfLines)
-						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, false);
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, false, minProbOfDisappear, maxProbOfDisappear);
 					else
-						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, true);
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, true, minProbOfDisappear, maxProbOfDisappear);
 				else if (x > 1 && x < numberOfColumns) //middle coluns
 					if (y == 1 || y == numberOfLines)
-						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, false);
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, false, minProbOfDisappear, maxProbOfDisappear);
 					else
-						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, true);
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, true, minProbOfDisappear, maxProbOfDisappear);
 				else if (currentVariable.equals(goalVariable)) //goal state
 					transition = getMovementTransitionString(currentVariable, previousVariable);
 				
@@ -334,7 +346,7 @@ public class NavigationGen {
 		return adds;
 	}
 	
-	private static List<String> getMoveWestADDs(Integer numberOfLines, Integer numberOfColumns) {
+	private static List<String> getMoveWestADDs(Integer numberOfLines, Integer numberOfColumns, Double minProbOfDisappear, Double maxProbOfDisappear) {
 		List<String> adds = new ArrayList<String>();
 		
 		for (int x = 1; x <= numberOfColumns; x++) 
@@ -350,16 +362,16 @@ public class NavigationGen {
 					transition = getMovementTransitionString(currentVariable, previousVariable);
 				else if (x == 1) // first column
 					if (y == 1 || y == numberOfLines)
-						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, false);
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, false, minProbOfDisappear, maxProbOfDisappear);
 					else
-						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, true);
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 1.0, x, numberOfColumns, true, minProbOfDisappear, maxProbOfDisappear);
 				else if (x == numberOfColumns && !currentVariable.equals(goalVariable)) //last column
 					transition = getNoTransitionString(currentVariable);
 				else if (x > 1 && x < numberOfColumns) //middle columns
 					if (y == 1 || y == numberOfLines)
-						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, false);
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, false, minProbOfDisappear, maxProbOfDisappear);
 					else
-						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, true);
+						transition = getUncertainMovementTransitionString(currentVariable, previousVariable, goalVariable, 0.0, x, numberOfColumns, true, minProbOfDisappear, maxProbOfDisappear);
 				else if (currentVariable.equals(goalVariable)) //goal state
 					transition = getAbsorventTransitionString(currentVariable);
 				
@@ -407,10 +419,10 @@ public class NavigationGen {
 		}
 	}
 	
-	private static String getUncertainMovementTransitionString(String currentVariable, String previousVariable, String goalVariable, double stayInPlaceProbability, int column, int numberOfColumns, boolean computeExistenceProbability) {		
+	private static String getUncertainMovementTransitionString(String currentVariable, String previousVariable, String goalVariable, double stayInPlaceProbability, int column, int numberOfColumns, boolean computeExistenceProbability, Double minProbOfDisappear, Double maxProbOfDisappear) {		
 						
 		if (computeExistenceProbability) { //linear formula to compute the probability of movement fail
-			double existenceProbability = getExistenceProbability(column, numberOfColumns);
+			double existenceProbability = getExistenceProbability(column, numberOfColumns, minProbOfDisappear, maxProbOfDisappear);
 			
 			return String.format(UNCERTAIN_AND_IMPRECISE_MOVEMENT_TRANSITION, 
 			//return String.format(UNCERTAIN_MOVEMENT_TRANSITION,
@@ -422,9 +434,9 @@ public class NavigationGen {
 		}
 	} 
 
-	private static double getExistenceProbability(int column, int numberOfColumns) {
-		final double first_point = 0.9;
-		final double last_point = 0.1;
+	private static double getExistenceProbability(int column, int numberOfColumns, Double minProbOfDisappear, Double maxProbOfDisappear) {
+		double first_point = maxProbOfDisappear;
+		double last_point = minProbOfDisappear;
 		
 		//linear formula to compute the probability of movement fail
 		return first_point + (column - 1) * ((last_point - first_point) / (numberOfColumns - 1));

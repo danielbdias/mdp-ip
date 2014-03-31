@@ -60,7 +60,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			posAction++;
 		}
 		
-		formattedPrintln("Executing action [%s]...", actionGreedy.getName());
+		//formattedPrintln("Executing action [%s]...", actionGreedy.getName());
 		
 		return chooseNextStateRTDPEnum(state, actionGreedy, randomGenNextState, bestActionIndex);
 	}
@@ -200,7 +200,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			state = open.pop();
 			closed.push(state);
 			
-			if (isDeadEnd(state) && !listGoalStates.contains(state.getValues())) {
+			if (isDeadEnd(state)) { // && !listGoalStates.contains(state.getValues())) {
 				V.put(state, NEGATIVE_INFINITY); //update to negative infinity
 				continue;
 			}
@@ -651,7 +651,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				break; //state solved
 			}
 						
-			formattedPrintln("Planning using SS-SSP with [%s] as initial state...", state);
+			//formattedPrintln("Planning using SS-SSP with [%s] as initial state...", state);
 			
 			HashSet<State> goalStates = shortSightedSSPIP(state, t);
 			
@@ -664,11 +664,16 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			
 			goalStates.addAll(solvedStates);
 			
+			HashMap<State,Double> initValueFunction = new HashMap<State, Double>(valueFunction);
+			
+			for (State goalState : goalStates)
+				initValueFunction.put(goalState, 0.0);		
+			
 			HashMap<State,Double> optimalValueFunction = planner.executePlanner(state, goalStates, maxDepth, timeOut, stateSamplingType, 
-																		 randomGenInitial, randomGenNextState, valueFunction);
+																		 randomGenInitial, randomGenNextState, initValueFunction);
 			
 			for (State s : optimalValueFunction.keySet()) {
-				//if (!goalStates.contains(state))
+				if (!goalStates.contains(s))
 					valueFunction.put(s, optimalValueFunction.get(s));
 			}
 			

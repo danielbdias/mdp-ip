@@ -595,8 +595,12 @@ public abstract class Context {
 					}
 				}
 	    		
-				if (pros.exitValue() != 0)
+	    		int amplExitValue = pros.exitValue();
+	    		
+				if (amplExitValue < 0 || obj == null)
 				{
+					new File(NAME_FILE_AMPL).delete();
+					
 					for (String line : lines)
 						System.err.println(line);
 					
@@ -1028,13 +1032,13 @@ public abstract class Context {
 	}
 	
 	public Hashtable<String, Double> getProbabilitiesSubjectTo(String NAME_FILE_CONTRAINTS, Polynomial poly) {
-		String objective = poly.toString(this, "p");
-		
-		createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min");
-  		Double result = callNonLinearSolver();
-  		
-  		if (result == null && objective.equals("-1+1*p2"))
-  			createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min");
+		if (poly.getTerms().size() > 0) {
+			String objective = poly.toString(this, "p");
+			
+			createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min");
+	  		//Double result = callNonLinearSolver();
+	  		callNonLinearSolver();
+		}
   		
 		return currentValuesProb;
 	}
