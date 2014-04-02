@@ -35,7 +35,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 	// SSiPP aux methods
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 
-	private State executeAction(HashMap<State, Double> vLower, State state, Random randomGenNextState) {		
+	private Pair getBestAction(HashMap<State, Double> vLower, State state, Random randomGenNextState) {		
 		double max = Double.NEGATIVE_INFINITY;
 		Action actionGreedy = null;
 		
@@ -60,9 +60,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			posAction++;
 		}
 		
-		//formattedPrintln("Executing action [%s]...", actionGreedy.getName());
-		
-		return chooseNextStateRTDPEnum(state, actionGreedy, randomGenNextState, bestActionIndex);
+		return new Pair(actionGreedy, bestActionIndex);
 	}
 
 	private HashSet<State> shortSightedSSPIP(State s, int t) {
@@ -201,6 +199,9 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			closed.push(state);
 			
 			if (isDeadEnd(state)) { // && !listGoalStates.contains(state.getValues())) {
+				if (verbose)
+					System.out.println("DEADEND: " + state);
+				
 				V.put(state, NEGATIVE_INFINITY); //update to negative infinity
 				continue;
 			}
@@ -565,7 +566,15 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			
 			while (!goalStates.contains(state)) {
 				context.workingWithParameterized = true;
-				state = executeAction(valueFunction, state, randomGenNextState);
+				
+				Pair p = getBestAction(valueFunction, state, randomGenNextState);  
+				
+				Action actionGreedy = (Action) p.get_o1();
+				int bestActionIndex = (Integer) p.get_o2();
+				
+				formattedPrintln("Executing action [%s]...", actionGreedy.getName());
+				
+				state = chooseNextStateRTDPEnum(state, actionGreedy, randomGenNextState, bestActionIndex);
 			}
 		}
 		
@@ -576,7 +585,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 	// Labeled SSiPP
-	///////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////l/////////////////////////////////////////////////////////////////////////////////////
 	
 	public void executeLabeledSSiPPuntilConvergence(int t, Random randomGenInitial, Random randomGenNextState, 
 			int maxDepth, long timeOut, int stateSamplingType, SSiPP_PlannerCaller planner, String initialStateValuePath)
@@ -651,7 +660,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				break; //state solved
 			}
 						
-			//formattedPrintln("Planning using SS-SSP with [%s] as initial state...", state);
+			formattedPrintln("Planning using SS-SSP with [%s] as initial state...", state);
 			
 			HashSet<State> goalStates = shortSightedSSPIP(state, t);
 			
@@ -677,11 +686,20 @@ public class ShortSightedSSPIP extends MDP_Fac {
 					valueFunction.put(s, optimalValueFunction.get(s));
 			}
 			
+			printEnumValueFunction(optimalValueFunction);
+			
 			for (int i = 0; i <= t; i++) {
 			//while (!goalStates.contains(state)) {
 				if (goalStates.contains(state)) break;
 				
-				state = executeAction(valueFunction, state, randomGenNextState);
+				Pair p = getBestAction(valueFunction, state, randomGenNextState);  
+				
+				Action actionGreedy = (Action) p.get_o1();
+				int bestActionIndex = (Integer) p.get_o2();
+				
+				formattedPrintln("Executing action [%s]...", actionGreedy.getName());
+				
+				state = chooseNextStateRTDPEnum(state, actionGreedy, randomGenNextState, bestActionIndex);
 				visitedStates.add(state);
 				
 				//formattedPrintln("State [%s] reached...", state);

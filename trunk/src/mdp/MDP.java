@@ -3339,12 +3339,17 @@ public abstract class MDP {
 		System.out.println("Value function:");
 		
 		TreeMap<Long, Double> orderedValueFunction = new TreeMap<Long, Double>();
+		TreeMap<Long, State> statePerId = new TreeMap<Long, State>();
 		
-		for (State state : valueFunction.keySet())
-			orderedValueFunction.put(state.getIdentifier().longValue(), valueFunction.get(state));
+		for (State state : valueFunction.keySet()) {
+			long stateId = state.getIdentifier().longValue();
+			orderedValueFunction.put(stateId, valueFunction.get(state));
+			statePerId.put(stateId, state);
+		}
 		
-		for (Long state : orderedValueFunction.keySet())
-			System.out.println(String.format("%s\t%.16f", state, orderedValueFunction.get(state)));
+		for (Long state : orderedValueFunction.keySet()) {
+			System.out.println(String.format("%s\t%.16f", statePerId.get(state), orderedValueFunction.get(state)));
+		}
 	}
 	
 	protected HashMap<State, Double> convertValueFunctionAddToHashMap(Object vUpper) {
