@@ -3336,7 +3336,7 @@ public abstract class MDP {
 	}
 	
 	protected void printEnumValueFunction(HashMap<State, Double> valueFunction) {
-		System.out.println("Value function:");
+		formattedPrintln("Value function:");
 		
 		TreeMap<Long, Double> orderedValueFunction = new TreeMap<Long, Double>();
 		TreeMap<Long, State> statePerId = new TreeMap<Long, State>();
@@ -3348,7 +3348,7 @@ public abstract class MDP {
 		}
 		
 		for (Long state : orderedValueFunction.keySet()) {
-			System.out.println(String.format("%s\t%.16f", statePerId.get(state), orderedValueFunction.get(state)));
+			formattedPrintln("%s\t%.16f", statePerId.get(state), orderedValueFunction.get(state));
 		}
 	}
 	

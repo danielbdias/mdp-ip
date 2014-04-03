@@ -368,7 +368,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			}
 			
 			if (isDeadEnd(state)) {
-				System.out.println("Reached a deadend at state: " + state);
+				formattedPrintln("Reached a deadend at state: " + state);
 				((HashMap<State,Double>) this.VUpper).put(state, NEGATIVE_INFINITY);
 				break;
 			}
@@ -651,7 +651,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		while (true)
 		{
 			if (inGoalSet(state.getValues())) {
-				//formattedPrintln("Goal state [%s] reached.", state);
+				formattedPrintln("Goal state [%s] reached.", state);
 				break; //goal reached
 			}
 			
@@ -675,18 +675,18 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			
 			HashMap<State,Double> initValueFunction = new HashMap<State, Double>(valueFunction);
 			
-			for (State goalState : goalStates)
-				initValueFunction.put(goalState, 0.0);		
+//			for (State goalState : goalStates)
+//				initValueFunction.put(goalState, 0.0);		
 			
 			HashMap<State,Double> optimalValueFunction = planner.executePlanner(state, goalStates, maxDepth, timeOut, stateSamplingType, 
 																		 randomGenInitial, randomGenNextState, initValueFunction);
 			
 			for (State s : optimalValueFunction.keySet()) {
-				if (!goalStates.contains(s))
+				//if (!goalStates.contains(s))
 					valueFunction.put(s, optimalValueFunction.get(s));
 			}
 			
-			printEnumValueFunction(optimalValueFunction);
+			//printEnumValueFunction(optimalValueFunction);
 			
 			for (int i = 0; i <= t; i++) {
 			//while (!goalStates.contains(state)) {
