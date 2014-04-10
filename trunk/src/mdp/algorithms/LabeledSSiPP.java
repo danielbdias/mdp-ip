@@ -55,10 +55,16 @@ public class LabeledSSiPP {
 		//Indica que o tipo de algoritmo usado para solucionar o MDP-IP é o RTDP-IP (para efeito de inicialização de variáveis)
 		String typeSolution 	= "RTDPIP";
 		
-		Random randomGenInitial = new Random(19580434);
-		Random randomGenNextState = new Random(19580807);
+		long seedInitial = 19580434; //System.currentTimeMillis();
+		long seedNextState = 19580807; //seedInitial + 1;/
+		
+		Random randomGenInitial = new Random(seedInitial);
+		Random randomGenNextState = new Random(seedNextState);
 		
 		ShortSightedSSPIP myMDP = new ShortSightedSSPIP(problemFilename, typeContext, typeAproxPol, typeSolution);
+		
+		myMDP.formattedPrintln("randomGenInitial seed: %s", seedInitial);
+		myMDP.formattedPrintln("randomGenNextState seed: %s", seedNextState);
 		
 		SSiPP_PlannerCaller planner = new SSiPP_LRTDPCaller(myMDP);
 		
@@ -68,6 +74,8 @@ public class LabeledSSiPP {
 				
 		long timeSeg = (System.currentTimeMillis() - startTime) / 1000;
 		 
+		myMDP.emulatePolicy((HashMap<State, Double>) myMDP.VUpper, randomGenInitial, randomGenNextState, stateSamplingType);
+		
 		int numVariables = myMDP.hmPrime2IdRemap.keySet().size();
 		
 		//Corrige o tipo de algoritmo usado para solucionar o MDP-IP

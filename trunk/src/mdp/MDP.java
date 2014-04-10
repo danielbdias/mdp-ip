@@ -3379,7 +3379,7 @@ public abstract class MDP {
 		return add;
 	}
 	
-	protected void formattedPrintln(String message, Object... args) {
+	public void formattedPrintln(String message, Object... args) {
 		if (!this.printLogs) return;
 		
 		if (args != null && args.length > 0)

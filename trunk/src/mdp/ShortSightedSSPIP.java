@@ -11,7 +11,7 @@ import util.Pair;
 
 public class ShortSightedSSPIP extends MDP_Fac {
 
-	private static final double NEGATIVE_INFINITY = -5e2; //-1e10;
+	private static final double NEGATIVE_INFINITY = -1e4;
 	
 	public ShortSightedSSPIP(String filename, int typeContext, int typeAproxPol, String typeSolution) {
 		super(filename, typeContext, typeAproxPol, typeSolution, false);
@@ -198,11 +198,12 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			state = open.pop();
 			closed.push(state);
 			
-			if (isDeadEnd(state)) { // && !listGoalStates.contains(state.getValues())) {
+			if (!isGoal(state) && isDeadEnd(state)) {
 				if (verbose)
-					System.out.println("DEADEND: " + state);
+					formattedPrintln("DEADEND: %s", state);
 				
 				V.put(state, NEGATIVE_INFINITY); //update to negative infinity
+				solvedStates.add(state);
 				continue;
 			}
 			
@@ -224,7 +225,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				continue;
 			}
 			
-			if (listGoalStates.contains(state.getValues()))
+			if (isGoal(state))
 				continue;
 			
 			int greedyActionIndex = this.getBestActionForState(V, state);
@@ -249,8 +250,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			{
 				solvedStates.add(nextState);
 				if (verbose) { 
-					System.out.println("SOLVED: " + nextState);
-					System.out.println("SOLVED VALUE: " + V.get(nextState));
+					formattedPrintln("SOLVED: %s", nextState);
+					formattedPrintln("SOLVED VALUE: %s", V.get(nextState));
 				}
 			}
 		}
@@ -344,6 +345,10 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		}
 		
 		return true;
+	}
+	
+	private boolean isGoal(State state) {
+		return  listGoalStates.contains(state.getValues());
 	}
 	
 	private long lrtdpEnumTrial(State state, HashSet<State> solvedStates, int maxDepth, Random randomGenNextState, long timeOut, long initialTime, String initialStateLogPath)
@@ -482,6 +487,36 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		}
 	}
 	
+	public void emulatePolicy(HashMap<State,Double> valueFunction, Random randomGenInitial, Random randomGenNextState, int stateSamplingType) {
+		formattedPrintln("Policy execution started...");
+		
+		State initialState = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
+		
+		formattedPrintln("Initial state [%s].", initialState);
+		
+		State state = initialState;
+		
+		while (true) {	
+			if (isGoal(state)) {
+				formattedPrintln("Goal state [%s] found.", state);
+				break;
+			}
+			
+			Pair p = getBestAction(valueFunction, state, randomGenNextState);  
+			
+			Action actionGreedy = (Action) p.get_o1();
+			int bestActionIndex = (Integer) p.get_o2();
+			
+			formattedPrintln("Executing action [%s]...", actionGreedy.getName());
+			
+			state = chooseNextStateRTDPEnum(state, actionGreedy, randomGenNextState, bestActionIndex);
+			
+			formattedPrintln("State [%s] reached...", state);
+		}
+		
+		formattedPrintln("Policy execution done.");
+	}
+	
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 	// SSiPP
 	///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -598,9 +633,12 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		HashMap<State,Double> valueFunction = new HashMap<State,Double>();
 		valueFunction.put(initialState, maxUpper);
 		
+		HashSet<State> solvedStates = new HashSet<State>();
+		
 		for (TreeMap stateAsMap : this.listGoalStates) {
 			State goalState = new State(stateAsMap);
 			valueFunction.put(goalState, 0.0);
+			solvedStates.add(goalState);
 		}
 		
 		long initialTime = System.currentTimeMillis();
@@ -608,8 +646,6 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		//log do estado inicial
 		if (initialStateValuePath != null)
 			this.logValueInFile(initialStateValuePath, valueFunction.get(initialState), 0);
-		
-		HashSet<State> solvedStates = new HashSet<State>();
 		
 		while (true){
 			long elapsedTime = (System.currentTimeMillis() - initialTime);
@@ -641,7 +677,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			SSiPP_PlannerCaller planner, HashSet<State> solvedStates, Random randomGenInitial, 
 			Random randomGenNextState, int maxDepth, long timeOut, int stateSamplingType)
 	{
-		//formattedPrintln("Executing Labeled SSiPP with [%s] as initial state and [%s] as t...", initialState, t);
+		formattedPrintln("Executing Labeled SSiPP with [%s] as initial state and [%s] as t...", initialState, t);
 		
 		Stack<State> visitedStates = new Stack<State>();
 		
@@ -650,10 +686,6 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		
 		while (true)
 		{
-			if (inGoalSet(state.getValues())) {
-				formattedPrintln("Goal state [%s] reached.", state);
-				break; //goal reached
-			}
 			
 			if (solvedStates.contains(state)) {
 				//formattedPrintln("Solved state [%s] reached.", state);
@@ -666,32 +698,24 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			
 			if (goalStates.size() == 0) {
 				valueFunction.put(state, NEGATIVE_INFINITY);
-				//formattedPrintln("Deadend found, finishing the SSiPP.");
-				visitedStates.clear(); //do not update visited states in deadend cases
+				solvedStates.add(state);
+				formattedPrintln("Deadend found, finishing the SSiPP.");
 				break; //deadend, end loop
 			}
 			
 			goalStates.addAll(solvedStates);
 			
-			HashMap<State,Double> initValueFunction = new HashMap<State, Double>(valueFunction);
-			
-//			for (State goalState : goalStates)
-//				initValueFunction.put(goalState, 0.0);		
-			
 			HashMap<State,Double> optimalValueFunction = planner.executePlanner(state, goalStates, maxDepth, timeOut, stateSamplingType, 
-																		 randomGenInitial, randomGenNextState, initValueFunction);
+																		 randomGenInitial, randomGenNextState, valueFunction);
 			
 			for (State s : optimalValueFunction.keySet()) {
 				//if (!goalStates.contains(s))
-					valueFunction.put(s, optimalValueFunction.get(s));
+				valueFunction.put(s, optimalValueFunction.get(s));
 			}
 			
 			//printEnumValueFunction(optimalValueFunction);
 			
-			for (int i = 0; i <= t; i++) {
-			//while (!goalStates.contains(state)) {
-				if (goalStates.contains(state)) break;
-				
+			while (!goalStates.contains(state)) {				
 				Pair p = getBestAction(valueFunction, state, randomGenNextState);  
 				
 				Action actionGreedy = (Action) p.get_o1();
@@ -702,7 +726,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				state = chooseNextStateRTDPEnum(state, actionGreedy, randomGenNextState, bestActionIndex);
 				visitedStates.add(state);
 				
-				//formattedPrintln("State [%s] reached...", state);
+				formattedPrintln("State [%s] reached...", state);
 			}
 		}
 		
@@ -714,7 +738,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			}
 		}
 		
-		//formattedPrintln("Labeled SSiPP executed.");
+		formattedPrintln("Labeled SSiPP executed.");
 		
 		return valueFunction;
 	}
