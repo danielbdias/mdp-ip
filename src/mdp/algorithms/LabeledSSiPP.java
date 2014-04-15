@@ -74,7 +74,7 @@ public class LabeledSSiPP {
 				
 		long timeSeg = (System.currentTimeMillis() - startTime) / 1000;
 		 
-		myMDP.emulatePolicy((HashMap<State, Double>) myMDP.VUpper, randomGenInitial, randomGenNextState, stateSamplingType);
+		//myMDP.emulatePolicy((HashMap<State, Double>) myMDP.VUpper, randomGenInitial, randomGenNextState, stateSamplingType);
 		
 		int numVariables = myMDP.hmPrime2IdRemap.keySet().size();
 		
