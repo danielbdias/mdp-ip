@@ -198,7 +198,10 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			state = open.pop();
 			closed.push(state);
 			
-			if (!isGoal(state) && isDeadEnd(state)) {
+			if (isGoal(state) || solvedStates.contains(state))
+				continue;
+			
+			if (isDeadEnd(state)) {
 				if (verbose)
 					formattedPrintln("DEADEND: %s", state);
 				
@@ -224,9 +227,6 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				rv = false;
 				continue;
 			}
-			
-			if (isGoal(state))
-				continue;
 			
 			int greedyActionIndex = this.getBestActionForState(V, state);
 			
@@ -650,13 +650,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		while (true){
 			long elapsedTime = (System.currentTimeMillis() - initialTime);
 			
-//			if (elapsedTime >= timeOutInMilliseconds) {
-//				formattedPrintln("Finished by timeout !");
-//				break; //timeout		
-//			}
-			
 			if (solvedStates.contains(initialState)) {
-				//formattedPrintln("Finished by convergence !");
+				formattedPrintln("Finished by convergence !");
 				break; //convergence of initial state
 			}
 			
@@ -670,7 +665,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
             }
 		}
 		
-		//formattedPrintln("Done !");
+		formattedPrintln("Done !");
 	}
 	
 	public HashMap<State,Double> executeLabeledSSiPP(int t, State initialState, HashMap<State,Double> valueFunction, 
@@ -686,22 +681,21 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		
 		while (true)
 		{
-			
 			if (solvedStates.contains(state)) {
 				//formattedPrintln("Solved state [%s] reached.", state);
 				break; //state solved
 			}
-						
+
+			if (isDeadEnd(state)) {
+				valueFunction.put(state, NEGATIVE_INFINITY);
+				solvedStates.add(state);
+				formattedPrintln("Deadend found, finishing the LSSiPP trial.");
+				break; //deadend, end loop
+			}
+			
 			formattedPrintln("Planning using SS-SSP with [%s] as initial state...", state);
 			
 			HashSet<State> goalStates = shortSightedSSPIP(state, t);
-			
-			if (goalStates.size() == 0) {
-				valueFunction.put(state, NEGATIVE_INFINITY);
-				solvedStates.add(state);
-				formattedPrintln("Deadend found, finishing the SSiPP.");
-				break; //deadend, end loop
-			}
 			
 			goalStates.addAll(solvedStates);
 			
@@ -723,17 +717,19 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				
 				formattedPrintln("Executing action [%s]...", actionGreedy.getName());
 				
-				state = chooseNextStateRTDPEnum(state, actionGreedy, randomGenNextState, bestActionIndex);
-				visitedStates.add(state);
+				State reachedState = chooseNextStateRTDPEnum(state, actionGreedy, randomGenNextState, bestActionIndex);
+				visitedStates.add(reachedState);
 				
-				formattedPrintln("State [%s] reached...", state);
+				formattedPrintln("State [%s] reached...", reachedState);
+				
+				state = reachedState;
 			}
 		}
 		
 		if (inGoalSet(state.getValues()) || solvedStates.contains(state)) {
 			while (!visitedStates.empty()) {
 				state = visitedStates.pop();
-				if (!checkSolved(valueFunction, solvedStates, state, false))
+				if (!checkSolved(valueFunction, solvedStates, state, true))
 					break;
 			}
 		}
