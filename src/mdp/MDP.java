@@ -2867,13 +2867,17 @@ public abstract class MDP {
 	}
 	
 	protected Action updateVUpper(State state) {
+		return updateVUpper(state, ((HashMap)VUpper));
+	}
+	
+	protected Action updateVUpper(State state, HashMap vUpper) {
 		
-		Pair result = this.computeVUpper(state);
+		Pair result = this.computeVUpper(state, vUpper);
 		
 		Action actionGreedy = (Action) result.get_o1();
 		double maxTotal = (Double) result.get_o2();
 		
-		((HashMap)VUpper).put(state, maxTotal);
+		vUpper.put(state, maxTotal);
 	
 		maxUpperUpdated = maxTotal;
 		
