@@ -202,11 +202,15 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				continue;
 			
 			if (isDeadEnd(state)) {
-				if (verbose)
-					formattedPrintln("DEADEND: %s", state);
-				
 				V.put(state, NEGATIVE_INFINITY); //update to negative infinity
 				solvedStates.add(state);
+				
+				if (verbose) {
+					formattedPrintln("DEADEND: %s", state);
+					formattedPrintln("SOLVED: %s", state);
+					formattedPrintln("SOLVED VALUE: %s", V.get(state));
+				}
+				
 				continue;
 			}
 			
@@ -217,8 +221,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			else
 				previousValue = maxUpper;
 			
-			this.updateVUpper(state);
-			V = (HashMap) VUpper;
+			this.updateVUpper(state, V);
 			
 			double nextValue = (Double) V.get(state);
 			
@@ -258,7 +261,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		else {
 			while (!closed.empty()) {
 				state = closed.pop();
-				this.updateVUpper(state);
+				this.updateVUpper(state, V);
 				contUpperUpdates++;
 			}
 		}
