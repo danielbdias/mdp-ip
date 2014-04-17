@@ -153,6 +153,15 @@ public class RelaxedTriangleTireWorldGen {
 		}
 	}
 
+	public static int getNumberOfVariablesForInstance(Integer instanceNumber) {
+		Integer numberOfColumns = (3 + (instanceNumber - 1));
+		Integer numberOfLines = (numberOfColumns * 2) - 1;
+		
+		List<String> variables = getCellVariables(numberOfLines, numberOfColumns);
+		
+		return variables.size() + 2;
+	}
+	
 	private static List<String> generateGoalStates(Integer numberOfLines, Integer numberOfColumns) {
 		List<String> goals = new ArrayList<String>();
 		
