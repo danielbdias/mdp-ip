@@ -10,7 +10,7 @@ import com.sun.org.apache.bcel.internal.generic.IDIV;
 import add.BinaryOperKeyADD;
 import add.BinaryOperation;
 
-public class State {
+public class State implements Comparable<State> {
 	private BigInteger identifier;
 	private TreeMap<Integer, Boolean> values;
 	private SuccProbabilitiesM actionSuccProbab[];
@@ -113,4 +113,8 @@ public class State {
 		return this.identifier.equals(otherA.identifier);
 	}
 
+	@Override
+	public int compareTo(State o) {
+		return this.getIdentifier().compareTo(o.getIdentifier());
+	}
 }

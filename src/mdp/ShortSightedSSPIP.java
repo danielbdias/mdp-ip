@@ -4,7 +4,6 @@ import java.math.*;
 import java.util.*;
 
 import add.Context;
-
 import mdp.algorithms.ssipp.SSiPP_PlannerCaller;
 import prob.mdp.HierarchicalParser;
 import util.Pair;
@@ -211,6 +210,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 					formattedPrintln("SOLVED VALUE: %s", V.get(state));
 				}
 				
+				rv = false; 
 				continue;
 			}
 			
@@ -241,7 +241,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				nextStates = nextProbs.getNextStatesPoly().keySet();
 			else
 				nextStates = nextProbs.getNextStatesProbs().keySet();
-			
+						
 			for (State nextState : nextStates) {
 				if (!solvedStates.contains(nextState) && !open.contains(nextState) && !closed.contains(nextState))
 					open.push(nextState);
@@ -625,6 +625,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 	// Labeled SSiPP
 	//////////////l/////////////////////////////////////////////////////////////////////////////////////
 	
+	List<HashMap<State,Double>> valueFunctionPerTrial = new ArrayList<HashMap<State,Double>>();
+	
 	public void executeLabeledSSiPPuntilConvergence(int t, Random randomGenInitial, Random randomGenNextState, 
 			int maxDepth, long timeOut, int stateSamplingType, SSiPP_PlannerCaller planner, String initialStateValuePath)
 	{	
@@ -668,6 +670,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
             }
 		}
 		
+//		summarizeValueFunction(valueFunctionPerTrial);
+		
 		formattedPrintln("Done !");
 	}
 	
@@ -675,7 +679,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			SSiPP_PlannerCaller planner, HashSet<State> solvedStates, Random randomGenInitial, 
 			Random randomGenNextState, int maxDepth, long timeOut, int stateSamplingType)
 	{
-		formattedPrintln("Executing Labeled SSiPP with [%s] as initial state and [%s] as t...", initialState, t);
+//		formattedPrintln("Executing Labeled SSiPP with [%s] as initial state and [%s] as t...", initialState, t);
 		
 		Stack<State> visitedStates = new Stack<State>();
 		
@@ -710,7 +714,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				valueFunction.put(s, optimalValueFunction.get(s));
 			}
 			
-			//printEnumValueFunction(optimalValueFunction);
+			valueFunctionPerTrial.add(new HashMap<State, Double>(valueFunction));
 			
 			while (!goalStates.contains(state)) {				
 				Pair p = getBestAction(valueFunction, state, randomGenNextState);  
@@ -737,8 +741,38 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			}
 		}
 		
-		formattedPrintln("Labeled SSiPP executed.");
+//		formattedPrintln("Labeled SSiPP executed.");
 		
 		return valueFunction;
+	}
+	
+	private void summarizeValueFunction(List<HashMap<State,Double>> valueFunctionPerTrial) {
+		if (valueFunctionPerTrial == null || valueFunctionPerTrial.size() == 0) return;
+		
+		Set<State> lastTrialStates = new TreeSet<State>(valueFunctionPerTrial.get(valueFunctionPerTrial.size() - 1).keySet());
+		
+		List<String> reportData = new ArrayList<String>();
+		
+		String line = "";
+		
+		//print value per trial
+		
+		for (State state : lastTrialStates) {
+			line = String.format("%s;%s;", state.getIdentifier(), state.toString());
+			
+			for (int i = 0; i < valueFunctionPerTrial.size(); i++) {	
+				HashMap<State,Double> valueFunction = valueFunctionPerTrial.get(i);
+				
+				if (valueFunction.containsKey(state))
+					line += valueFunction.get(state) + ";";
+				else
+					line += maxUpper + ";";
+			}
+		
+			reportData.add(line);
+		}
+		
+		for (String string : reportData)
+			formattedPrintln(string);
 	}
 }
