@@ -93,7 +93,7 @@ public abstract class MDP {
 	public int contUpperUpdates;
 	  
 	protected double maxUpper;
-	private double minLower;
+	protected double minLower;
 	protected double maxUpperUpdated, maxLowerUpdated;
 	public static long timeTrials;  
 	double gapInitial;
@@ -1476,7 +1476,7 @@ public abstract class MDP {
 		maxLowerUpdated=maxTotal;
 	}
 
-	private void updateVLower(State state) {
+	protected void updateVLower(State state) {
 		double max=Double.NEGATIVE_INFINITY;
 		Iterator actions=mName2Action.entrySet().iterator();
 		int posAction=0;
@@ -2861,6 +2861,39 @@ public abstract class MDP {
 		return new Pair(actionGreedy, maxTotal);
 	}
 	
+	protected Pair computeVLower(State state, HashMap vLower) {
+		double max = Double.NEGATIVE_INFINITY;
+		Action actionGreedy = null;
+		
+		Iterator actions = mName2Action.entrySet().iterator();
+		
+		int posAction = 0;
+		posActionGreedy = -1;
+		
+		while (actions.hasNext()){
+			Map.Entry meaction=(Map.Entry) actions.next();
+			Action action=(Action) meaction.getValue();
+
+			double Qt = this.computeQEnum(vLower, state, action, action.tmID2ADD, 'u', posAction, true);
+		
+			max = Math.max(max,Qt);
+		
+			if (Math.abs(max - Qt) <= 1e-10d){
+				actionGreedy = action;
+				posActionGreedy = posAction;
+				
+				probNature = new Hashtable(context.currentValuesProb);
+			}
+			
+			posAction++;
+		}
+
+		double rew = this.getRewardEnum(state);
+		double maxTotal = rew + this.bdDiscount.doubleValue() * max;
+		
+		return new Pair(actionGreedy, maxTotal);
+	}
+	
 	protected double getRewardEnum(State state)
 	{
 		return context.getValueForStateInContext((Integer)this.rewardDD, state.getValues(), null, null);
@@ -2884,6 +2917,20 @@ public abstract class MDP {
 		return actionGreedy;
 	}
 
+	protected Action updateVLower(State state, HashMap vLower) {
+		
+		Pair result = this.computeVLower(state, vLower);
+		
+		Action actionGreedy = (Action) result.get_o1();
+		double maxTotal = (Double) result.get_o2();
+		
+		vLower.put(state, maxTotal);
+	
+		maxLowerUpdated = maxTotal;
+		
+		return actionGreedy;
+	}
+	
     private State sampleInitialStateFromListEnum(Random randomGenerator) {
     	int ranIndex=randomGenerator.nextInt(listInitialStatesEnum.size());
 		State state=listInitialStatesEnum.get(ranIndex);
@@ -2978,6 +3025,109 @@ public abstract class MDP {
 		
 		return nextState;
     }
+	
+	protected State chooseNextStateBRTDPEnum(State state, Action actionGreedy, Random randomGenerator, int posActionGreedy, double tau, State initialState) {
+		SuccProbabilitiesM succState = state.getActionSuccProbab()[posActionGreedy];
+					
+		State nextState = null;
+		
+		Double value, B = 0d;
+			
+		if (context.workingWithParameterized) {
+			if (!useVerticesSolver) {
+				if (typeSampledRTDPMDPIP == 4)
+					probNature = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
+				else if (typeSampledRTDPMDPIP == 5)
+					probNature = context.probSample;	
+			}
+			else {
+				if (typeSampledRTDPMDPIP == 4) {
+					Iterator i = succState.getNextStatesPoly().keySet().iterator();
+					
+					Set<String> parameters = new HashSet<String>();
+					
+					while (i.hasNext()) {
+						State s = (State) i.next();
+						
+						String[] tmp = this.getParameterFromPolynomial(succState.getNextStatesPoly().get(s));
+						for (String p : tmp) parameters.add(p);
+					}
+					
+//					String polytopeCacheKey = this.getPolytopeCacheKey(parameters.toArray(new String[0]));
+//					
+//					PolytopePoint point = null;
+//					
+//					if (!this.cachedPolytopes.containsKey(polytopeCacheKey))
+//						this.addToPolytopeCache(iD2ADD, varPrime);
+//					
+//					List<PolytopePoint> vertices = this.cachedPolytopes.get(polytopeCacheKey);
+//					point = getRandomPointFromPolytopeVertices(vertices);
+				} 
+			}
+		}
+		
+		double ran = randomGenerator.nextDouble();
+		
+		Iterator it = null;
+		
+		if (!context.workingWithParameterized)
+			it = succState.getNextStatesProbs().keySet().iterator();
+		else
+			it = succState.getNextStatesPoly().keySet().iterator();
+		
+		HashMap<State, Double> b = new HashMap<State, Double>();
+		HashMap<State, Double> vUpper = (HashMap<State, Double>) VUpper;
+		HashMap<State, Double> vLower = (HashMap<State, Double>) VLower;
+		
+		while (it.hasNext()){
+			nextState = (State) it.next();
+			
+			if (!context.workingWithParameterized)
+				value = succState.getNextStatesProbs().get(nextState);
+			else
+				value = succState.getNextStatesPoly().get(nextState).evalWithListValues(probNature, context);
+			
+			double upper = maxUpper;
+			
+			if (vUpper.containsKey(nextState))
+				upper = vUpper.get(nextState);
+			
+			double lower = minLower;
+			
+			if (vLower.containsKey(nextState))
+				lower = vLower.get(nextState);
+			
+			b.put(nextState, value * (upper - lower));
+			B += value * (upper - lower);
+			
+//			if (ran <= sum) return nextState;
+		}
+		
+		double upperInitial = maxUpper;
+		
+		if (vUpper.containsKey(initialState))
+			upperInitial = vUpper.get(initialState);
+		
+		double lowerInitial = minLower;
+		
+		if (vLower.containsKey(initialState))
+			lowerInitial = vLower.get(initialState);
+		
+		if (B < (upperInitial - lowerInitial) / tau) 
+			return null;
+		
+		double sum = 0;
+		
+		for (State sPrime : b.keySet()) {
+			nextState = sPrime;
+			
+			sum += (b.get(nextState) / B);
+			
+			if (ran <= sum) return sPrime;
+		}
+		
+		return nextState;
+    }
 
 	protected double computeQEnum(HashMap V, State state, Action action, TreeMap iD2ADD, char c, int posAction) {
 		SuccProbabilitiesM succ = state.getActionSuccProbab()[posAction];
@@ -2999,6 +3149,28 @@ public abstract class MDP {
         	return mulSumSuccessors(succ, V, c);
         else
         	return mulSumSuccessorsPoly(succ, V, c);
+	}
+	
+	protected double computeQEnum(HashMap V, State state, Action action, TreeMap iD2ADD, char c, int posAction, boolean useLastSolverResults) {
+		SuccProbabilitiesM succ = state.getActionSuccProbab()[posAction];
+
+		//if it has not been calculed before, compute it 
+        if (succ == null) {
+        	//succ = computeSuccesorsProbEnum(state, iD2ADD);
+        	succ = computeSuccessorsProb(state, iD2ADD);
+        	
+        	if (succ.getNextStatesProbs().size() == 0 && succ.getNextStatesPoly().size() == 0){
+        		System.out.println("Not Successors for state: " + state);
+        		System.exit(1);
+        	}
+        	
+        	state.getActionSuccProbab()[posAction] = succ;
+        }
+        
+        if (!context.workingWithParameterized)	
+        	return mulSumSuccessors(succ, V, c);
+        else
+        	return mulSumSuccessorsPoly(succ, V, c, useLastSolverResults);
 	}
 	
 	protected int getBestActionForState(HashMap V, State state) {
@@ -3262,6 +3434,42 @@ public abstract class MDP {
 		
 		if (result.getTerms().size() > 0) {
 			context.getProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS, result);
+		
+			return result.evalWithListValues(context.currentValuesProb, context);
+		}
+		else {
+			return result.getC();
+		}
+	}
+	
+	private double mulSumSuccessorsPoly(SuccProbabilitiesM succ, HashMap V, char c, boolean useLastSolverResults) {
+		Polynomial result = new Polynomial(0.0, new Hashtable(), context);
+		
+		Iterator it = succ.getNextStatesPoly().keySet().iterator();
+
+		while (it.hasNext()){	
+			State state = (State) it.next();
+			Polynomial prob = succ.getNextStatesPoly().get(state);
+			Double valueV = (Double)V.get(state);
+
+			if (valueV == null){
+				if (c == 'u')
+					valueV = maxUpper;
+				else if (c == 'l')
+					valueV = minLower;
+				else{
+					System.out.println("must be u:upper l:lower");
+					System.exit(1);
+				}
+			}
+			
+			prob = prob.prodPolynomial(new Polynomial(valueV, new Hashtable(), context), context);
+			result = prob.sumPolynomial(result);
+		}
+		
+		if (result.getTerms().size() > 0) {
+			if (!useLastSolverResults)
+				context.getProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS, result);
 		
 			return result.evalWithListValues(context.currentValuesProb, context);
 		}
