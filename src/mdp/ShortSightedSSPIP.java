@@ -201,6 +201,15 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				continue;
 			
 			if (isDeadEnd(state)) {
+				if (!V.containsKey(state))
+					rv = false;
+				else {
+					double currentValue = (Double) V.get(state);
+					
+					if (currentValue != NEGATIVE_INFINITY)
+						rv = false;	
+				}
+				
 				V.put(state, NEGATIVE_INFINITY); //update to negative infinity
 				solvedStates.add(state);
 				
@@ -209,8 +218,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 					formattedPrintln("SOLVED: %s", state);
 					formattedPrintln("SOLVED VALUE: %s", V.get(state));
 				}
-				
-				rv = false; 
+				 
 				continue;
 			}
 			
@@ -428,6 +436,81 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		return totalTrialTimeSec;
 	}	
 
+	private long brtdpEnumTrial(State state, int maxDepth, double tau, Random randomGenNextState, long timeOut, long initialTime, String initialStateLogPath)
+	{
+		State initialState = new State(listInitialStates.get(0), mName2Action.size());
+		
+		Stack<State> visited = new Stack<State>();
+		
+		long totalTrialTime = 0;
+		long totalTrialTimeSec = 0;
+		
+		while (true) {			
+			if (state == null)
+				break; //convergence
+			
+			visited.push(state);
+			
+			if (inGoalSet(state.getValues())) {
+				//System.out.println("Found goal state: " + state);
+				//((HashMap<State,Double>) this.VUpper).put(state, 0.0);
+				break;
+			}
+			
+			if (isDeadEnd(state)) {
+				formattedPrintln("Reached a deadend at state: " + state);
+				((HashMap<State,Double>) this.VUpper).put(state, NEGATIVE_INFINITY);
+				((HashMap<State,Double>) this.VLower).put(state, NEGATIVE_INFINITY);
+				break;
+			}
+			
+			//this compute maxUpperUpdated and actionGreedy
+			Action greedyAction = updateVUpper(state, (HashMap<State, Double>) VUpper); // Here we fill probNature
+			
+			updateVLower(state, (HashMap<State, Double>) VLower);
+			
+			contUpperUpdates++;
+			
+			//System.out.println("action greedy: " + greedyAction.getName());
+			
+			context.workingWithParameterized = context.workingWithParameterizedBef;
+			state = chooseNextStateBRTDPEnum(state, greedyAction, randomGenNextState, posActionGreedy, tau, initialState);
+			
+			//System.out.println("next state: " + state);
+			flushCachesRTDP(false);       
+			
+			totalTrialTime = GetElapsedTime();
+            totalTrialTimeSec = totalTrialTime / 1000;
+            
+            if (initialStateLogPath != null) {
+	            //medição para o estado inicial
+	            long elapsedTime = (System.currentTimeMillis() - initialTime);
+		    			    	
+		    	Double value = ((HashMap<State,Double>) this.VUpper).get(initialState);
+		    	        	    	
+		    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
+            }
+		}
+		
+		if (state == null || inGoalSet(state.getValues())) {
+			while (!visited.empty()) {
+				state = visited.pop();
+				
+				updateVUpper(state, (HashMap<State, Double>) VUpper);
+				updateVLower(state, (HashMap<State, Double>) VLower);
+			}	
+		}
+		
+//		System.out.println("***************************************************");
+//		System.out.println(" TRIAL END ");
+//		System.out.println("***************************************************");
+		//this.printEnumValueFunction((HashMap<State,Double>) this.VUpper);
+		
+		totalTrialTime = GetElapsedTime();
+        totalTrialTimeSec = totalTrialTime / 1000;		
+		return totalTrialTimeSec;
+	}
+	
 	/**
 	 * Labeled Real-time dynamic programming for Enumerative MDP-IPs
 	 */
@@ -481,6 +564,97 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		while (!solvedStates.contains(state)){
 			//do trial //////////////////////////////////
 			this.lrtdpEnumTrial(state, solvedStates, maxDepth, randomGenNextState, timeOut, initialTime, initialStateLogPath);
+		}
+		
+		if (printFinalADD) {
+			HashMap<State,Double> vUpperAsHashMap = (HashMap<State,Double>) VUpper;
+			
+			this.printEnumValueFunction(vUpperAsHashMap);
+		}
+	}
+	
+	/**
+	 * Bounded Real-time dynamic programming for Enumerative MDP-IPs
+	 */
+	public void solveBRTDPIPEnum(int maxDepth, long timeOut, double tau, int stateSamplingType, 
+			Random randomGenInitial, Random randomGenNextState, String initialStateLogPath) {
+		this.solveBRTDPIPEnum(maxDepth, timeOut, tau, stateSamplingType, randomGenInitial, randomGenNextState, initialStateLogPath, new HashMap<State,Double>(), new HashMap<State,Double>());
+	}
+	
+	/**
+	 * Bounded Real-time dynamic programming for Enumerative MDP-IPs
+	 */
+	public void solveBRTDPIPEnum(int maxDepth, long timeOut, double tau, int stateSamplingType, 
+			Random randomGenInitial, Random randomGenNextState, String initialStateLogPath, HashMap<State,Double> vUpper, HashMap<State,Double> vLower) {		
+		typeSampledRTDPMDPIP = stateSamplingType;
+		
+		HashSet<State> solvedStates = new HashSet<State>(); 
+		
+		ResetTimer();
+		
+		if (typeSampledRTDPMDPIP == 3)  //callSolver with constraints p_i>=epsilon 
+			context.getProbSampleCallingSolver(NAME_FILE_CONTRAINTS_GREATERZERO);
+		else if (typeSampledRTDPMDPIP == 5)
+			context.probSample = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
+	
+		double Rmax = context.apply(this.rewardDD, Context.MAXVALUE);
+		
+		if (this.bdDiscount.doubleValue() == 1)
+			maxUpper = Rmax * maxDepth;
+		else
+			maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
+		
+		double Rmin = context.apply(this.rewardDD, Context.MINVALUE);
+		
+		if (this.bdDiscount.doubleValue() == 1)
+			minLower = Rmin * maxDepth;
+		else
+			minLower = Rmin / (1 - this.bdDiscount.doubleValue());
+		
+		for (TreeMap stateAsMap : this.listGoalStates) {
+			State goalState = new State(stateAsMap);
+			
+			if (!vUpper.containsKey(goalState))
+				vUpper.put(goalState, 0.0);
+			
+			if (!vLower.containsKey(goalState))
+				vLower.put(goalState, 0.0);
+		}		
+		
+		VUpper = new HashMap<State,Double>(vUpper);
+		
+		VLower = new HashMap<State,Double>(vLower);
+		
+		contUpperUpdates = 0;
+
+		context.workingWithParameterizedBef = context.workingWithParameterized;
+				
+		long initialTime = System.currentTimeMillis();
+		
+		State state = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
+		
+		double upperInitial = maxUpper;
+		
+		if (vUpper.containsKey(state))
+			upperInitial = vUpper.get(state);
+		
+		double lowerInitial = minLower;
+		
+		if (vLower.containsKey(state))
+			lowerInitial = vLower.get(state);
+		
+		while (upperInitial - lowerInitial > epsilon){
+			//do trial //////////////////////////////////
+			this.brtdpEnumTrial(state, maxDepth, tau, randomGenNextState, timeOut, initialTime, initialStateLogPath);
+			
+			vUpper = (HashMap<State,Double>) VUpper;
+			vLower = (HashMap<State,Double>) VLower;
+			
+			if (vUpper.containsKey(state))
+				upperInitial = vUpper.get(state);
+			
+			if (vLower.containsKey(state))
+				lowerInitial = vLower.get(state);
 		}
 		
 		if (printFinalADD) {
