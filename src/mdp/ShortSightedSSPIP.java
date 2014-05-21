@@ -664,8 +664,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		}
 	}
 	
-	public void emulatePolicy(HashMap<State,Double> valueFunction, Random randomGenInitial, Random randomGenNextState, int stateSamplingType) {
-		formattedPrintln("Policy execution started...");
+	public boolean emulatePolicy(HashMap<State,Double> valueFunction, Random randomGenInitial, Random randomGenNextState, int stateSamplingType, int maxDepth) {
+//		formattedPrintln("Policy execution started...");
 		
 		State initialState = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
 		
@@ -673,10 +673,15 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		
 		State state = initialState;
 		
-		while (true) {	
+		for (int i = 0; i < maxDepth; i++) {
 			if (isGoal(state)) {
-				formattedPrintln("Goal state [%s] found.", state);
-				break;
+//				formattedPrintln("Goal state [%s] found.", state);
+				return true;
+			}
+			
+			if (isDeadEnd(state)) {
+//				formattedPrintln("Deadend state [%s] found.", state);
+				return false;
 			}
 			
 			Pair p = getBestAction(valueFunction, state, randomGenNextState);  
@@ -684,14 +689,14 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			Action actionGreedy = (Action) p.get_o1();
 			int bestActionIndex = (Integer) p.get_o2();
 			
-			formattedPrintln("Executing action [%s]...", actionGreedy.getName());
+//			formattedPrintln("Executing action [%s]...", actionGreedy.getName());
 			
 			state = chooseNextStateRTDPEnum(state, actionGreedy, randomGenNextState, bestActionIndex);
 			
-			formattedPrintln("State [%s] reached...", state);
+//			formattedPrintln("State [%s] reached...", state);
 		}
 		
-		formattedPrintln("Policy execution done.");
+		return false;
 	}
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////////

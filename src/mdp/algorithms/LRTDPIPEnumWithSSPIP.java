@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.*;
 
 import mdp.*;
+import mdp.algorithms.ssipp.SSiPP_LRTDPCaller;
+import mdp.algorithms.ssipp.SSiPP_PlannerCaller;
 
 public class LRTDPIPEnumWithSSPIP {
 
@@ -58,6 +60,36 @@ public class LRTDPIPEnumWithSSPIP {
 		printReport(problemFilename, typeContext, timeSeg, outputFilename, 
 				   myMDP.context.numCallNonLinearSolver, myMDP.contUpperUpdates, 
 				   typeSolution, numVariables);
+	}
+	
+	public static HashMap<State, Double> runSimulation(String[] args, ShortSightedSSPIP myMDP) {
+		
+		//Profundidade máxima que um trial do RTDP-IP pode assumir
+		int maxTrialDepth 		= Integer.parseInt(args[2]);
+		
+		//Tempo máximo de execução do algoritmo
+		long timeOut 			= Long.parseLong(args[3]);
+		
+		//Indica o tipo de amostragem de estados que será utilizado
+		//Pode variar de 1 a 4, sendo:
+		//1: sorteio min, utilizando o resultado da minimização do Bellman Backup 
+		//2: if p=0  => p=epsilon 
+		//3: using  the result of a problem with constraints p>= epsilon 
+		//4: sorteio random, sorteando aleatoriamente as os parâmetros de probabilidades do conjunto credal 
+		int stateSamplingType   = Integer.parseInt(args[4]);
+		
+		long seedInitial = 19580434; //System.currentTimeMillis();
+		long seedNextState = 19580807; //seedInitial + 1;/
+		
+		Random randomGenInitial = new Random(seedInitial);
+		Random randomGenNextState = new Random(seedNextState);
+		
+		myMDP.formattedPrintln("randomGenInitial seed: %s", seedInitial);
+		myMDP.formattedPrintln("randomGenNextState seed: %s", seedNextState);
+		
+		myMDP.solveLRTDPIPEnum(maxTrialDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, null);
+		
+		return (HashMap<State, Double>) myMDP.VUpper;
 	}
 	
 	private static void printReport(String filename, int typeContext, long timeSeg, 
