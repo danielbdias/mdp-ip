@@ -21,7 +21,8 @@ public class CallPrincipal {
 			int numberOfVariables = numberOfLines * numberOfColumns;
 			
 			String[] anotherArgs = {
-					"//home//daniel//workspaces//java//mestrado//mdp-ip//problemsMDPIP//ssp_navigation_" + numberOfVariables  + ".net",
+					//"//home//daniel//workspaces//java//mestrado//mdp-ip//problemsMDPIP//ssp_navigation_" + numberOfVariables  + ".net",
+					"D://Users//Daniel//workspace//mdp-ip//problemsMDPIP//ssp_navigation_" + numberOfVariables  + ".net",
 					Integer.toString(numberOfLines),
 					Integer.toString(numberOfColumns),
 					"1.0",
@@ -41,7 +42,8 @@ public class CallPrincipal {
 			int numberOfVariables = TriangleTireWorldGen.getNumberOfVariablesForInstance(i);
 			
 			String[] anotherArgs = {
-					"//home//daniel//workspaces//java//mestrado//mdp-ip//problemsMDPIP//ssp_triangle_tireworld_" + numberOfVariables  + ".net",
+					//"//home//daniel//workspaces//java//mestrado//mdp-ip//problemsMDPIP//ssp_triangle_tireworld_" + numberOfVariables  + ".net",
+					"D://Users//Daniel//workspace//mdp-ip//problemsMDPIP//ssp_triangle_tireworld_" + numberOfVariables  + ".net",
 					Integer.toString(i),
 					"1.0",
 					"0.01"
