@@ -669,7 +669,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		
 		State initialState = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
 		
-		formattedPrintln("Initial state [%s].", initialState);
+//		formattedPrintln("Initial state [%s].", initialState);
 		
 		State state = initialState;
 		
