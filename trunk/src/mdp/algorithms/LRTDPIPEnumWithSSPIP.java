@@ -64,11 +64,8 @@ public class LRTDPIPEnumWithSSPIP {
 	
 	public static HashMap<State, Double> runSimulation(String[] args, ShortSightedSSPIP myMDP) {
 		
-		//Profundidade máxima que um trial do RTDP-IP pode assumir
-		int maxTrialDepth 		= Integer.parseInt(args[2]);
-		
-		//Tempo máximo de execução do algoritmo
-		long timeOut 			= Long.parseLong(args[3]);
+		int maxTrialDepth 		= Integer.MAX_VALUE;	
+		long timeOut 			= Long.MAX_VALUE;
 		
 		//Indica o tipo de amostragem de estados que será utilizado
 		//Pode variar de 1 a 4, sendo:
@@ -76,7 +73,7 @@ public class LRTDPIPEnumWithSSPIP {
 		//2: if p=0  => p=epsilon 
 		//3: using  the result of a problem with constraints p>= epsilon 
 		//4: sorteio random, sorteando aleatoriamente as os parâmetros de probabilidades do conjunto credal 
-		int stateSamplingType   = Integer.parseInt(args[4]);
+		int stateSamplingType   = Integer.parseInt(args[0]);
 		
 		long seedInitial = 19580434; //System.currentTimeMillis();
 		long seedNextState = 19580807; //seedInitial + 1;/
