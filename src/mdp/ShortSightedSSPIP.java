@@ -700,6 +700,249 @@ public class ShortSightedSSPIP extends MDP_Fac {
 	}
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////////
+	// Heuristic
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	public HashMap<State,Double> computeHeuristic(Random randomGenInitial, Random randomGenNextState) {
+		State initialState = new State(sampleInitialStateFromList(randomGenInitial), mName2Action.size());
+		
+		HashMap<State,Double> valueFunction = new HashMap<State,Double>();
+		valueFunction.put(initialState, maxUpper);
+		
+		HashSet<State> solvedStates = new HashSet<State>();
+		
+		while (!solvedStates.contains(initialState)){
+			this.executeHeristicComputationTrial(initialState, randomGenNextState, valueFunction, solvedStates);
+		}
+		
+		return valueFunction;
+	}
+	
+	private void executeHeristicComputationTrial(State state,
+			Random randomGenNextState, HashMap<State, Double> heuristicFunction,
+			HashSet<State> solvedStates) {
+		
+		Stack<State> visited = new Stack<State>();
+		
+		while (true) {
+			if (solvedStates.contains(state)) { 
+				break; //ended because reached a solved state
+			}
+			
+			visited.push(state);
+			
+			if (inGoalSet(state.getValues())) {
+				break;
+			}
+			
+			if (isDeadEnd(state)) {
+				formattedPrintln("Reached a deadend at state: " + state);
+				heuristicFunction.put(state, NEGATIVE_INFINITY);
+				break;
+			}
+			
+			Action greedyAction = updateHeuristic(state, heuristicFunction);
+			
+			//System.out.println("action greedy: " + greedyAction.getName());
+			
+			context.workingWithParameterized = context.workingWithParameterizedBef;
+			state = chooseNextStateRTDPEnum(state, greedyAction, randomGenNextState, posActionGreedy);
+			
+			//System.out.println("next state: " + state);
+			flushCachesRTDP(false);       
+		}
+		
+		if (solvedStates.contains(state) || inGoalSet(state.getValues())) {
+			while (!visited.empty()) {
+				state = visited.pop();
+				if (!checkSolvedHeuristic(heuristicFunction, solvedStates, state))
+					break;
+			}	
+		}
+	}
+
+	protected Action updateHeuristic(State state, HashMap heuristicFunction) {
+		
+		Pair result = this.computeVUpper(state, heuristicFunction);
+		
+		Action actionGreedy = (Action) result.get_o1();
+		double maxTotal = (Double) result.get_o2();
+		
+		heuristicFunction.put(state, maxTotal);
+		
+		return actionGreedy;
+	}
+	
+	protected Pair computeHeuristic(State state, HashMap heuristicFunction) {
+		double max = Double.NEGATIVE_INFINITY;
+		Action actionGreedy = null;
+		
+		Iterator actions = mName2Action.entrySet().iterator();
+		
+		int posAction = 0;
+		posActionGreedy = -1;
+		
+		while (actions.hasNext()){
+			Map.Entry meaction=(Map.Entry) actions.next();
+			Action action=(Action) meaction.getValue();
+
+			double h = this.computeMaxHeuristic(heuristicFunction, state, action, action.tmID2ADD, posAction);
+		
+			max = Math.max(max,h);
+		
+			if (Math.abs(max - h) <= 1e-10d){
+				actionGreedy = action;
+				posActionGreedy = posAction;
+			}
+			
+			posAction++;
+		}
+
+		double rew = this.getRewardEnum(state);
+		double maxTotal = rew + max;
+		
+		return new Pair(actionGreedy, maxTotal);
+	}
+	
+	protected double computeMaxHeuristic(HashMap heuristicFunction, State state, Action action, TreeMap iD2ADD, int posAction) {
+		SuccProbabilitiesM succ = state.getActionSuccProbab()[posAction];
+
+		//if it has not been calculed before, compute it 
+        if (succ == null) {
+        	//succ = computeSuccesorsProbEnum(state, iD2ADD);
+        	succ = computeSuccessorsProb(state, iD2ADD);
+        	
+        	if (succ.getNextStatesProbs().size() == 0 && succ.getNextStatesPoly().size() == 0){
+        		System.out.println("Not Successors for state: " + state);
+        		System.exit(1);
+        	}
+        	
+        	state.getActionSuccProbab()[posAction] = succ;
+        }
+        
+        double maxRew = Double.NEGATIVE_INFINITY;
+        
+        for (State nextState : succ.getNextStatesPoly().keySet()) {
+        	double rew = maxUpper;
+        	
+			if (heuristicFunction.containsKey(nextState))
+				rew = (Double) heuristicFunction.get(nextState);
+			
+			if (rew > maxRew)
+				maxRew = rew;
+		}
+        
+        return maxRew;
+	}
+	
+	protected int getBestActionForStateHeuristic(HashMap heuristicFunction, State state) {
+		
+		double max = Double.NEGATIVE_INFINITY;
+		
+		Iterator actions = mName2Action.entrySet().iterator();
+		
+		int posAction = 0;
+		int bestActionIndex = -1;
+		
+		while (actions.hasNext()){
+			Map.Entry meaction=(Map.Entry) actions.next();
+			Action action=(Action) meaction.getValue();
+
+			double h = this.computeMaxHeuristic(heuristicFunction, state, action, action.tmID2ADD, posAction);
+			
+			max = Math.max(max,h);
+		
+			if (Math.abs(max - h) <= 1e-10d){
+				posActionGreedy = posAction;
+			}
+			
+			posAction++;
+		}
+		
+		return bestActionIndex;
+	}
+	
+	protected boolean checkSolvedHeuristic(HashMap heuristicFunction, HashSet<State> solvedStates, State state) {
+		boolean rv = true;
+		
+		Stack<State> open = new Stack<State>();
+		Stack<State> closed = new Stack<State>();
+		
+		if (!solvedStates.contains(state)) open.push(state);
+		
+		while (!open.empty()) {
+			state = open.pop();
+			closed.push(state);
+			
+			if (isGoal(state) || solvedStates.contains(state))
+				continue;
+			
+			if (isDeadEnd(state)) {
+				if (!heuristicFunction.containsKey(state))
+					rv = false;
+				else {
+					double currentValue = (Double) heuristicFunction.get(state);
+					
+					if (currentValue != NEGATIVE_INFINITY)
+						rv = false;	
+				}
+				
+				heuristicFunction.put(state, NEGATIVE_INFINITY); //update to negative infinity
+				solvedStates.add(state);
+				 
+				continue;
+			}
+			
+			double previousValue = Double.NaN;
+			
+			if (heuristicFunction.containsKey(state))
+				previousValue = (Double) heuristicFunction.get(state);
+			else
+				previousValue = maxUpper;
+			
+			this.updateHeuristic(state, heuristicFunction);
+			
+			double nextValue = (Double) heuristicFunction.get(state);
+			
+			if (Math.abs(nextValue - previousValue) > epsilon)
+			{
+				rv = false;
+				continue;
+			}
+			
+			int greedyActionIndex = this.getBestActionForStateHeuristic(heuristicFunction, state);
+			
+			SuccProbabilitiesM nextProbs = state.getActionSuccProbab()[greedyActionIndex];
+			
+			Set<State> nextStates = null;
+			
+			if (context.workingWithParameterized)
+				nextStates = nextProbs.getNextStatesPoly().keySet();
+			else
+				nextStates = nextProbs.getNextStatesProbs().keySet();
+						
+			for (State nextState : nextStates) {
+				if (!solvedStates.contains(nextState) && !open.contains(nextState) && !closed.contains(nextState))
+					open.push(nextState);
+			}
+		}
+		
+		if (rv) {
+			for (State nextState : closed) 
+				solvedStates.add(nextState);
+		}
+		else {
+			while (!closed.empty()) {
+				state = closed.pop();
+				this.updateHeuristic(state, heuristicFunction);
+				contUpperUpdates++;
+			}
+		}
+		
+		return rv;
+	}
+	
+	///////////////////////////////////////////////////////////////////////////////////////////////////
 	// SSiPP
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -825,6 +1068,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			solvedStates.add(goalState);
 		}
 		
+		//valueFunction = computeHeuristic(randomGenInitial, randomGenNextState);
+		
 		long initialTime = System.currentTimeMillis();
 		
 		//log do estado inicial
@@ -925,7 +1170,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		return valueFunction;
 	}
 	
-	private void summarizeValueFunction(List<HashMap<State,Double>> valueFunctionPerTrial) {
+	protected void summarizeValueFunction(List<HashMap<State,Double>> valueFunctionPerTrial) {
 		if (valueFunctionPerTrial == null || valueFunctionPerTrial.size() == 0) return;
 		
 		Set<State> lastTrialStates = new TreeSet<State>(valueFunctionPerTrial.get(valueFunctionPerTrial.size() - 1).keySet());
