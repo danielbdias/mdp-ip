@@ -853,7 +853,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			max = Math.max(max,h);
 		
 			if (Math.abs(max - h) <= 1e-10d){
-				posActionGreedy = posAction;
+				bestActionIndex = posAction;
 			}
 			
 			posAction++;
@@ -1068,7 +1068,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			solvedStates.add(goalState);
 		}
 		
-		//valueFunction = computeHeuristic(randomGenInitial, randomGenNextState);
+		valueFunction = computeHeuristic(randomGenInitial, randomGenNextState);
 		
 		long initialTime = System.currentTimeMillis();
 		
