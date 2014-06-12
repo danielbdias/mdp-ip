@@ -1407,5 +1407,14 @@ public abstract class Context {
 			leaf_val = ((TerminalNodeKeyPar) cur).getPolynomial();  // the result is a poly
 	     
 		leaf_op.processADDLeaf(assign, leaf_val);
-	}
+	 }
+	 
+	 public void printPaths(int id) {
+		 this.enumeratePaths(id, new ADDLeafOperation() {
+			@Override
+			public void processADDLeaf(TreeMap<Integer, Boolean> assign, Object value) {
+				System.out.println(String.format("%s = %s", assign, value));
+			}
+		});
+	 }
 }

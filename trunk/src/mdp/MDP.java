@@ -3903,8 +3903,14 @@ public abstract class MDP {
         if (initVUpperPath == null) {
 			//Initialize Vu with admissible value function //////////////////////////////////
 			//create an ADD with  VUpper=Rmax/1-gamma /////////////////////////////////////////
-			maxUpper = Rmax / (1 - this.bdDiscount.doubleValue());
-			
+        	
+        	double factor = (1 - this.bdDiscount.doubleValue());
+        	
+        	if (factor != 0.0)
+        		maxUpper = Rmax / factor;
+        	else
+        		maxUpper = Rmax;
+						
 			valueiDD = context.getTerminalNode(maxUpper);
 		}
 		else {
@@ -3916,7 +3922,7 @@ public abstract class MDP {
 		
     	double Vmax = Rmax; 
     	context.workingWithParameterizedBef = context.workingWithParameterized;
-    	//context.createBoundsProb(NAME_FILE_CONTRAINTS);
+//    	context.createBoundsProb(NAME_FILE_CONTRAINTS);
     	
     	long initialTime = System.currentTimeMillis();
     	boolean keepIterating = true;
@@ -3929,8 +3935,9 @@ public abstract class MDP {
     			//System.out.println("  - Regress action " + action.getName());
 
       			context.workingWithParameterized = context.workingWithParameterizedBef;
-    			QiPlus1DD = this.regress(valueiDD, action, 0.0, action.tmID2ADD, OptimizationType.Minimization, false, false);
-    			    			
+    			     			
+      			QiPlus1DD = this.regress(valueiDD, action, 0.0, action.tmID2ADD, OptimizationType.Minimization, false, false);
+      			
    				valueiPlus1DD = context.apply(valueiPlus1DD, QiPlus1DD, Context.MAX);
      			
         	    flushCaches(null);		
