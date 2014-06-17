@@ -28,6 +28,8 @@ public abstract class MDP {
 	
 	protected boolean simulationMode;
 	
+	private static final double NEGATIVE_INFINITY = -1e6;
+	
 	// typeSampledRTDPMDPIP   
 	//1: allProbabilities 
 	//2: if p=0  => p=epsilon 
@@ -1803,14 +1805,19 @@ public abstract class MDP {
 			 	formattedPrintln("Exiting trial because state is a goal state");
 			    break;
 			}
-			else if (maxDepth > 0 && depth >= maxDepth) {
-				formattedPrintln("Exiting trial because depth >= " + maxDepth);
+			else if (isDeadEnd(state)) {
+				formattedPrintln("Exiting trial reached a deadend.");
+				updateValueBranch(state.getValues(), 'u', NEGATIVE_INFINITY);
 				break;
 			}
-			else if (totalTrialTimeSec > timeOut){
-				formattedPrintln("Exiting  because time > " + timeOut);
-				break;
-			}
+//			else if (maxDepth > 0 && depth >= maxDepth) {
+//				formattedPrintln("Exiting trial because depth >= " + maxDepth);
+//				break;
+//			}
+//			else if (totalTrialTimeSec > timeOut){
+//				formattedPrintln("Exiting  because time > " + timeOut);
+//				break;
+//			}
 			
 			depth++;
 			visited.push(state);
@@ -1883,7 +1890,17 @@ public abstract class MDP {
 		    // list and not mark any node as solved
 			TreeMap<Integer, Boolean> state_prime = remapWithPrimes(state.getValues());//Because Vupper has only prime variables
 			double valueState = (Double) context.getValueForStateInContext((Integer) VUpper, state_prime, null, null);
-		      
+		    
+			if (isDeadEnd(state)) {
+				if (valueState != NEGATIVE_INFINITY)
+					rv = false;
+				
+				updateValueBranch(state.getValues(), 'u', NEGATIVE_INFINITY);
+				solvedStates.add(state);
+				 
+				continue;
+			}
+			
 			Action greedyAction = updateVUpper(state.getValues()); // here it is computed maxUpperUpdated
 			contUpperUpdates++;
 			
@@ -3817,6 +3834,23 @@ public abstract class MDP {
 		return totalTrialTimeSec;
 	}
 	
+	protected boolean isDeadEnd(TreeMap<Integer,Boolean> state) {
+		return isDeadEnd(new State(state));
+	}
+	
+	protected boolean isDeadEnd(State state) {
+		for (Object actionName : this.mName2Action.keySet()) {
+			Action action = (Action) this.mName2Action.get(actionName);
+			
+			List<State> successors = getSuccessorsFromAction(state, action);
+			
+			if (successors.size() != 1) return false;
+			if (!successors.get(0).equals(state)) return false;
+		}
+		
+		return true;
+	}
+	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	// MDP-IP algorithms main methods
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3937,7 +3971,7 @@ public abstract class MDP {
       			context.workingWithParameterized = context.workingWithParameterizedBef;
     			     			
       			QiPlus1DD = this.regress(valueiDD, action, 0.0, action.tmID2ADD, OptimizationType.Minimization, false, false);
-      			
+    			
    				valueiPlus1DD = context.apply(valueiPlus1DD, QiPlus1DD, Context.MAX);
      			
         	    flushCaches(null);		
@@ -4493,7 +4527,8 @@ public abstract class MDP {
 		
 		long initialTime = System.currentTimeMillis();
 		
-		while (totalTrialTimeSec <= timeOut){	
+//		while (totalTrialTimeSec <= timeOut){	
+		while (true){
 			int depth = 0;
 			visited.clear();// clear visited states stack
 			
@@ -4503,8 +4538,13 @@ public abstract class MDP {
 				break; //end the trials
 			
 			//do trial //////////////////////////////////
-			while (!inGoalSet(state) && (state !=null) && depth < maxDepth) {
-				if (totalTrialTimeSec > timeOut) break;
+//			while (!inGoalSet(state) && (state !=null) && depth < maxDepth) {
+			while (!inGoalSet(state) && (state !=null)) {
+				if (isDeadEnd(state)) {
+					updateValueBranch(state, 'u', NEGATIVE_INFINITY);
+					break;
+				}
+//				if (totalTrialTimeSec > timeOut) break;
 				
 				depth++;
 				visited.push(state);
@@ -4533,8 +4573,11 @@ public abstract class MDP {
 			//do optimization
 			while (!visited.empty()) {
 				state = visited.pop();
-				updateVUpper(state);
-				contUpperUpdates++;
+				
+				if (!isDeadEnd(state)){
+					updateVUpper(state);
+					contUpperUpdates++;
+				}
 			}
 			
 			totalTrialTime = GetElapsedTime();
@@ -4624,13 +4667,14 @@ public abstract class MDP {
 		
 		long initialTime = System.currentTimeMillis();
 		
-		while (totalTrialTimeSec <= timeOut && !solvedStates.contains(s)){
+//		while (totalTrialTimeSec <= timeOut && !solvedStates.contains(s)){
+		while (!solvedStates.contains(s)){
 			totalTrialTimeSec = lrtdpTrial(maxDepth, timeOut, randomGenNextState, s, solvedStates, initialStateLogPath, initialTime);
    	    	
    	    	s = new State(sampleInitialStateFromList(randomGenInitial));
    	    	
-   	    	formattedPrintln("Chamadas ao solver: " + context.numCallNonLinearSolver);
-   	    	formattedPrintln("Número de Backups: " + contUpperUpdates);
+//   	    	formattedPrintln("Chamadas ao solver: " + context.numCallNonLinearSolver);
+//   	    	formattedPrintln("Número de Backups: " + contUpperUpdates);
 		}
 					
 		context.workingWithParameterized = false;
