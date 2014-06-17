@@ -531,13 +531,16 @@ public abstract class Context {
 	    	 
 	    	Double obj = null;
  
+	    	PrintWriter process_in = null;
+	    	BufferedReader process_out = null;
+	    	
 	    	try {
 	    		// Open files for reading and writing
 	    		Process pros = Runtime.getRuntime().exec("ampl " + NAME_FILE_AMPL);
 	    		 
-	    		BufferedReader process_out = new BufferedReader(new InputStreamReader(pros.getInputStream()));
+	    		process_out = new BufferedReader(new InputStreamReader(pros.getInputStream()));
 	    		
-	    		PrintWriter    process_in  = new PrintWriter(pros.getOutputStream(), true);
+	    		process_in  = new PrintWriter(pros.getOutputStream(), true);
 	    		process_in.close(); // Need to close input stream so process exits!!!
 	    		
 	    		currentValuesProb = new Hashtable<String, Double>();
@@ -597,10 +600,10 @@ public abstract class Context {
 	    		
 	    		int amplExitValue = pros.exitValue();
 	    		
+	    		new File(NAME_FILE_AMPL).delete();
+	    		
 				if (amplExitValue < 0 || obj == null)
 				{
-					new File(NAME_FILE_AMPL).delete();
-					
 					for (String line : lines)
 						System.err.println(line);
 					
@@ -608,7 +611,6 @@ public abstract class Context {
 				}
 				else
 				{
-					new File(NAME_FILE_AMPL).delete();
 					return obj;
 				}
 				
@@ -618,6 +620,14 @@ public abstract class Context {
 	    	 } catch (IOException ioe) {
 	    		 ioe.printStackTrace(System.err);
 	    		 return null;
+	    	 }
+	    	 finally {
+				try {
+					if (process_in != null) process_in.close();
+					if (process_out != null) process_out.close();
+				} catch (IOException e) {
+					e.printStackTrace(System.err);
+				}
 	    	 }
 	    }
 	    

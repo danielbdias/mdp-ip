@@ -28,7 +28,7 @@ public abstract class MDP {
 	
 	protected boolean simulationMode;
 	
-	private static final double NEGATIVE_INFINITY = -1e6;
+	private static final double NEGATIVE_INFINITY = -1e4;
 	
 	// typeSampledRTDPMDPIP   
 	//1: allProbabilities 
@@ -3961,7 +3961,8 @@ public abstract class MDP {
     	long initialTime = System.currentTimeMillis();
     	boolean keepIterating = true;
     	
-    	while (keepIterating && numIterations < maxNumberIterations) {
+//    	while (keepIterating && numIterations < maxNumberIterations) {
+    	while (keepIterating) {
     		valueiPlus1DD = context.getTerminalNode(Double.NEGATIVE_INFINITY);
    		
     		for (Object actionAsObject : mName2Action.values()) {
