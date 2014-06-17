@@ -344,19 +344,6 @@ public class ShortSightedSSPIP extends MDP_Fac {
 
 		return super.getRewardEnum(state);
 	}
-
-	private boolean isDeadEnd(State state) {
-		for (Object actionName : this.mName2Action.keySet()) {
-			Action action = (Action) this.mName2Action.get(actionName);
-			
-			List<State> successors = getSuccessorsFromAction(state, action);
-			
-			if (successors.size() != 1) return false;
-			if (!successors.get(0).equals(state)) return false;
-		}
-		
-		return true;
-	}
 	
 	private boolean isGoal(State state) {
 		return  listGoalStates.contains(state.getValues());
