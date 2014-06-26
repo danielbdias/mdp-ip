@@ -1859,8 +1859,6 @@ public abstract class MDP {
 	        totalTrialTimeSec = totalTrialTime / 1000;		
 			return totalTrialTimeSec;
 		}
-	
-//		System.out.println("Last State: " + getStateString(state.getValues()));
 		
 		// Trying to label the visited nodes from the last to the first
 		while (!visited.empty()) {
@@ -1886,6 +1884,9 @@ public abstract class MDP {
 	    while (!open.empty()) {
 	    	state = open.pop();
 		    closed.push(state);
+		    
+		    if (inGoalSet(state.getValues()) || solvedStates.contains(state))
+				continue;
 		    
 		    // The residual was too big, so will update the nodes in the open
 		    // list and not mark any node as solved

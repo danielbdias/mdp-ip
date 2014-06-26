@@ -28,11 +28,11 @@ public abstract class DotViewer
     }
 
     public void setWindowSizing(int w, int h, int x_off, int y_off, int text_h) {
-	width = w;
-	height = h;
-	x_offset = x_off;
-	y_offset = y_off;
-	text_height = text_h;
+		width = w;
+		height = h;
+		x_offset = x_off;
+		y_offset = y_off;
+		text_height = text_h;
     }
 
     // Must override
@@ -40,36 +40,36 @@ public abstract class DotViewer
     
     public void showWindow(String filename) {
 
-	FileInputStream input = null;
-	try {
-	    input = new FileInputStream(filename);
-	} catch(FileNotFoundException fnf) {
-	    System.out.println(fnf.toString());
-	    System.exit(1);
-	}
-	showWindow(input);
+		FileInputStream input = null;
+		try {
+		    input = new FileInputStream(filename);
+		} catch(FileNotFoundException fnf) {
+		    System.out.println(fnf.toString());
+		    System.exit(1);
+		}
+		showWindow(input);
     }
 
     public void showWindow(InputStream input) {
 
-	Parser program = new Parser(input,System.err);
-	try {
-	    program.parse();
-	} catch(Exception ex) {
-	    System.err.println("Exception: " + ex.getMessage());
-	    ex.printStackTrace(System.err);
-	    System.exit(1);
-	}
-
-	Graph graph = null;
-	graph = program.getGraph();
-
-	graph.setEditable(true);
-	graph.setErrorWriter(new PrintWriter(System.err,true));
-
-	frame = new DotViewerFrame(graph, this, width, height, x_offset, y_offset, text_height);
-	frame.show();
-	frame.repaint();
+		Parser program = new Parser(input,System.err);
+		try {
+		    program.parse();
+		} catch(Exception ex) {
+		    System.err.println("Exception: " + ex.getMessage());
+		    ex.printStackTrace(System.err);
+		    System.exit(1);
+		}
+	
+		Graph graph = null;
+		graph = program.getGraph();
+	
+		graph.setEditable(true);
+		graph.setErrorWriter(new PrintWriter(System.err,true));
+	
+		frame = new DotViewerFrame(graph, this, width, height, x_offset, y_offset, text_height);
+		frame.show();
+		frame.repaint();
     }
 
     public void displayText(String msg) {
