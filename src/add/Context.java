@@ -533,6 +533,7 @@ public abstract class Context {
  
 	    	PrintWriter process_in = null;
 	    	BufferedReader process_out = null;
+	    	BufferedReader process_err = null;
 	    	
 	    	try {
 	    		// Open files for reading and writing
@@ -543,6 +544,8 @@ public abstract class Context {
 	    		process_in  = new PrintWriter(pros.getOutputStream(), true);
 	    		process_in.close(); // Need to close input stream so process exits!!!
 	    		
+	    		process_err = new BufferedReader(new InputStreamReader(pros.getErrorStream()));
+	    		
 	    		currentValuesProb = new Hashtable<String, Double>();
 				currentValuesW = new Hashtable<String, Double>();
 	    		
@@ -551,6 +554,11 @@ public abstract class Context {
 	    		// Provide input to process (could come from any stream)
 	    		String temp = null;
 
+	    		while ((temp = process_err.readLine()) != null)
+	    			System.err.println(temp);
+	    		
+	    		process_err.close();
+	    		
 	    		while ((temp = process_out.readLine()) != null)
 	    			lines.add(temp);    		
 
@@ -600,6 +608,7 @@ public abstract class Context {
 	    		
 	    		int amplExitValue = pros.exitValue();
 	    		
+	    		pros.destroy();
 	    		new File(NAME_FILE_AMPL).delete();
 	    		
 				if (amplExitValue < 0 || obj == null)
@@ -625,6 +634,7 @@ public abstract class Context {
 				try {
 					if (process_in != null) process_in.close();
 					if (process_out != null) process_out.close();
+					if (process_err != null) process_err.close();
 				} catch (IOException e) {
 					e.printStackTrace(System.err);
 				}
