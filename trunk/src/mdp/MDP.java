@@ -613,12 +613,7 @@ public abstract class MDP {
     		valueiPlus1DD = context.apply(valueiPlus1DD, context.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
     		valueiPlus1DD = context.apply(valueiPlus1DD, this.rewardDD, Context.SUM);
     				
-    		DiffDD = context.apply(valueiPlus1DD, valueiDD, Context.SUB);
-    		Double maxDiff = (Double) context.apply(DiffDD, Context.MAXVALUE);
-    		Double minDiff = (Double) context.apply(DiffDD, Context.MINVALUE);
-    		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
- 
-    		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
+    		if (checkConvergencySpudd()){
     			 System.out.println("Terminate after " + numIterations + " iterations");
     			 keepIterating = false;
     		}
@@ -1742,8 +1737,12 @@ public abstract class MDP {
 
 		return perf;
 	}
-		
+	
 	private boolean checkConvergencyForGreedyGraphFactored(Integer V, State state) {
+		return checkConvergencyForGreedyGraphFactored(V, state, true);
+	}
+	
+	private boolean checkConvergencyForGreedyGraphFactored(Integer V, State state, boolean remap) {
 		Stack<State> statesToVisit = new Stack<State>();
 		ArrayList<State> visitedStates = new ArrayList<State>();
 		
@@ -1753,8 +1752,10 @@ public abstract class MDP {
 			state = statesToVisit.pop();
 			visitedStates.add(state);
 			
-			TreeMap<Integer, Boolean> remappedVars = remapWithPrimes(state.getValues());
-			double currentValue = context.getValueForStateInContext(V, remappedVars, null, null);;
+			TreeMap<Integer, Boolean> vars = state.getValues();
+			if (remap) vars = remapWithPrimes(vars);
+			
+			double currentValue = context.getValueForStateInContext(V, vars, null, null);
 			
 			Pair result = this.computeVUpper(state.getValues());
 			double nextValue = (Double) result.get_o2();
@@ -3980,13 +3981,9 @@ public abstract class MDP {
 
     		valueiPlus1DD = context.apply(valueiPlus1DD, context.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
     		valueiPlus1DD = context.apply(valueiPlus1DD, this.rewardDD, Context.SUM);
-    				
-    		DiffDD = context.apply(valueiPlus1DD, valueiDD, Context.SUB);
-    		Double maxDiff = (Double) context.apply(DiffDD, Context.MAXVALUE);
-    		Double minDiff = (Double) context.apply(DiffDD, Context.MINVALUE);
-    		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
  
-    		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
+    		//if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
+    		if (checkConvergencySpudd()) {
     			 System.out.println("Terminate after " + numIterations + " iterations");
     			 keepIterating = false;
     		}
@@ -4028,6 +4025,55 @@ public abstract class MDP {
     	flushCaches(null);
     	
         return contNumNodes;
+	}
+
+	private boolean checkConvergencySpudd() {
+		VUpper = context.remapIdWithPrime(valueiPlus1DD, hmPrimeRemap);
+		
+		Object DiffDD = context.apply(valueiPlus1DD, valueiDD, Context.SUB);
+//		
+//		Double maxDiff = (Double) context.apply(DiffDD, Context.MAXVALUE);
+//		Double minDiff = (Double) context.apply(DiffDD, Context.MINVALUE);
+//		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
+//		
+//		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0)
+//			return true;
+//		else
+//			return false;
+		
+		TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
+		State state = new State(initialState);
+		
+		Stack<State> statesToVisit = new Stack<State>();
+		ArrayList<State> visitedStates = new ArrayList<State>();
+		
+		statesToVisit.add(state);
+		
+		while (!statesToVisit.empty()) {
+			state = statesToVisit.pop();
+			visitedStates.add(state);
+
+			if (isDeadEnd(state)) continue;
+			
+			TreeMap<Integer, Boolean> vars = state.getValues();
+			
+			double residual = Math.abs(context.getValueForStateInContext((Integer) DiffDD, vars, null, null));
+			
+			if (residual > epsilon) return false;
+
+			Pair pair = computeVUpper(vars);
+			Action bestAction = (Action) pair.get_o1();
+			
+			List<State> nextStates = this.getSuccessorsFromAction(state, bestAction);
+			
+			for (State nextState : nextStates) {
+				if (visitedStates.contains(nextState)) break;
+				statesToVisit.add(nextState);
+			}
+		}
+		
+		return true;
+
 	}
 	
 	/**
@@ -4080,13 +4126,8 @@ public abstract class MDP {
 
     		valueiPlus1DD = context.apply(valueiPlus1DD, context.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
     		valueiPlus1DD = context.apply(valueiPlus1DD, this.rewardDD, Context.SUM);
-    				
-    		DiffDD = context.apply(valueiPlus1DD, valueiDD, Context.SUB);
-    		Double maxDiff = (Double) context.apply(DiffDD, Context.MAXVALUE);
-    		Double minDiff = (Double) context.apply(DiffDD, Context.MINVALUE);
-    		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
- 
-    		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
+    				 
+    		if (checkConvergencySpudd()){
     			 System.out.println("Terminate after " + numIterations + " iterations");
     			 keepIterating = false;
     		}
@@ -4896,13 +4937,8 @@ public abstract class MDP {
 
     		valueiPlus1DD = context.apply(valueiPlus1DD, context.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
     		valueiPlus1DD = context.apply(valueiPlus1DD, this.rewardDD, Context.SUM);
-    				
-    		DiffDD = context.apply(valueiPlus1DD, valueiDD, Context.SUB);
-    		Double maxDiff = (Double) context.apply(DiffDD, Context.MAXVALUE);
-    		Double minDiff = (Double) context.apply(DiffDD, Context.MINVALUE);
-    		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
  
-    		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
+    		if (checkConvergencySpudd()){
     			 System.out.println("Terminate after " + numIterations + " iterations");
     			 keepIterating = false;
     		}
