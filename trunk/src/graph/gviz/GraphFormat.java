@@ -146,35 +146,35 @@ public class GraphFormat {
 			connector = null;
 	    }
 	    if(connector == null) {
-		try {
-		    //System.out.println("Trying URL");
-		    connector = (new URL("http://www.research.att.com/~john/cgi-bin/format-graph")).openConnection();
-		    URLConnection urlConn = (URLConnection)connector;
-		    urlConn.setDoInput(true);
-		    urlConn.setDoOutput(true);
-		    urlConn.setUseCaches(false);
-		    urlConn.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
-		} catch(Exception ex) {
-		    System.err.println("Exception while setting up URLConnection: " + ex.getMessage() + "\nLayout not performed.");
-		    connector = null;
-		}
+			try {
+			    //System.out.println("Trying URL");
+			    connector = (new URL("http://www.research.att.com/~john/cgi-bin/format-graph")).openConnection();
+			    URLConnection urlConn = (URLConnection)connector;
+			    urlConn.setDoInput(true);
+			    urlConn.setDoOutput(true);
+			    urlConn.setUseCaches(false);
+			    urlConn.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
+			} catch(Exception ex) {
+			    System.err.println("Exception while setting up URLConnection: " + ex.getMessage() + "\nLayout not performed.");
+			    connector = null;
+			}
 	    }
 	    if(connector != null) {
 			if(!GrappaSupport.filterGraph(g,connector)) {
 			    System.err.println("ERROR: somewhere in filterGraph");
 			}
-		if(connector instanceof Process) {
-		    try {
-				int code = ((Process)connector).waitFor();
-				if(code != 0) {
-				    System.err.println("WARNING: proc exit code is: " + code);
-				}
-		    } catch(InterruptedException ex) {
-				System.err.println("Exception while closing down proc: " + ex.getMessage());
-				ex.printStackTrace(System.err);
-		    }
-		}
-		connector = null;
+			if(connector instanceof Process) {
+			    try {
+					int code = ((Process)connector).waitFor();
+					if(code != 0) {
+					    System.err.println("WARNING: proc exit code is: " + code);
+					}
+			    } catch(InterruptedException ex) {
+					System.err.println("Exception while closing down proc: " + ex.getMessage());
+					ex.printStackTrace(System.err);
+			    }
+			}
+			connector = null;
 	    } else {
 			System.out.println("Could not access local or web-based graph layout.");
 			System.exit(1);
