@@ -1752,6 +1752,8 @@ public abstract class MDP {
 			state = statesToVisit.pop();
 			visitedStates.add(state);
 			
+			if (isDeadEnd(state)) continue;
+			
 			TreeMap<Integer, Boolean> vars = state.getValues();
 			if (remap) vars = remapWithPrimes(vars);
 			
