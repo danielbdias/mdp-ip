@@ -365,7 +365,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			visited.push(state);
 			
 			if (inGoalSet(state.getValues())) {
-				//System.out.println("Found goal state: " + state);
+				System.out.println("Found goal state: " + state);
 				//((HashMap<State,Double>) this.VUpper).put(state, 0.0);
 				break;
 			}
@@ -407,8 +407,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		if (solvedStates.contains(state) || inGoalSet(state.getValues())) {
 			while (!visited.empty()) {
 				state = visited.pop();
-				//if (!checkSolved((HashMap) VUpper, solvedStates, state, true))
-				if (!checkSolved((HashMap) VUpper, solvedStates, state, false))
+				if (!checkSolved((HashMap) VUpper, solvedStates, state, true))
+//				if (!checkSolved((HashMap) VUpper, solvedStates, state, false))
 					break;
 			}	
 		}
