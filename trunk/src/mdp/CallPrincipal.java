@@ -73,11 +73,11 @@ public class CallPrincipal {
 			String[] anotherArgs = {
 					"D://Users//Daniel//workspace//mdp-ip//problemsMDPIP//ssp_uni_ring_IP_" + i  + ".net",
 					Integer.toString(i),
-					"1.0",
+					"0.9",
 					"0.01"
 				};
 			
-			SSPSysAdminUniRingGen.main(anotherArgs);
+			ConvertedSSPSysAdminUniRingGen.main(anotherArgs);
 		}
 	}
 }
