@@ -358,11 +358,9 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		
 		while (true) {
 			if (solvedStates.contains(state)) { 
-				//System.out.println("Found solved state: " + state);
+				System.out.println("Found solved state: " + state);
 				break; //ended because reached a solved state
 			}
-			
-			visited.push(state);
 			
 			if (inGoalSet(state.getValues())) {
 				System.out.println("Found goal state: " + state);
@@ -376,14 +374,19 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				break;
 			}
 			
+			visited.push(state);
+			
 			//this compute maxUpperUpdated and actionGreedy
 			Action greedyAction = updateVUpper(state); // Here we fill probNature
 			
 			contUpperUpdates++;
 			
-			//System.out.println("action greedy: " + greedyAction.getName());
+//			System.out.println("state: " + state);
+//			System.out.println("action greedy: " + greedyAction.getName());
 			
 			context.workingWithParameterized = context.workingWithParameterizedBef;
+			
+//			state = new State(chooseNextStateRTDP(state.getValues(), greedyAction, randomGenNextState));
 			state = chooseNextStateRTDPEnum(state, greedyAction, randomGenNextState, posActionGreedy);
 			
 			//System.out.println("next state: " + state);
@@ -404,23 +407,26 @@ public class ShortSightedSSPIP extends MDP_Fac {
             }
 		}
 		
-		if (solvedStates.contains(state) || inGoalSet(state.getValues())) {
-			while (!visited.empty()) {
-				state = visited.pop();
-				if (!checkSolved((HashMap) VUpper, solvedStates, state, true))
+		this.printEnumValueFunction((HashMap<State,Double>) this.VUpper);
+		
+//		if (solvedStates.contains(state) || inGoalSet(state.getValues())) {
+//			while (!visited.empty()) {
+//				state = visited.pop();
+////				if (!checkSolved((HashMap) VUpper, solvedStates, state, true))
 //				if (!checkSolved((HashMap) VUpper, solvedStates, state, false))
-					break;
-			}	
-		}
+//					break;
+//			}	
+//		}
 		
 //		System.out.println("***************************************************");
 //		System.out.println(" TRIAL END ");
 //		System.out.println("***************************************************");
-		//this.printEnumValueFunction((HashMap<State,Double>) this.VUpper);
+//		this.printEnumValueFunction((HashMap<State,Double>) this.VUpper);
 		
 		totalTrialTime = GetElapsedTime();
-        totalTrialTimeSec = totalTrialTime / 1000;		
-		return totalTrialTimeSec;
+        totalTrialTimeSec = totalTrialTime / 1000;
+
+        return totalTrialTimeSec;
 	}	
 
 	private long brtdpEnumTrial(State state, int maxDepth, double tau, Random randomGenNextState, long timeOut, long initialTime, String initialStateLogPath)
@@ -536,6 +542,8 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			
 			if (!vUpper.containsKey(goalState))
 				vUpper.put(goalState, 0.0);
+			
+//			solvedStates.add(goalState);
 		}		
 		
 		VUpper = new HashMap<State,Double>(vUpper);

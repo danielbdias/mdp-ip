@@ -1861,6 +1861,9 @@ public abstract class MDP {
 	        totalTrialTimeSec = totalTrialTime / 1000;		
 			return totalTrialTimeSec;
 		}
+
+		HashMap<State, Double> vupper = this.convertValueFunctionAddToHashMap(this.VUpper);
+		this.printEnumValueFunction(vupper);
 		
 		// Trying to label the visited nodes from the last to the first
 		while (!visited.empty()) {
@@ -2050,7 +2053,7 @@ public abstract class MDP {
 		System.out.println("After flush,freeMemory: "+RUNTIME.freeMemory());
 	}
 	
-	private TreeMap<Integer, Boolean> chooseNextStateRTDP(TreeMap<Integer, Boolean> state, Action actionGreedy, Random randomGenerator) {
+	protected TreeMap<Integer, Boolean> chooseNextStateRTDP(TreeMap<Integer, Boolean> state, Action actionGreedy, Random randomGenerator) {
 		return sampling(state, actionGreedy, randomGenerator);
 	}
 		
@@ -2990,36 +2993,10 @@ public abstract class MDP {
 		Double value, sum = 0d;
 			
 		if (context.workingWithParameterized) {
-			if (!useVerticesSolver) {
-				if (typeSampledRTDPMDPIP == 4)
-					probNature = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
-				else if (typeSampledRTDPMDPIP == 5)
-					probNature = context.probSample;	
-			}
-			else {
-				if (typeSampledRTDPMDPIP == 4) {
-					Iterator i = succState.getNextStatesPoly().keySet().iterator();
-					
-					Set<String> parameters = new HashSet<String>();
-					
-					while (i.hasNext()) {
-						State s = (State) i.next();
-						
-						String[] tmp = this.getParameterFromPolynomial(succState.getNextStatesPoly().get(s));
-						for (String p : tmp) parameters.add(p);
-					}
-					
-//					String polytopeCacheKey = this.getPolytopeCacheKey(parameters.toArray(new String[0]));
-//					
-//					PolytopePoint point = null;
-//					
-//					if (!this.cachedPolytopes.containsKey(polytopeCacheKey))
-//						this.addToPolytopeCache(iD2ADD, varPrime);
-//					
-//					List<PolytopePoint> vertices = this.cachedPolytopes.get(polytopeCacheKey);
-//					point = getRandomPointFromPolytopeVertices(vertices);
-				} 
-			}
+			if (typeSampledRTDPMDPIP == 4)
+				probNature = context.sampleProbabilitiesSubjectTo(NAME_FILE_CONTRAINTS);
+			else if (typeSampledRTDPMDPIP == 5)
+				probNature = context.probSample;			
 		}
 		
 		double ran = randomGenerator.nextDouble();
@@ -3157,7 +3134,7 @@ public abstract class MDP {
         if (succ == null) {
         	//succ = computeSuccesorsProbEnum(state, iD2ADD);
         	succ = computeSuccessorsProb(state, iD2ADD);
-        	
+        	        	
         	if (succ.getNextStatesProbs().size() == 0 && succ.getNextStatesPoly().size() == 0){
         		System.out.println("Not Successors for state: " + state);
         		System.exit(1);
@@ -3345,17 +3322,40 @@ public abstract class MDP {
 			
 			State nextState = new State(remappedVars, mName2Action.size());
 			
-//			if (context.workingWithParameterized) {
-				Polynomial poly = (Polynomial) context.getValuePolyForStateInContext(jointProbADD, successorState.getValues(), null, null);
-				succ.getNextStatesPoly().put(nextState, poly);
-//			}
-//			else {
-//				Double value = context.getValueForStateInContext(jointProbADD, successorState.getValues(), null, null);
-//				succ.getNextStatesProbs().put(nextState, value);
-//			}
+			Polynomial poly = getTransitionProbabilityForState(nextState, iD2ADD);
+			succ.getNextStatesPoly().put(nextState, poly);
 		}
-				
+		
 		return succ;
+	}
+	
+	private Polynomial getTransitionProbabilityForState(State state, TreeMap iD2ADD) {
+		Polynomial result = new Polynomial(1.0, new Hashtable(), context);
+		
+		TreeMap<Integer, Boolean> stateAsTreeMap = state.getValues();
+		
+		Integer multCPTs = (Integer) this.context.getTerminalNode(1.0);
+		
+		Iterator x = this.hmPrimeRemap.entrySet().iterator();
+		
+		while (x.hasNext()){
+			Map.Entry xiprimeme = (Map.Entry) x.next();
+			Integer xiprime = (Integer) xiprimeme.getValue();
+			Integer cpt_a_xiprime = (Integer) iD2ADD.get(xiprime);
+
+			context.printPaths(cpt_a_xiprime);
+	    	Polynomial probTrue = (Polynomial) context.getValuePolyForStateInContext(cpt_a_xiprime, stateAsTreeMap, xiprime, true);
+			
+	    	if (stateAsTreeMap.get(xiprime + this.numVars))
+				result = result.prodPolynomial(probTrue, context);
+			else {
+				Polynomial polynomial1 = new Polynomial(1.0, new Hashtable(), context);
+				Polynomial probFalse = polynomial1.subPolynomial(probTrue);
+				result = result.prodPolynomial(probFalse, context);
+			}
+		}
+		
+		return result;
 	}
 	
 	private SuccProbabilitiesM computeSuccesorsProbEnum(State state, TreeMap iD2ADD) {
