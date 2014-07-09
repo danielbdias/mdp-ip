@@ -2017,6 +2017,38 @@ public abstract class MDP {
 		return multCPTs;
 	}
 	
+	//Calculo de sucessores para o RTDP enumerativo
+	private int computeSuccessorsEnum(State state, TreeMap iD2ADD) {
+		TreeMap<Integer, Boolean> stateAsTreeMap = state.getValues();
+		
+		Integer multCPTs = (Integer) this.context.getTerminalNode(1.0);
+		Integer xiprime;
+		
+		Iterator x = this.hmPrimeRemap.entrySet().iterator();
+		
+		while (x.hasNext()){
+			Map.Entry xiprimeme = (Map.Entry) x.next();
+			xiprime = (Integer) xiprimeme.getValue();
+			Integer cpt_a_xiprime = (Integer) iD2ADD.get(xiprime);
+			
+			Object Fh,Fl;
+			
+	    	Polynomial probTrue, probFalse;
+			
+	    	probTrue = (Polynomial) context.getValuePolyForStateInContext(cpt_a_xiprime, stateAsTreeMap, xiprime, true);	
+			Polynomial polynomial1 = new Polynomial(1.0, new Hashtable(), context);
+			probFalse = polynomial1.subPolynomial((Polynomial)probTrue);
+			Fh = context.getTerminalNode(probTrue);
+			Fl = context.getTerminalNode(probFalse);
+    		
+			Integer newADD = (Integer) this.context.getInternalNode(xiprime, Fh, Fl);
+			
+			multCPTs = (Integer) context.apply(multCPTs, newADD, context.PROD);
+		}
+		
+		return multCPTs;
+	}
+	
 	public void dumpADDtoFile(Object V){
 		System.out.println("Dumping Value");
 		context.dump(context.remapIdWithOutPrime(V, hmPrime2IdRemap),NAME_FILE_VALUE);		
@@ -3307,7 +3339,7 @@ public abstract class MDP {
 	}
 	
 	protected SuccProbabilitiesM computeSuccessorsProb(State state, TreeMap iD2ADD) {
-		int jointProbADD = this.computeSuccessors(state, iD2ADD);
+		int jointProbADD = this.computeSuccessorsEnum(state, iD2ADD);
 		
 		StateEnumerator enumerator = new StateEnumerator(new ArrayList<Integer>(this.hmPrimeRemap.values()));
 		context.enumeratePaths(jointProbADD, enumerator);
@@ -3322,40 +3354,11 @@ public abstract class MDP {
 			
 			State nextState = new State(remappedVars, mName2Action.size());
 			
-			Polynomial poly = getTransitionProbabilityForState(nextState, iD2ADD);
+			Polynomial poly = (Polynomial) context.getValuePolyForStateInContext(jointProbADD, successorState.getValues(), null, false);
 			succ.getNextStatesPoly().put(nextState, poly);
 		}
 		
 		return succ;
-	}
-	
-	private Polynomial getTransitionProbabilityForState(State state, TreeMap iD2ADD) {
-		Polynomial result = new Polynomial(1.0, new Hashtable(), context);
-		
-		TreeMap<Integer, Boolean> stateAsTreeMap = state.getValues();
-		
-		Integer multCPTs = (Integer) this.context.getTerminalNode(1.0);
-		
-		Iterator x = this.hmPrimeRemap.entrySet().iterator();
-		
-		while (x.hasNext()){
-			Map.Entry xiprimeme = (Map.Entry) x.next();
-			Integer xiprime = (Integer) xiprimeme.getValue();
-			Integer cpt_a_xiprime = (Integer) iD2ADD.get(xiprime);
-
-			context.printPaths(cpt_a_xiprime);
-	    	Polynomial probTrue = (Polynomial) context.getValuePolyForStateInContext(cpt_a_xiprime, stateAsTreeMap, xiprime, true);
-			
-	    	if (stateAsTreeMap.get(xiprime + this.numVars))
-				result = result.prodPolynomial(probTrue, context);
-			else {
-				Polynomial polynomial1 = new Polynomial(1.0, new Hashtable(), context);
-				Polynomial probFalse = polynomial1.subPolynomial(probTrue);
-				result = result.prodPolynomial(probFalse, context);
-			}
-		}
-		
-		return result;
 	}
 	
 	private SuccProbabilitiesM computeSuccesorsProbEnum(State state, TreeMap iD2ADD) {
