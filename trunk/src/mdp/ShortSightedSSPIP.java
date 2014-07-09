@@ -407,16 +407,16 @@ public class ShortSightedSSPIP extends MDP_Fac {
             }
 		}
 		
-		this.printEnumValueFunction((HashMap<State,Double>) this.VUpper);
+//		this.printEnumValueFunction((HashMap<State,Double>) this.VUpper);
 		
-//		if (solvedStates.contains(state) || inGoalSet(state.getValues())) {
-//			while (!visited.empty()) {
-//				state = visited.pop();
-////				if (!checkSolved((HashMap) VUpper, solvedStates, state, true))
-//				if (!checkSolved((HashMap) VUpper, solvedStates, state, false))
-//					break;
-//			}	
-//		}
+		if (solvedStates.contains(state) || inGoalSet(state.getValues())) {
+			while (!visited.empty()) {
+				state = visited.pop();
+//				if (!checkSolved((HashMap) VUpper, solvedStates, state, true))
+				if (!checkSolved((HashMap) VUpper, solvedStates, state, false))
+					break;
+			}	
+		}
 		
 //		System.out.println("***************************************************");
 //		System.out.println(" TRIAL END ");
