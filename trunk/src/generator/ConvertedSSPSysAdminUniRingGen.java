@@ -8,6 +8,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 import mdp.Config;
 
@@ -77,8 +78,54 @@ public class ConvertedSSPSysAdminUniRingGen {
 
 	private static List<String> generateGoalStates(Integer computers) {
 		List<String> goals = new ArrayList<String>();
-		goals.add(String.format("(%s)", GOAL_VARIABLE));
+		
+		for (List<String> combination : getComputerCombinations(computers)) {		
+			String combinationAsString = "";
+			
+			for (int i = 0; i < combination.size(); i++)
+				combinationAsString += (" " + combination.get(i));
+			
+			goals.add(String.format("(%s%s)", GOAL_VARIABLE, combinationAsString));
+		}
+		
 		return goals;
+	}
+	
+	private static List<List<String>> getComputerCombinations(Integer numberOfComputers) {
+		List<String> computers = new ArrayList<String>();
+		
+		for (int i = 1; i <= numberOfComputers; i++) 
+			computers.add(String.format(VARIABLE_MASK, i));
+		
+		List<List<String>> result = new ArrayList<List<String>>();
+		
+		getComputerCombinationsRecursive(result, computers, new HashMap<String, Boolean>(), 0);
+		
+		return result;
+	}
+	
+	private static void getComputerCombinationsRecursive(List<List<String>> result, List<String> computers, HashMap<String, Boolean> composition, int computerIndex) {	
+		if (computerIndex == computers.size())
+		{
+			List<String> computersToAdd = new ArrayList<String>();
+			
+			for (String key : composition.keySet()) {
+				if (composition.get(key))
+					computersToAdd.add(key);
+			}
+			
+			result.add(computersToAdd);
+		}
+		else {
+		
+			String cell = computers.get(computerIndex);
+			
+			composition.put(cell, true);
+			getComputerCombinationsRecursive(result, computers, composition, computerIndex + 1);
+			
+			composition.put(cell, false);
+			getComputerCombinationsRecursive(result, computers, composition, computerIndex + 1);
+		}
 	}
 	
 	private static void generateFormattedDomainFile(File outputFile,
@@ -183,18 +230,20 @@ public class ConvertedSSPSysAdminUniRingGen {
 		return constraints;
 	}
 	
-	private static String generateReward(Integer computers) {	
-//		String beginRew = "(" + GOAL_VARIABLE + " ";
-//		String endRew = ")";
-//		
-//		for (int i = 1; i <= computers; i++) {
-//			beginRew += "(" + String.format(VARIABLE_MASK, i) + " ";
-//			endRew += " (-1) )";
-//		}
-//		
-//		return beginRew + "(0)" + endRew;
-		
-		return String.format("(%s (0) (-1))", GOAL_VARIABLE);
+	private static String generateReward(Integer computers) {		
+		return String.format("(%s (0) %s)", GOAL_VARIABLE, generateRecursiveReward(computers, 1, 0));
+	}
+	
+	private static String generateRecursiveReward(Integer computers, Integer currentComputer, Integer currentReward) {
+		if (currentComputer == computers) {
+			return String.format("(c%d (%d) (%d))", currentComputer, currentReward, currentReward - 1);
+		}
+		else {
+			String trueBranch = generateRecursiveReward(computers, currentComputer + 1, currentReward);
+			String falseBranch = generateRecursiveReward(computers, currentComputer + 1, currentReward - 1);
+			
+			return String.format("(c%d %s %s)", currentComputer, trueBranch, falseBranch);
+		}
 	}
 	
 	private static String generateVariables(Integer computers) {
@@ -230,7 +279,7 @@ public class ConvertedSSPSysAdminUniRingGen {
 			add = String.format(VARIABLE_MASK, i) + " ";
 			
 			if (i == index) {
-				add += String.format("(%1$s ([0.0]) ([1.0]))", GOAL_VARIABLE);
+				add += String.format("(%1$s (c%2$d ([1.0]) ([0.0])) ([1.0]))", GOAL_VARIABLE, i);
 			}
 			else {				
 				Integer lastComputer = i - 1;
@@ -242,7 +291,7 @@ public class ConvertedSSPSysAdminUniRingGen {
 				String trueTransition = String.format("(c%1$d ([1*p%2$d]) ([0.5*p%2$d]))", lastComputer, firstParam);
 				String falseTransition = String.format("(c%1$d ([1*p%2$d]) ([0.5*p%2$d]))", lastComputer, secondParam);
 				
-				add += String.format("(%1$s ([0.0]) (c%2$d %3$s %4$s ) )", GOAL_VARIABLE, i, trueTransition, falseTransition);
+				add += String.format("(%1$s (c%2$d ([1.0]) ([0.0])) (c%2$d %3$s %4$s ) )", GOAL_VARIABLE, i, trueTransition, falseTransition);
 			}
 			
 			adds.add(add);
