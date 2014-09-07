@@ -358,18 +358,18 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		
 		while (true) {
 			if (solvedStates.contains(state)) { 
-				System.out.println("Found solved state: " + state);
+//				System.out.println("Found solved state: " + state);
 				break; //ended because reached a solved state
 			}
 			
 			if (inGoalSet(state.getValues())) {
-				System.out.println("Found goal state: " + state);
+//				System.out.println("Found goal state: " + state);
 				//((HashMap<State,Double>) this.VUpper).put(state, 0.0);
 				break;
 			}
 			
 			if (isDeadEnd(state)) {
-				formattedPrintln("Reached a deadend at state: " + state);
+//				formattedPrintln("Reached a deadend at state: " + state);
 				((HashMap<State,Double>) this.VUpper).put(state, NEGATIVE_INFINITY);
 				break;
 			}
