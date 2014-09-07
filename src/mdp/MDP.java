@@ -1851,6 +1851,15 @@ public abstract class MDP {
 		    	Double value = context.getValueForStateInContext((Integer) this.VUpper, remappedInitialState, null, null);
 		    	        	    	
 		    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
+		    	
+		    	String nodesPath = initialStateLogPath.substring(0, initialStateLogPath.length() - 4) + "_nodes.txt";
+		    	
+		    	double maxTeoricalNodes = Math.pow(2.0, this.numVars);
+		    	int currentNodes = context.contNumberNodes(this.VUpper);
+		    	
+		    	double capacityUsed = currentNodes / maxTeoricalNodes;
+		    	
+		    	this.logValueInFile("caminho arquivo log", capacityUsed, elapsedTime);
             }
 		}
 		/* END TRIAL*/
