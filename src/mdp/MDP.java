@@ -3988,7 +3988,7 @@ public abstract class MDP {
     		valueiPlus1DD = context.apply(valueiPlus1DD, context.getTerminalNode(this.bdDiscount.doubleValue()), Context.PROD);
     		valueiPlus1DD = context.apply(valueiPlus1DD, this.rewardDD, Context.SUM);
  
-    		//if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
+//    		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0 && !forceNumberIt){
     		if (checkConvergencySpudd()) {
     			 System.out.println("Terminate after " + numIterations + " iterations");
     			 keepIterating = false;
@@ -4037,48 +4037,48 @@ public abstract class MDP {
 		VUpper = context.remapIdWithPrime(valueiPlus1DD, hmPrimeRemap);
 		
 		Object DiffDD = context.apply(valueiPlus1DD, valueiDD, Context.SUB);
+		
+		Double maxDiff = (Double) context.apply(DiffDD, Context.MAXVALUE);
+		Double minDiff = (Double) context.apply(DiffDD, Context.MINVALUE);
+		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
+		
+		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0)
+			return true;
+		else
+			return false;
+		
+//		TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
+//		State state = new State(initialState);
 //		
-//		Double maxDiff = (Double) context.apply(DiffDD, Context.MAXVALUE);
-//		Double minDiff = (Double) context.apply(DiffDD, Context.MINVALUE);
-//		Double BellErro = Math.max(maxDiff.doubleValue(), -minDiff.doubleValue());
+//		Stack<State> statesToVisit = new Stack<State>();
+//		ArrayList<State> visitedStates = new ArrayList<State>();
 //		
-//		if (BellErro.compareTo(this.bdTolerance.doubleValue()) < 0)
-//			return true;
-//		else
-//			return false;
-		
-		TreeMap<Integer, Boolean> initialState = listInitialStates.get(0);
-		State state = new State(initialState);
-		
-		Stack<State> statesToVisit = new Stack<State>();
-		ArrayList<State> visitedStates = new ArrayList<State>();
-		
-		statesToVisit.add(state);
-		
-		while (!statesToVisit.empty()) {
-			state = statesToVisit.pop();
-			visitedStates.add(state);
-
-			if (isDeadEnd(state)) continue;
-			
-			TreeMap<Integer, Boolean> vars = state.getValues();
-			
-			double residual = Math.abs(context.getValueForStateInContext((Integer) DiffDD, vars, null, null));
-			
-			if (residual > epsilon) return false;
-
-			Pair pair = computeVUpper(vars);
-			Action bestAction = (Action) pair.get_o1();
-			
-			List<State> nextStates = this.getSuccessorsFromAction(state, bestAction);
-			
-			for (State nextState : nextStates) {
-				if (visitedStates.contains(nextState)) break;
-				statesToVisit.add(nextState);
-			}
-		}
-		
-		return true;
+//		statesToVisit.add(state);
+//		
+//		while (!statesToVisit.empty()) {
+//			state = statesToVisit.pop();
+//			visitedStates.add(state);
+//
+//			if (isDeadEnd(state)) continue;
+//			
+//			TreeMap<Integer, Boolean> vars = state.getValues();
+//			
+//			double residual = Math.abs(context.getValueForStateInContext((Integer) DiffDD, vars, null, null));
+//			
+//			if (residual > epsilon) return false;
+//
+//			Pair pair = computeVUpper(vars);
+//			Action bestAction = (Action) pair.get_o1();
+//			
+//			List<State> nextStates = this.getSuccessorsFromAction(state, bestAction);
+//			
+//			for (State nextState : nextStates) {
+//				if (visitedStates.contains(nextState)) break;
+//				statesToVisit.add(nextState);
+//			}
+//		}
+//		
+//		return true;
 
 	}
 	
@@ -4320,6 +4320,11 @@ public abstract class MDP {
 
 		context.workingWithParameterizedBef = context.workingWithParameterized;
 		
+		if (initialStateLogPath != null) {            
+            State initialState = new State(listInitialStates.get(0), mName2Action.size());
+	    	this.logValueInFile(initialStateLogPath, maxUpper, 0);
+        }
+		
 		long initialTime = System.currentTimeMillis();
 		
 		while (totalTrialTimeSec <= timeOut){	
@@ -4332,7 +4337,12 @@ public abstract class MDP {
 				break;
 			
 			//do trial //////////////////////////////////
-			while (!inGoalSet(state.getValues()) && (state != null) && depth < maxDepth) {
+			while (!inGoalSet(state.getValues()) && (state != null)) {
+				if (isDeadEnd(state)) {
+					((HashMap<State,Double>) this.VUpper).put(state, NEGATIVE_INFINITY);
+					break;
+				}
+				
 				if (totalTrialTimeSec > timeOut) break;
 				
 				depth++;
@@ -4362,8 +4372,11 @@ public abstract class MDP {
 			//do optimization
 			while (!visited.empty()) {
 				state = visited.pop();
-				updateVUpper(state);
-				contUpperUpdates++;
+				
+				if (!isDeadEnd(state)) {
+					updateVUpper(state);
+					contUpperUpdates++;
+				}
 			}
 			
 			totalTrialTime = GetElapsedTime();
@@ -4575,15 +4588,15 @@ public abstract class MDP {
 		
 		long initialTime = System.currentTimeMillis();
 		
-//		while (totalTrialTimeSec <= timeOut){	
-		while (true){
+		while (totalTrialTimeSec <= timeOut){	
+//		while (true){
 			int depth = 0;
 			visited.clear();// clear visited states stack
 			
 			TreeMap<Integer,Boolean> state = sampleInitialStateFromList(randomGenInitial); 
 
-			if (checkConvergency && this.checkConvergencyForGreedyGraphFactored((Integer) VUpper, new State(state))) 
-				break; //end the trials
+//			if (checkConvergency && this.checkConvergencyForGreedyGraphFactored((Integer) VUpper, new State(state))) 
+//				break; //end the trials
 			
 			//do trial //////////////////////////////////
 //			while (!inGoalSet(state) && (state !=null) && depth < maxDepth) {
@@ -4592,7 +4605,7 @@ public abstract class MDP {
 					updateValueBranch(state, 'u', NEGATIVE_INFINITY);
 					break;
 				}
-//				if (totalTrialTimeSec > timeOut) break;
+				if (totalTrialTimeSec > timeOut) break;
 				
 				depth++;
 				visited.push(state);

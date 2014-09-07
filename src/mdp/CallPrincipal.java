@@ -38,21 +38,21 @@ public class CallPrincipal {
 //		}
 		
 //		int[] instances = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
-//		int[] instances = { 1, 2, 3, 4, 5 };
+		int[] instances = { 1, 2, 3, 4, 5 };
 		//int[] instances = { 2 };
 		
-//		for (int i : instances) {
-//			int numberOfVariables = TriangleTireWorldGen.getNumberOfVariablesForInstance(i);
-//			
-//			String[] anotherArgs = {
-//					"D://Users//Daniel//workspace//mdp-ip//problemsMDPIP//ssp_triangle_tireworld_" + numberOfVariables  + ".net",
-//					Integer.toString(i),
-//					"1.0",
-//					"0.01"
-//				};
-//			
-//			TriangleTireWorldGen.main(anotherArgs);
-//		}
+		for (int i : instances) {
+			int numberOfVariables = TriangleTireWorldGen.getNumberOfVariablesForInstance(i);
+			
+			String[] anotherArgs = {
+					"//home//daniel//workspaces//java//mdpip//ADD//problemsMDPIP//ssp_triangle_tireworld_" + numberOfVariables  + ".net",
+					Integer.toString(i),
+					"1.0",
+					"0.01"
+				};
+			
+			TriangleTireWorldGen.main(anotherArgs);
+		}
 		
 //		for (int i : instances) {
 //			int numberOfVariables = RelaxedTriangleTireWorldGen.getNumberOfVariablesForInstance(i);
@@ -67,17 +67,17 @@ public class CallPrincipal {
 //			RelaxedTriangleTireWorldGen.main(anotherArgs);
 //		}
 		
-		int[] computers = { 2, 3, 4, 5, 6, 7, 8 };
-		
-		for (int i : computers) {		
-			String[] anotherArgs = {
-					"D://Users//Daniel//workspace//mdp-ip//problemsMDPIP//ssp_uni_ring_IP_" + i  + ".net",
-					Integer.toString(i),
-					"0.9",
-					"0.01"
-				};
-			
-			ConvertedSSPSysAdminUniRingGen.main(anotherArgs);
-		}
+//		int[] computers = { 2, 3, 4, 5, 6, 7, 8 };
+//		
+//		for (int i : computers) {		
+//			String[] anotherArgs = {
+//					"D://Users//Daniel//workspace//mdp-ip//problemsMDPIP//ssp_uni_ring_IP_" + i  + ".net",
+//					Integer.toString(i),
+//					"0.9",
+//					"0.01"
+//				};
+//			
+//			ConvertedSSPSysAdminUniRingGen.main(anotherArgs);
+//		}
 	}
 }
