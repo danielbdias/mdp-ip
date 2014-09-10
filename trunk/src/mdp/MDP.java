@@ -126,6 +126,8 @@ public abstract class MDP {
 	
 	public HashMap<String, List<String>> alphasPerPolytope = new HashMap<String, List<String>>();
 	
+	public HashMap<State, List<State>> successorsCache = new HashMap<State, List<State>>();
+	
 	public int lrsCalls = 0;
 	
 	///////////////////////////////
@@ -1970,7 +1972,11 @@ public abstract class MDP {
 		return state;
 	}
 
-	protected List<State> getSuccessorsFromAction(State state, Action greedyAction) {	
+	protected List<State> getSuccessorsFromAction(State state, Action greedyAction) {
+		
+		if (successorsCache.containsKey(state))
+			return successorsCache.get(state);
+		
 		int successorsADD = this.computeSuccessors(state, greedyAction.tmID2ADD);
 		
 		StateEnumerator enumerator = new StateEnumerator(new ArrayList<Integer>(this.hmPrimeRemap.values()));
@@ -1985,6 +1991,8 @@ public abstract class MDP {
 			
 			list.set(i, new State(remappedVars, mName2Action.size()));
 		}
+		
+		successorsCache.put(state, list);
 		
 		return list;
 	}
