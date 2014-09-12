@@ -1854,14 +1854,14 @@ public abstract class MDP {
 		    	        	    	
 		    	this.logValueInFile(initialStateLogPath, value, elapsedTime);
 		    	
-		    	String nodesPath = initialStateLogPath.substring(0, initialStateLogPath.length() - 4) + "_nodes.txt";
-		    	
-		    	double maxTheoricalNodes = Math.pow(2.0, this.numVars + 1) - 1;
-		    	int currentNodes = context.contNumberNodes(this.VUpper);
-		    	
-		    	double capacityUsed = currentNodes / maxTheoricalNodes;
-		    	
-		    	this.logValueInFile(nodesPath, capacityUsed, elapsedTime);
+//		    	String nodesPath = initialStateLogPath.substring(0, initialStateLogPath.length() - 4) + "_nodes.txt";
+//		    	
+//		    	double maxTheoricalNodes = Math.pow(2.0, this.numVars + 1) - 1;
+//		    	int currentNodes = context.contNumberNodes(this.VUpper);
+//		    	
+//		    	double capacityUsed = currentNodes / maxTheoricalNodes;
+//		    	
+//		    	this.logValueInFile(nodesPath, capacityUsed, elapsedTime);
             }
 		}
 		/* END TRIAL*/
