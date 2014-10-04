@@ -73,6 +73,7 @@ public abstract class Context {
     HashMap probBound=new HashMap();  // String prob -> array[lower,upper]
     
     public long linearSolverElapsedTime = 0;
+    public long nonLinearSolverElapsedTime = 0;
     public int reuseCacheIntNode=0,clash=0, noclash=0,contReuse=0,contNoReuse=0,numberReducedToValue=0,contReuseUsingLattice=0;
     public Hashtable<String, Double> currentValuesProb=new Hashtable<String, Double>();     //  idProb--> valProb
     public Hashtable<String, Double> probSample;     //  idProb--> valProb
@@ -645,11 +646,27 @@ public abstract class Context {
 	     * call the non linear solver and fill currentValuesProb with the probabilities  
 	     */
 	    public Double callNonLinearSolver() {
-	    	return callSolver(true);
+	    	long startTime = System.currentTimeMillis();
+	    	
+	    	double result = callSolver(true);
+	    	
+	    	long elapsedTime = System.currentTimeMillis() - startTime;
+	    	
+	    	this.nonLinearSolverElapsedTime += elapsedTime;
+	    	
+	    	return result;
 		}
 	    
 	    public Double callLinearSolver() {
-	    	return callSolver(false);
+	    	long startTime = System.currentTimeMillis();
+	    	
+	    	double result = callSolver(false);
+	    	
+	    	long elapsedTime = System.currentTimeMillis() - startTime;
+	    	
+	    	this.linearSolverElapsedTime += elapsedTime;
+	    	
+	    	return result;
 		}
 	    
 	    public String[] getParameterFromPolynomial(Polynomial polynomial) {
@@ -1019,8 +1036,6 @@ public abstract class Context {
 		
 		if (objective != null && !objective.isEmpty()) {
 			
-			long initialTime = System.currentTimeMillis();
-			
 			createFileAMPL(objective, NAME_FILE_CONTRAINTS, "min");
 			callLinearSolver();
 			
@@ -1044,8 +1059,6 @@ public abstract class Context {
 			}
 			
 			this.probSample = randomProbabilities;
-			long elapsedTime = System.currentTimeMillis() - initialTime;
-			this.linearSolverElapsedTime += elapsedTime;
 		}
 		
 		return randomProbabilities;
