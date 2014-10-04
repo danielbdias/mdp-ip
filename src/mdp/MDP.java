@@ -1874,7 +1874,7 @@ public abstract class MDP {
 		}
 
 		HashMap<State, Double> vupper = this.convertValueFunctionAddToHashMap(this.VUpper);
-		this.printEnumValueFunction(vupper);
+//		this.printEnumValueFunction(vupper);
 		
 		// Trying to label the visited nodes from the last to the first
 		while (!visited.empty()) {
@@ -1943,7 +1943,7 @@ public abstract class MDP {
 		if (rv) {// Marking all nodes in the closed list as solved
 			while (!closed.empty()) {
 				state = closed.pop();
-				formattedPrintln("SOLVED: " + getStateString(state.getValues()));			
+//				formattedPrintln("SOLVED: " + getStateString(state.getValues()));			
 		        solvedStates.add(state);
 		    }
 		}
@@ -1976,11 +1976,11 @@ public abstract class MDP {
 		
 		String actionName = greedyAction.getName();
 		
-		if (!successorsCache.containsKey(actionName))
-			successorsCache.put(actionName, new HashMap<State, List<State>>());
-		
-		if (successorsCache.get(actionName).containsKey(greedyAction))
-			return successorsCache.get(actionName).get(state);
+//		if (!successorsCache.containsKey(actionName))
+//			successorsCache.put(actionName, new HashMap<State, List<State>>());
+//		
+//		if (successorsCache.get(actionName).containsKey(greedyAction))
+//			return successorsCache.get(actionName).get(state);
 		
 		int successorsADD = this.computeSuccessors(state, greedyAction.tmID2ADD);
 		
@@ -1997,7 +1997,7 @@ public abstract class MDP {
 			list.set(i, new State(remappedVars, mName2Action.size()));
 		}
 		
-		successorsCache.get(actionName).put(state, list);
+//		successorsCache.get(actionName).put(state, list);
 		
 		return list;
 	}
@@ -3185,7 +3185,7 @@ public abstract class MDP {
 		SuccProbabilitiesM succ = state.getActionSuccProbab()[posAction];
 
 		//if it has not been calculed before, compute it 
-        if (succ == null) {
+//        if (succ == null) {
         	//succ = computeSuccesorsProbEnum(state, iD2ADD);
         	succ = computeSuccessorsProb(state, iD2ADD);
         	        	
@@ -3195,7 +3195,7 @@ public abstract class MDP {
         	}
         	
         	state.getActionSuccProbab()[posAction] = succ;
-        }
+//        }
         
         if (!context.workingWithParameterized)	
         	return mulSumSuccessors(succ, V, c);

@@ -142,8 +142,12 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		for (State state : goalStates)
 			listGoalStates.add(state.getValues());		
 		
+//		int oldUpperUpdates = contUpperUpdates;
+		
 		this.solveLRTDPIPEnum(maxDepth, timeOut, stateSamplingType, randomGenInitial, randomGenNextState, null, vLower);
 		
+//		contUpperUpdates = contUpperUpdates + oldUpperUpdates;
+				
 		//Restore the original goals and initial states
 		listInitialStates = realInitialStates;
 		listGoalStates = realGoals;
@@ -230,6 +234,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 				previousValue = maxUpper;
 			
 			this.updateVUpper(state, V);
+			contUpperUpdates++;
 			
 			double nextValue = (Double) V.get(state);
 			
@@ -548,7 +553,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 		
 		VUpper = new HashMap<State,Double>(vUpper);
 		
-		contUpperUpdates = 0;
+//		contUpperUpdates = 0;
 
 		context.workingWithParameterizedBef = context.workingWithParameterized;
 				
@@ -567,7 +572,7 @@ public class ShortSightedSSPIP extends MDP_Fac {
 			this.printEnumValueFunction(vUpperAsHashMap);
 		}
 	}
-	
+		
 	/**
 	 * Bounded Real-time dynamic programming for Enumerative MDP-IPs
 	 */

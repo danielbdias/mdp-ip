@@ -83,7 +83,7 @@ public class LabeledSSiPP {
 		
 		printReport(problemFilename, typeContext, timeSeg, outputFilename, 
 				   myMDP.context.numCallNonLinearSolver, myMDP.contUpperUpdates, 
-				   typeSolution, numVariables);
+				   typeSolution, numVariables, myMDP.context.nonLinearSolverElapsedTime / 1000);
 	}
 	
 	public static HashMap<State, Double> runSimulation(String[] args, ShortSightedSSPIP myMDP) {
@@ -120,7 +120,7 @@ public class LabeledSSiPP {
 	
 	private static void printReport(String filename, int typeContext, long timeSeg, 
 			String fileNameReport, int numCallSolver, int numBackups, 
-			String typeSolution, int numVariables) {
+			String typeSolution, int numVariables, long solverTime) {
 
 		String typeCon = "Table";
 		String typeAprox = "REGR";
@@ -139,6 +139,7 @@ public class LabeledSSiPP {
 				out.write("Tempo de execução\t");
 				out.write("Chamadas ao Solver\t");
 				out.write("Número de Backups\t");
+				out.write("Tempo do Solver\t");
 				out.write("Algoritmo\t");
 				out.write("Número de variáveis\t");
 				out.write(System.getProperty("line.separator"));
@@ -150,6 +151,7 @@ public class LabeledSSiPP {
 			out.write(timeSeg + "\t");
 			out.write(numCallSolver + "\t");
 			out.write(numBackups + "\t");
+			out.write(solverTime + "\t");
 			out.write(typeSolution + "\t");
 			out.write(numVariables + "\t");
 			out.write(System.getProperty("line.separator"));
