@@ -3,3 +3,6 @@ Este é o projeto MDP-IP contendo uma biblioteca para execução de experimentos
 Estas bibliotecas foram baseadas no código inicial da biblioteca [https://code.google.com/p/rddlsim/ RDDLSIM] e nos trabalhos de doutorado de [http://www.ime.usp.br/~kvd/ Karina Valdivia Delgado] e de mestrado de  [http://www.ime.usp.br/~dbdias/ Daniel Baptista Dias].
 
 = Tópicos importantes =
+
+ * [RunExperiments Como rodar experimentos?]
+ * [Algorithms Algoritmos implementados]
