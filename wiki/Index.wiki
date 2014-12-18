@@ -1,8 +1,5 @@
-#summary Bem vindo !
-
 Este é o projeto MDP-IP contendo uma biblioteca para execução de experimentos de algoritmos para resolução de Processos de Decisão Markovianos com Probabilidades Imprecisas.
 
-Estas bibliotecas foram baseadas no código inicial da biblioteca [https://code.google.com/p/rddlsim/ RDDLSIM] e nos trabalhos de doutorado de [http://www.ime.usp.br/~kvd/ Karina Valdivia Delgado] e de mestrado de  [http://www.ime.usp.br/~dbdias/ Daniel Baptista Dias]
+Estas bibliotecas foram baseadas no código inicial da biblioteca [https://code.google.com/p/rddlsim/ RDDLSIM] e nos trabalhos de doutorado de [http://www.ime.usp.br/~kvd/ Karina Valdivia Delgado] e de mestrado de  [http://www.ime.usp.br/~dbdias/ Daniel Baptista Dias].
 
 = Tópicos importantes =
-
