@@ -27,7 +27,7 @@ MAIN_CLASS=mdp.algorithms.SPUDDIP
 execute_problem(){
 	local problem_type=$1
 	local current_problem_index=$2
-	local test_type=$3	
+	local test_type=$3
 	local max_iter=$4
 
 	cd $ROOT_DIR
@@ -40,14 +40,15 @@ execute_problem(){
 	value_function=$RESULTS_DIR/value_functions/"valuefunction_"$problem_type"_"$current_problem_index"_spudd.net"
 	initial_state_value=$RESULTS_DIR/initial_values/"initial_value"$problem_type"_"$current_problem_index"_spudd.txt"
 
-	java -Xms200m -Xmx2560m -classpath $CLASSPATH -cp $BINARIES_DIR $MAIN_CLASS $current_problem $current_report $max_iter $value_function $initial_state_value > $current_log
+	#java -Xms200m -Xmx2560m -classpath $CLASSPATH -cp $BINARIES_DIR $MAIN_CLASS $current_problem $current_report $max_iter $value_function $initial_state_value > $current_log
+	java -Xms200m -Xmx2560m -classpath $CLASSPATH -cp $BINARIES_DIR $MAIN_CLASS $current_problem $current_report $max_iter $value_function $initial_state_value
 
 	echo Problem $problem_type"_"$current_problem_index executed
-	echo 
+	echo
 }
 
 echo Starting tests...
-echo 
+echo
 
 MAX_ITER=100
 
@@ -55,16 +56,20 @@ echo Tests with 100% of time...
 
 TEST_TYPE="full"
 
+#PROBLEM_TYPE=uni_ring
+
+#execute_problem $PROBLEM_TYPE 1 $TEST_TYPE $MAX_ITER
+
 PROBLEM_TYPE=uni_ring_IP
 
 execute_problem $PROBLEM_TYPE 1 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 2 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 3 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 4 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 5 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 6 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 7 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 8 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 2 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 3 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 4 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 5 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 6 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 7 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 8 $TEST_TYPE $MAX_ITER
 
 PROBLEM_TYPE=traffic
 
@@ -75,19 +80,19 @@ PROBLEM_TYPE=traffic
 
 PROBLEM_TYPE=navigation
 
-execute_problem $PROBLEM_TYPE 6 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 8 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 9 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 10 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 12 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 15 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 18 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 6 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 8 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 9 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 10 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 12 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 15 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 18 $TEST_TYPE $MAX_ITER
 
 PROBLEM_TYPE=triangle_tireworld
 
-execute_problem $PROBLEM_TYPE 8 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 12 $TEST_TYPE $MAX_ITER
-execute_problem $PROBLEM_TYPE 17 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 8 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 12 $TEST_TYPE $MAX_ITER
+#execute_problem $PROBLEM_TYPE 17 $TEST_TYPE $MAX_ITER
 
 echo End of tests
 

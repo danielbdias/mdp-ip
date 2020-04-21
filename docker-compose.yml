@@ -1,0 +1,10 @@
+version: "3.7"
+
+services:
+  experiments:
+    build: .
+    volumes:
+      - ./:/usr/src/mdp-ip
+    working_dir: /usr/src/mdp-ip/scripts
+    command: 'sh rtdp_problemexecution_min.sh'
+    # command: 'sh test.sh'

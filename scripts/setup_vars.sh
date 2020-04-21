@@ -1,13 +1,13 @@
 #!/bin/bash
 #
-# Auxiliary script used to configure environment variables 
+# Auxiliary script used to configure environment variables
 #
 # Author: Daniel Dias (dbdias at ime.usp.br)
 
 echo Updating environment variables
 
 #Program root dir
-export ROOT_DIR=/home/daniel/workspaces/java/mestrado/mdp-ip
+export ROOT_DIR=/usr/src/mdp-ip
 
 #Directory where the problems are located
 export PROBLEM_DIR=$ROOT_DIR/problemsMDPIP
